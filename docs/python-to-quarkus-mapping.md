@@ -37,9 +37,10 @@ This document maps the Python reference zip from the book to the Quarkus compani
 - tool definition -> `src/main/java/dk/ashlan/agent/tools/ToolDefinition.java` - Direct port
 - tool abstraction -> `src/main/java/dk/ashlan/agent/tools/Tool.java` - Direct port
 - tool decorator -> `src/main/java/dk/ashlan/agent/chapters/chapter03/ToolDecoratorDemo.java` - Adapted port
+- `scratch_agents/tools/schema_utils.py` -> `src/main/java/dk/ashlan/agent/tools/SchemaUtils.java` - Adapted port
+- `scratch_agents/tools/decorator.py` -> `src/main/java/dk/ashlan/agent/tools/ToolDecorator.java` - Adapted port
 - `scratch_agents/tools/*.py` -> `src/main/java/dk/ashlan/agent/tools/*` - Adapted port
 - `scratch_agents/tools/function_tool.py` -> `src/main/java/dk/ashlan/agent/tools/FunctionToolAdapter.java` - Adapted port
-- `scratch_agents/tools/decorator.py` -> `src/main/java/dk/ashlan/agent/tools/AbstractTool.java` and chapter demo wrappers - Adapted port
 
 ## `chapter_04_basic_agent/`
 
