@@ -46,6 +46,7 @@ CODE_LEADING = 11.0
 
 TITLE_LINE = "Build an AI Agent from Scratch - Quarkus Edition"
 SUBTITLE_LINE = "A book-like companion PDF generated from the Quarkus/Java reference implementation"
+SMALL_CAPS_LINE = "Companion Edition"
 
 
 @dataclass
@@ -114,6 +115,8 @@ class PdfDocument:
         return page
 
     def _draw_section_intro(self, page: Page, section: Section) -> None:
+        if section.category == "chapter":
+            page.add_text(LEFT_MARGIN, page.cursor_y + 20, SMALL_CAPS_LINE, BODY_BOLD, 8.2)
         page.add_text(LEFT_MARGIN, page.cursor_y, section.title, BODY_BOLD, SECTION_TITLE_SIZE)
         page.cursor_y -= 22
         page.add_text(
@@ -233,6 +236,7 @@ class PdfDocument:
     def _build_cover_page(self) -> Page:
         page = Page(number=0, section_title="Cover")
         page.add_raw("0 0 0 rg")
+        page.add_text(LEFT_MARGIN, 578, SMALL_CAPS_LINE, BODY_BOLD, 10)
         page.add_text(LEFT_MARGIN, 540, "Build an AI", BODY_BOLD, 20)
         page.add_text(LEFT_MARGIN, 512, "Agent from Scratch", BODY_BOLD, 24)
         page.add_text(LEFT_MARGIN, 474, "Quarkus Edition", BODY_BOLD, 20)
@@ -251,9 +255,10 @@ class PdfDocument:
         for bullet in bullets:
             page.add_text(LEFT_MARGIN + 12, y, f"• {bullet}", BODY_FONT, 10.2)
             y -= 20
-        page.add_text(LEFT_MARGIN, 112, "Generated from the repository docs", BODY_ITALIC, 9.5)
-        page.add_text(LEFT_MARGIN, 92, "Source repository: quarkus-agent-edition", BODY_FONT, 9.2)
-        page.add_text(LEFT_MARGIN, 72, "Companion edition, not original book code", BODY_BOLD, 9.2)
+        page.add_text(LEFT_MARGIN, 132, "Generated from the repository docs", BODY_ITALIC, 9.5)
+        page.add_text(LEFT_MARGIN, 114, "Reference book materials are included in docs/book", BODY_FONT, 8.9)
+        page.add_text(LEFT_MARGIN, 96, "Source repository: quarkus-agent-edition", BODY_FONT, 9.2)
+        page.add_text(LEFT_MARGIN, 76, "Companion edition, not original book code", BODY_BOLD, 9.2)
         return page
 
     def _build_toc_page(self, sections: list[Section]) -> Page:
@@ -262,16 +267,30 @@ class PdfDocument:
         page.add_rule(566, 0.9)
         y = 540
         for section in sections:
-            display = f"{section.title}"
-            if section.category == "appendix":
-                display = f"Appendix - {display}"
+            display = self._toc_label(section)
             page.add_text(LEFT_MARGIN, y, display, BODY_FONT, 10.6)
-            page.add_text(360, y, str(section.page_start), BODY_BOLD, 10.6)
+            page.add_text(334, y, self._toc_leader(display, section.page_start), BODY_FONT, 10.6)
+            page.add_text(362, y, str(section.page_start), BODY_BOLD, 10.6)
             y -= 20
             if y < 58:
                 break
         page.add_text(LEFT_MARGIN, 42, "Page numbers refer to the content pages after the front matter.", BODY_ITALIC, 8.6)
         return page
+
+    def _toc_label(self, section: Section) -> str:
+        if section.category == "preface":
+            return section.title
+        if section.category == "chapter":
+            match = re.match(r"Chapter\s+(\d+)\s*[-–]\s*(.*)", section.title)
+            if match:
+                return f"Chapter {match.group(1)}  {match.group(2)}"
+        if section.category == "appendix":
+            return f"Appendix  {section.title}"
+        return section.title
+
+    def _toc_leader(self, label: str, page_number: int) -> str:
+        leader_len = max(0, 34 - len(label) // 2)
+        return "." * leader_len
 
 
 def normalize_inline(text: str) -> str:
@@ -552,6 +571,29 @@ def build_sections(repo_root: Path) -> list[Section]:
             ),
         ],
     )
+    how_to_use = Section(
+        title="How to Use This Companion",
+        source=repo_root / "README.md",
+        category="preface",
+        blocks=[
+            Block(
+                kind="paragraph",
+                text=(
+                    "Read this companion in chapter order if you want the same learning progression "
+                    "as the book. Use the README for the practical Quarkus run instructions and use "
+                    "the mapping appendix when you want to jump from Python filenames to Java classes."
+                ),
+            ),
+            Block(
+                kind="bullets",
+                items=[
+                    "Chapter docs explain the Quarkus translation and the design tradeoffs.",
+                    "The companion modules extend the book with Quarkus-native features such as RAG and evaluation.",
+                    "Demo and fake implementations are clearly marked so you can distinguish learning code from placeholders.",
+                ],
+            ),
+        ],
+    )
     python_index = Section(
         title="Python Reference File Index",
         source=book_dir / "ai-agent-from-scratch-main.zip",
@@ -573,6 +615,7 @@ def build_sections(repo_root: Path) -> list[Section]:
     )
     sections = [
         reference_materials,
+        how_to_use,
         parse_markdown_doc(repo_root / "README.md", "preface", "Build an AI Agent from Scratch - Quarkus Edition"),
         parse_markdown_doc(docs / "architecture.md", "overview"),
         parse_markdown_doc(docs / "chapter-status.md", "overview"),
