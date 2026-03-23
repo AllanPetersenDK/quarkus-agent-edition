@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class Chapter04SmokeTest {
     @Test
     void chapter04DemosWork() {
-        assertTrue(new SolveKipchogeProblemDemo().run().contains("Kipchoge"));
-        assertTrue(new AgentStructuredOutputDemo().run().contains("structured"));
-        assertTrue(new HumanInTheLoopDemo().run().contains("Human"));
+        assertTrue(new SolveKipchogeProblemDemo().run().contains("100"));
+        assertTrue(new AgentStructuredOutputDemo().run().contains("structured output demo"));
+        assertTrue(new HumanInTheLoopDemo().run().contains("before:"));
     }
 }

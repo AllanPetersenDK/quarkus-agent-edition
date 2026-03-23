@@ -49,6 +49,9 @@ This document maps the Python reference zip from the book to the Quarkus compani
 - `human-in-the-loop` -> `src/main/java/dk/ashlan/agent/chapters/chapter04/HumanInTheLoopDemo.java` - Direct port
 - `scratch_agents/agents/execution_context_ch4.py` -> `src/main/java/dk/ashlan/agent/core/ExecutionContext.java` - Adapted port
 - `scratch_agents/agents/tool_calling_agent_ch4_*` -> `src/main/java/dk/ashlan/agent/core/AgentOrchestrator.java` and related classes - Adapted port
+- `scratch_agents/agents/tool_calling_agent_ch4_base.py` -> `src/main/java/dk/ashlan/agent/core/AgentOrchestrator.java` and `src/main/java/dk/ashlan/agent/agents/ToolCallingAgentCh4Base.java` - Adapted port
+- `scratch_agents/agents/tool_calling_agent_ch4_callback.py` -> `src/main/java/dk/ashlan/agent/core/CallbackAwareAgentOrchestrator.java` and `src/main/java/dk/ashlan/agent/agents/ToolCallingAgentCh4Callback.java` - Adapted port
+- `scratch_agents/agents/tool_calling_agent_ch4_structured_output.py` -> `src/main/java/dk/ashlan/agent/core/StructuredOutputAgentOrchestrator.java` and `src/main/java/dk/ashlan/agent/agents/ToolCallingAgentCh4StructuredOutput.java` - Adapted port
 - `scratch_agents/types/*` -> `src/main/java/dk/ashlan/agent/types/*` - Adapted port
 - `scratch_agents/types/contents.py` -> `src/main/java/dk/ashlan/agent/types/ContentItem.java`, `MessageItem.java`, `ToolCallItem.java`, `ToolResultItem.java` - Adapted port
 - `scratch_agents/types/events.py` -> `src/main/java/dk/ashlan/agent/types/Event.java`, `EventType.java`, `ConversationEvent.java`, `MessageEvent.java`, `ToolCallEvent.java`, `ToolResultEvent.java`, `SystemEvent.java` - Adapted port

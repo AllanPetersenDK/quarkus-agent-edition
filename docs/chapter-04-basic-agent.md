@@ -16,6 +16,8 @@ This chapter maps the Python basic agent loop into the Quarkus core orchestratio
 
 - `dk.ashlan.agent.core.ExecutionContext`
 - `dk.ashlan.agent.core.AgentOrchestrator`
+- `dk.ashlan.agent.core.CallbackAwareAgentOrchestrator`
+- `dk.ashlan.agent.core.StructuredOutputAgentOrchestrator`
 - `dk.ashlan.agent.core.AgentRunResult`
 - `dk.ashlan.agent.core.AgentRunTrace`
 - `dk.ashlan.agent.core.StopReason`
@@ -29,5 +31,5 @@ This chapter maps the Python basic agent loop into the Quarkus core orchestratio
 
 ## Demo vs Production
 
-- Demo: `DemoToolCallingLlmClient` and the chapter demo classes.
+- Demo: `DemoToolCallingLlmClient`, `StructuredOutputParser`, and the chapter demo classes.
 - Production placeholder: provider-backed tool-calling LLMs.
