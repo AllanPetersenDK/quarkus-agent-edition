@@ -56,6 +56,12 @@ mvn quarkus:dev
 
 The application listens on `http://localhost:8080`.
 
+If your local Maven is older than 3.9, use the helper script instead:
+
+```bash
+bash scripts/run-dev.sh
+```
+
 ## Run Tests
 
 ```bash
