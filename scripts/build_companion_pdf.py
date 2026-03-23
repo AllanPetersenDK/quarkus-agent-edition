@@ -514,7 +514,65 @@ def build_pdf_bytes(pages: list[Page]) -> bytes:
 
 def build_sections(repo_root: Path) -> list[Section]:
     docs = repo_root / "docs"
+    book_dir = docs / "book"
+    source_repo_url = "https://github.com/shangrilar/ai-agent-from-scratch"
+    reference_materials = Section(
+        title="Reference Materials",
+        source=book_dir,
+        category="preface",
+        blocks=[
+            Block(
+                kind="paragraph",
+                text=(
+                    "This companion PDF is derived from the local Quarkus edition docs, the official "
+                    "book PDF in docs/book, and the Python reference zip. The Python source code "
+                    f"is available from {source_repo_url}."
+                ),
+            ),
+            Block(
+                kind="bullets",
+                items=[
+                    "docs/book/Build_an_AI_Agent_(From_Scratch)_v3_MEAP.pdf - book PDF reference",
+                    "docs/book/ai-agent-from-scratch-main.zip - official Python source reference",
+                    "Repository docs - chapter translation, architecture, and mapping notes",
+                ],
+            ),
+            Block(
+                kind="heading",
+                level=2,
+                text="Python Reference Scope",
+            ),
+            Block(
+                kind="paragraph",
+                text=(
+                    "The Python zip defines the exact chapter and shared-framework surface that this "
+                    "Quarkus edition maps. The file list below is retained as an appendix-style index "
+                    "so the companion PDF can be used as a navigation aid alongside the source repo."
+                ),
+            ),
+        ],
+    )
+    python_index = Section(
+        title="Python Reference File Index",
+        source=book_dir / "ai-agent-from-scratch-main.zip",
+        category="appendix",
+        blocks=[
+            Block(
+                kind="paragraph",
+                text=(
+                    "The following list captures the Python reference zip structure in chapter order. "
+                    "It is included here so readers can cross-check the Quarkus edition against the "
+                    "book's actual source tree."
+                ),
+            ),
+            Block(
+                kind="code",
+                lines=python_zip_index_lines(book_dir / "ai-agent-from-scratch-main.zip"),
+            ),
+        ],
+    )
     sections = [
+        reference_materials,
         parse_markdown_doc(repo_root / "README.md", "preface", "Build an AI Agent from Scratch - Quarkus Edition"),
         parse_markdown_doc(docs / "architecture.md", "overview"),
         parse_markdown_doc(docs / "chapter-status.md", "overview"),
@@ -529,8 +587,36 @@ def build_sections(repo_root: Path) -> list[Section]:
         parse_markdown_doc(docs / "chapter-09-multi-agent.md", "chapter"),
         parse_markdown_doc(docs / "chapter-10-evaluation-monitoring.md", "chapter"),
         parse_markdown_doc(docs / "python-to-quarkus-mapping.md", "appendix"),
+        python_index,
     ]
     return sections
+
+
+def python_zip_index_lines(zip_path: Path) -> list[str]:
+    import zipfile
+
+    prefix = "ai-agent-from-scratch-main/"
+    with zipfile.ZipFile(zip_path) as zf:
+        paths = [name for name in zf.namelist() if name.endswith(".py")]
+    chapter_order = [
+        "chapter_02_llm/",
+        "chapter_03_tool_use/",
+        "chapter_04_basic_agent/",
+        "chapter_06_memory/",
+        "scratch_agents/agents/",
+        "scratch_agents/memory/",
+        "scratch_agents/models/",
+        "scratch_agents/sessions/",
+        "scratch_agents/tools/",
+        "scratch_agents/types/",
+    ]
+    grouped: list[str] = []
+    for folder in chapter_order:
+        folder_paths = [name.removeprefix(prefix) for name in paths if folder in name]
+        if folder_paths:
+            grouped.append(folder.rstrip("/"))
+            grouped.extend(f"  - {name}" for name in folder_paths)
+    return grouped
 
 
 def main() -> int:

@@ -69,6 +69,8 @@ python3 scripts/build_companion_pdf.py
 ```
 
 The generated file is written to `target/quarkus-agent-edition-companion.pdf`.
+The build uses the local book materials in `docs/book/`, including the MEAP PDF and the official
+Python source zip from `https://github.com/shangrilar/ai-agent-from-scratch`.
 
 ## Current Status
 
