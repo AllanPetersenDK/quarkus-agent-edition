@@ -49,6 +49,8 @@ This document maps the Python reference zip from the book to the Quarkus compani
 - `scratch_agents/agents/execution_context_ch4.py` -> `src/main/java/dk/ashlan/agent/core/ExecutionContext.java` - Adapted port
 - `scratch_agents/agents/tool_calling_agent_ch4_*` -> `src/main/java/dk/ashlan/agent/core/AgentOrchestrator.java` and related classes - Adapted port
 - `scratch_agents/types/*` -> `src/main/java/dk/ashlan/agent/types/*` - Adapted port
+- `scratch_agents/types/contents.py` -> `src/main/java/dk/ashlan/agent/types/ContentItem.java`, `MessageItem.java`, `ToolCallItem.java`, `ToolResultItem.java` - Adapted port
+- `scratch_agents/types/events.py` -> `src/main/java/dk/ashlan/agent/types/Event.java`, `EventType.java`, `ConversationEvent.java`, `MessageEvent.java`, `ToolCallEvent.java`, `ToolResultEvent.java`, `SystemEvent.java` - Adapted port
 
 ## `chapter_06_memory/`
 
