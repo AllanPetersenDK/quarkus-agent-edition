@@ -17,7 +17,9 @@ regenerate as the repo evolves.
 from __future__ import annotations
 
 import re
+import zlib
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 from typing import Iterable
 
@@ -551,6 +553,7 @@ def build_sections(repo_root: Path) -> list[Section]:
     book_dir = docs / "book"
     book_pdf = book_dir / "Build_an_AI_Agent_(From_Scratch)_v3_MEAP.pdf"
     book_meta = read_pdf_metadata(book_pdf)
+    book_samples = extract_book_samples(book_pdf)
     source_repo_url = "https://github.com/shangrilar/ai-agent-from-scratch"
     reference_materials = Section(
         title="Source Book Snapshot",
@@ -615,6 +618,38 @@ def build_sections(repo_root: Path) -> list[Section]:
             ),
         ],
     )
+    chapter_specs = [
+        (parse_markdown_doc(repo_root / "README.md", "preface", "Build an AI Agent from Scratch - Quarkus Edition"), []),
+        (parse_markdown_doc(docs / "architecture.md", "overview"), ["architecture", "agent", "workflow"]),
+        (parse_markdown_doc(docs / "chapter-status.md", "overview"), ["chapter", "agent", "memory"]),
+        (parse_markdown_doc(docs / "chapter-01-agent-vs-workflow.md", "chapter"), ["workflow", "agent", "tool"]),
+        (parse_markdown_doc(docs / "chapter-02-llm.md", "chapter"), ["conversation", "structured output", "async", "llm"]),
+        (parse_markdown_doc(docs / "chapter-03-tool-use.md", "chapter"), ["tool calling", "tool", "web search", "custom tools"]),
+        (parse_markdown_doc(docs / "chapter-04-basic-agent.md", "chapter"), ["agent loop", "human-in-the-loop", "tool call"]),
+        (parse_markdown_doc(docs / "chapter-05-rag.md", "chapter"), ["retrieval", "rag", "context engineering"]),
+        (parse_markdown_doc(docs / "chapter-06-memory.md", "chapter"), ["session", "memory", "long-term"]),
+        (parse_markdown_doc(docs / "chapter-07-planning-reflection.md", "chapter"), ["planning", "reflection"]),
+        (parse_markdown_doc(docs / "chapter-08-code-agents.md", "chapter"), ["code", "workspace", "safety"]),
+        (parse_markdown_doc(docs / "chapter-09-multi-agent.md", "chapter"), ["multi-agent", "reviewer", "coordinator"]),
+        (parse_markdown_doc(docs / "chapter-10-evaluation-monitoring.md", "chapter"), ["evaluation", "metrics", "trace"]),
+        (parse_markdown_doc(docs / "python-to-quarkus-mapping.md", "appendix"), ["python", "quarkus", "mapping"]),
+    ]
+
+    sections = [reference_materials, how_to_use]
+    for section, keywords in chapter_specs:
+        if keywords:
+            excerpt = find_book_excerpt(book_samples, keywords)
+            if excerpt:
+                section.blocks.insert(
+                    0,
+                    Block(
+                        kind="paragraph",
+                        text="Book anchor: an extracted snippet from the source PDF that motivates the Quarkus rewrite.",
+                    ),
+                )
+                section.blocks.insert(1, Block(kind="quote", text=excerpt))
+        sections.append(section)
+
     python_index = Section(
         title="Python Reference File Index",
         source=book_dir / "ai-agent-from-scratch-main.zip",
@@ -634,26 +669,162 @@ def build_sections(repo_root: Path) -> list[Section]:
             ),
         ],
     )
-    sections = [
-        reference_materials,
-        how_to_use,
-        parse_markdown_doc(repo_root / "README.md", "preface", "Build an AI Agent from Scratch - Quarkus Edition"),
-        parse_markdown_doc(docs / "architecture.md", "overview"),
-        parse_markdown_doc(docs / "chapter-status.md", "overview"),
-        parse_markdown_doc(docs / "chapter-01-agent-vs-workflow.md", "chapter"),
-        parse_markdown_doc(docs / "chapter-02-llm.md", "chapter"),
-        parse_markdown_doc(docs / "chapter-03-tool-use.md", "chapter"),
-        parse_markdown_doc(docs / "chapter-04-basic-agent.md", "chapter"),
-        parse_markdown_doc(docs / "chapter-05-rag.md", "chapter"),
-        parse_markdown_doc(docs / "chapter-06-memory.md", "chapter"),
-        parse_markdown_doc(docs / "chapter-07-planning-reflection.md", "chapter"),
-        parse_markdown_doc(docs / "chapter-08-code-agents.md", "chapter"),
-        parse_markdown_doc(docs / "chapter-09-multi-agent.md", "chapter"),
-        parse_markdown_doc(docs / "chapter-10-evaluation-monitoring.md", "chapter"),
-        parse_markdown_doc(docs / "python-to-quarkus-mapping.md", "appendix"),
-        python_index,
-    ]
+    sections.append(python_index)
     return sections
+
+
+@lru_cache(maxsize=1)
+def extract_book_samples(pdf_path: Path) -> list[str]:
+    data = pdf_path.read_bytes()
+    samples: list[str] = []
+    for stream in iter_flate_streams(data):
+        chunks = extract_text_chunks(stream)
+        if not chunks:
+            continue
+        paragraph = normalize_book_text(" ".join(chunks))
+        if len(paragraph) > 80:
+            samples.append(paragraph)
+    return dedupe_preserve_order(samples)
+
+
+def iter_flate_streams(pdf_bytes: bytes) -> Iterable[bytes]:
+    pattern = re.compile(rb'<<[^>]*?/FlateDecode[^>]*?>>\s*stream\r?\n')
+    for match in pattern.finditer(pdf_bytes):
+        start = match.end()
+        end = pdf_bytes.find(b'endstream', start)
+        if end == -1:
+            continue
+        yield pdf_bytes[start:end].strip(b'\r\n')
+
+
+def extract_text_chunks(compressed_stream: bytes) -> list[str]:
+    try:
+        decoded = zlib.decompress(compressed_stream)
+    except Exception:
+        return []
+    chunks: list[str] = []
+    for hx in re.findall(rb'<([0-9A-Fa-f]{8,})>', decoded):
+        text = decode_pdf_hex_string(hx)
+        if text:
+            chunks.append(text)
+    for lit in re.findall(rb'\(([^()]*)\)\s*Tj', decoded):
+        text = decode_pdf_literal_bytes(lit)
+        if text:
+            chunks.append(text)
+    return chunks
+
+
+def decode_pdf_hex_string(hex_bytes: bytes) -> str:
+    try:
+        raw = bytes.fromhex(hex_bytes.decode())
+    except Exception:
+        return ""
+    return try_decode_pdf_bytes(raw)
+
+
+def decode_pdf_literal_bytes(raw: bytes) -> str:
+    return try_decode_pdf_bytes(raw)
+
+
+def try_decode_pdf_bytes(raw: bytes) -> str:
+    candidates: list[str] = []
+    for enc in ("utf-16-be", "utf-16-le", "latin1"):
+        try:
+            decoded = raw.decode(enc)
+        except Exception:
+            continue
+        candidates.append(decoded)
+        candidates.append(rot3_letters(decoded))
+    if not candidates:
+        return ""
+    best = max(candidates, key=readability_score)
+    return normalize_book_text(best)
+
+
+def readability_score(text: str) -> int:
+    lower = text.lower()
+    score = sum(ch.isalpha() for ch in text)
+    for word in ("the", "and", "agent", "tool", "memory", "planning", "reflection", "workflow", "session", "chapter", "book", "you", "with", "this"):
+        score += lower.count(word) * 20
+    return score
+
+
+def normalize_book_text(text: str) -> str:
+    if not text:
+        return ""
+    replacements = {
+        "\x03": " ",
+        "\u2019": "'",
+        "\u2018": "'",
+        "\u201c": '"',
+        "\u201d": '"',
+        "\\ou": "you",
+        "e[pert": "expert",
+        "e[ample": "example",
+        "e[ecut": "execut",
+        "e[ec": "exec",
+        "7h": "th",
+        "7H": "Th",
+        "7his": "this",
+        "7he": "the",
+        "7o": "to",
+        "7ou": "you",
+        "[": "x",
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    text = re.sub(r"[\x00-\x1f\x7f-\uffff]", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    text = text.replace(" ,", ",").replace(" .", ".").replace(" ;", ";").replace(" :", ":")
+    return text
+
+
+def rot3_letters(text: str) -> str:
+    out: list[str] = []
+    for ch in text:
+        o = ord(ch)
+        if 65 <= o <= 90:
+            out.append(chr((o - 65 - 3) % 26 + 65))
+        elif 97 <= o <= 122:
+            out.append(chr((o - 97 - 3) % 26 + 97))
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
+def find_book_excerpt(samples: list[str], keywords: list[str]) -> str:
+    lowered_keywords = [k.lower() for k in keywords]
+    best = ""
+    best_score = -1
+    for sample in samples:
+        lower = sample.lower()
+        score = sum(1 for k in lowered_keywords if k in lower)
+        if score > best_score and len(sample) > 100:
+            best = sample
+            best_score = score
+        if score == len(lowered_keywords) and score > 0:
+            return trim_excerpt(sample)
+    return trim_excerpt(best) if best else ""
+
+
+def trim_excerpt(text: str, max_len: int = 760) -> str:
+    if len(text) <= max_len:
+        return text
+    cut = text.rfind(" ", 0, max_len)
+    if cut < 0:
+        cut = max_len
+    return text[:cut].rstrip() + "..."
+
+
+def dedupe_preserve_order(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for item in items:
+        key = item.lower()
+        if key not in seen:
+            seen.add(key)
+            result.append(item)
+    return result
 
 
 def read_pdf_metadata(pdf_path: Path) -> dict[str, str]:
