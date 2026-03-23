@@ -549,39 +549,45 @@ def build_pdf_bytes(pages: list[Page]) -> bytes:
 def build_sections(repo_root: Path) -> list[Section]:
     docs = repo_root / "docs"
     book_dir = docs / "book"
+    book_pdf = book_dir / "Build_an_AI_Agent_(From_Scratch)_v3_MEAP.pdf"
+    book_meta = read_pdf_metadata(book_pdf)
     source_repo_url = "https://github.com/shangrilar/ai-agent-from-scratch"
     reference_materials = Section(
-        title="Reference Materials",
+        title="Source Book Snapshot",
         source=book_dir,
         category="preface",
         blocks=[
             Block(
                 kind="paragraph",
                 text=(
-                    "This companion PDF is derived from the local Quarkus edition docs, the official "
-                    "book PDF in docs/book, and the Python reference zip. The Python source code "
-                    f"is available from {source_repo_url}."
+                    "This companion PDF is derived from the local book PDF in docs/book and the "
+                    "official Python reference zip. The original source code is available from "
+                    f"{source_repo_url}. The Quarkus edition rewrites the learning path with Java 21 "
+                    "and Quarkus-native examples."
                 ),
             ),
             Block(
                 kind="bullets",
                 items=[
-                    "docs/book/Build_an_AI_Agent_(From_Scratch)_v3_MEAP.pdf - book PDF reference",
+                    f"Title: {book_meta.get('Title', 'Build an AI Agent (From Scratch) MEAP V03')}",
+                    f"Author(s): {book_meta.get('Author', 'Jungjun Hur and Younghee Song')}",
+                    f"Subject: {book_meta.get('Subject', 'MEAP V03')}",
+                    "docs/book/Build_an_AI_Agent_(From_Scratch)_v3_MEAP.pdf - source book PDF",
                     "docs/book/ai-agent-from-scratch-main.zip - official Python source reference",
-                    "Repository docs - chapter translation, architecture, and mapping notes",
                 ],
             ),
             Block(
                 kind="heading",
                 level=2,
-                text="Python Reference Scope",
+                text="How the Rewrite Works",
             ),
             Block(
                 kind="paragraph",
                 text=(
-                    "The Python zip defines the exact chapter and shared-framework surface that this "
-                    "Quarkus edition maps. The file list below is retained as an appendix-style index "
-                    "so the companion PDF can be used as a navigation aid alongside the source repo."
+                    "The book PDF defines the learning order, and the Python zip defines the concrete "
+                    "source files. The Quarkus edition keeps that progression, then rewrites the "
+                    "examples into Java classes, Quarkus REST resources, CDI beans, and companion "
+                    "modules."
                 ),
             ),
         ],
@@ -648,6 +654,52 @@ def build_sections(repo_root: Path) -> list[Section]:
         python_index,
     ]
     return sections
+
+
+def read_pdf_metadata(pdf_path: Path) -> dict[str, str]:
+    data = pdf_path.read_bytes().decode("latin1", errors="ignore")
+    metadata: dict[str, str] = {}
+    for key in ("Title", "Author", "Subject"):
+        literal = extract_pdf_literal(data, f"/{key}(")
+        if literal:
+            metadata[key] = unescape_pdf_literal(literal)
+    return metadata
+
+
+def extract_pdf_literal(data: str, marker: str) -> str:
+    start = data.find(marker)
+    if start == -1:
+        return ""
+    i = start + len(marker)
+    out: list[str] = []
+    escaped = False
+    depth = 1
+    while i < len(data):
+        ch = data[i]
+        if escaped:
+            out.append(ch)
+            escaped = False
+        elif ch == "\\":
+            escaped = True
+        elif ch == "(":
+            depth += 1
+            out.append(ch)
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                return "".join(out)
+            out.append(ch)
+        else:
+            out.append(ch)
+        i += 1
+    return ""
+
+
+def unescape_pdf_literal(value: str) -> str:
+    value = value.replace(r"\\", "\\")
+    value = value.replace(r"\(", "(").replace(r"\)", ")")
+    value = value.replace(r"\n", "\n").replace(r"\r", "\r").replace(r"\t", "\t")
+    return value
 
 
 def python_zip_index_lines(zip_path: Path) -> list[str]:
