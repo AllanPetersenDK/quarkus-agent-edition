@@ -5,7 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
 
 @ApplicationScoped
-public class WebSearchTool implements Tool {
+public class WebSearchTool extends AbstractTool {
     @Override
     public String name() {
         return "web-search";
@@ -17,8 +17,8 @@ public class WebSearchTool implements Tool {
     }
 
     @Override
-    public JsonToolResult execute(Map<String, Object> arguments) {
+    protected String executeSafely(Map<String, Object> arguments) {
         String query = String.valueOf(arguments.getOrDefault("query", ""));
-        return JsonToolResult.success(name(), "Web search is a placeholder for query: " + query);
+        return "Web search is a placeholder for query: " + query;
     }
 }

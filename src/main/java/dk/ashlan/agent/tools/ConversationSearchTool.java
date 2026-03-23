@@ -6,7 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
 
 @ApplicationScoped
-public class ConversationSearchTool implements Tool {
+public class ConversationSearchTool extends AbstractTool {
     private final MemoryService memoryService;
 
     public ConversationSearchTool(MemoryService memoryService) {
@@ -24,9 +24,9 @@ public class ConversationSearchTool implements Tool {
     }
 
     @Override
-    public JsonToolResult execute(Map<String, Object> arguments) {
+    protected String executeSafely(Map<String, Object> arguments) {
         String sessionId = String.valueOf(arguments.getOrDefault("sessionId", "default"));
         String query = String.valueOf(arguments.getOrDefault("query", ""));
-        return JsonToolResult.success(name(), String.join(" | ", memoryService.relevantMemories(sessionId, query)));
+        return String.join(" | ", memoryService.relevantMemories(sessionId, query));
     }
 }

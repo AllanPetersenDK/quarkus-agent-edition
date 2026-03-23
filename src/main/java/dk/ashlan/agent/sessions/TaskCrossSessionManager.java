@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @ApplicationScoped
-public class TaskCrossSessionManager implements CrossSessionManager {
+public class TaskCrossSessionManager extends BaseCrossSessionManager {
     private final List<String> memories = new CopyOnWriteArrayList<>();
 
     @Override

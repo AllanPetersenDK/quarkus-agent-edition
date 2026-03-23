@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @ApplicationScoped
-public class InMemorySessionManager implements SessionManager {
+public class InMemorySessionManager extends BaseSessionManager {
     private final Map<String, Session> sessions = new ConcurrentHashMap<>();
 
     @Override

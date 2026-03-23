@@ -5,7 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 
 @ApplicationScoped
-public class UserCrossSessionManager implements CrossSessionManager {
+public class UserCrossSessionManager extends BaseCrossSessionManager {
     private final TaskCrossSessionManager delegate = new TaskCrossSessionManager();
 
     @Override

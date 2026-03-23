@@ -5,7 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
 
 @ApplicationScoped
-public class CalculatorTool implements Tool {
+public class CalculatorTool extends AbstractTool {
     @Override
     public String name() {
         return "calculator";
@@ -17,13 +17,9 @@ public class CalculatorTool implements Tool {
     }
 
     @Override
-    public JsonToolResult execute(Map<String, Object> arguments) {
+    protected String executeSafely(Map<String, Object> arguments) {
         String expression = String.valueOf(arguments.getOrDefault("expression", ""));
-        try {
-            return JsonToolResult.success(name(), expression + " = " + evaluate(expression));
-        } catch (IllegalArgumentException exception) {
-            return JsonToolResult.failure(name(), exception.getMessage());
-        }
+        return expression + " = " + evaluate(expression);
     }
 
     public String calculate(String expr) {

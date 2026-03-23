@@ -5,7 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
 
 @ApplicationScoped
-public class WikipediaTool implements Tool {
+public class WikipediaTool extends AbstractTool {
     @Override
     public String name() {
         return "wikipedia";
@@ -17,8 +17,8 @@ public class WikipediaTool implements Tool {
     }
 
     @Override
-    public JsonToolResult execute(Map<String, Object> arguments) {
+    protected String executeSafely(Map<String, Object> arguments) {
         String query = String.valueOf(arguments.getOrDefault("query", ""));
-        return JsonToolResult.success(name(), "Wikipedia placeholder for: " + query);
+        return "Wikipedia placeholder for: " + query;
     }
 }
