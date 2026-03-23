@@ -62,6 +62,20 @@ If your local Maven is older than 3.9, use the helper script instead:
 bash scripts/run-dev.sh
 ```
 
+To run a specific chapter smoke test with one command, use one of these:
+
+```bash
+bash scripts/run-chapter-02.sh
+bash scripts/run-chapter-03.sh
+bash scripts/run-chapter-04.sh
+bash scripts/run-chapter-05.sh
+bash scripts/run-chapter-06.sh
+bash scripts/run-chapter-07.sh
+bash scripts/run-chapter-08.sh
+bash scripts/run-chapter-09.sh
+bash scripts/run-chapter-10.sh
+```
+
 ## Run Tests
 
 ```bash
