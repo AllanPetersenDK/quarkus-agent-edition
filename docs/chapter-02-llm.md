@@ -18,11 +18,13 @@ This chapter maps the Python `chapter_02_llm/` scripts and the shared `scratch_a
 - `dk.ashlan.agent.llm.DemoToolCallingLlmClient`
 - `dk.ashlan.agent.llm.OpenAiLlmClient`
 - `dk.ashlan.agent.llm.StructuredOutputParser`
+- `dk.ashlan.agent.core.LlmRequestBuilder`
 - `dk.ashlan.agent.chapters.chapter02.*`
 
 ## Design Notes
 
 - The Python request/response modeling becomes explicit Java records.
+- The chapter demos use `Chapter02Support` to assemble deterministic in-memory flows.
 - The async example is a small `CompletableFuture`-based demo rather than a direct coroutine port.
 - The “potato problem” is represented as a validation/retry style demo instead of a Python-specific pattern.
 

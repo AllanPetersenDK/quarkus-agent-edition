@@ -15,6 +15,7 @@ This document maps the Python reference zip from the book to the Quarkus compani
 - `03_structured_output.py` -> `src/main/java/dk/ashlan/agent/chapters/chapter02/StructuredOutputDemo.java` - Adapted port
 - `04_asynchronous_llm_call.py` -> `src/main/java/dk/ashlan/agent/chapters/chapter02/AsyncLlmCallDemo.java` - Adapted port
 - `05_potato_problem.py` -> `src/main/java/dk/ashlan/agent/chapters/chapter02/PotatoProblemDemo.java` - Direct port
+- `chapter_02_llm/*` -> `src/main/java/dk/ashlan/agent/chapters/chapter02/Chapter02Support.java` - Quarkus companion extension
 - `scratch_agents/models/base_llm.py` -> `src/main/java/dk/ashlan/agent/llm/LlmClient.java` - Adapted port
 - `scratch_agents/models/base_llm.py` -> `src/main/java/dk/ashlan/agent/llm/BaseLlmClient.java` - Direct compatibility port
 - `scratch_agents/models/llm_request.py` -> `src/main/java/dk/ashlan/agent/llm/LlmRequest.java` - Direct port

@@ -8,4 +8,8 @@ public class StructuredOutputDemo {
     public String run(String text) {
         return parser.parse(text).content();
     }
+
+    public String formatToolCall(String toolName) {
+        return parser.formatToolCall(toolName, java.util.Map.of("expression", "25 * 4"));
+    }
 }
