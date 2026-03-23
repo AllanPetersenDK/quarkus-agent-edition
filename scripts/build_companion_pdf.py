@@ -24,29 +24,33 @@ from typing import Iterable
 
 PAGE_WIDTH = 432.0  # 6 inches
 PAGE_HEIGHT = 648.0  # 9 inches
-LEFT_MARGIN = 40.0
-RIGHT_MARGIN = 40.0
-TOP_MARGIN = 42.0
-BOTTOM_MARGIN = 38.0
+LEFT_MARGIN = 42.0
+RIGHT_MARGIN = 42.0
+TOP_MARGIN = 46.0
+BOTTOM_MARGIN = 40.0
 CONTENT_WIDTH = PAGE_WIDTH - LEFT_MARGIN - RIGHT_MARGIN
-BODY_FONT = "Helvetica"
-BODY_BOLD = "Helvetica-Bold"
-BODY_ITALIC = "Helvetica-Oblique"
+BODY_FONT = "Times-Roman"
+BODY_BOLD = "Times-Bold"
+BODY_ITALIC = "Times-Italic"
 MONO_FONT = "Courier"
 
-TITLE_SIZE = 24
+TITLE_SIZE = 25
 SUBTITLE_SIZE = 12
-SECTION_TITLE_SIZE = 18
+SECTION_TITLE_SIZE = 19
 SUBSECTION_SIZE = 13
-BODY_SIZE = 10.6
-BODY_LEADING = 14.0
-SMALL_SIZE = 8.5
+BODY_SIZE = 10.7
+BODY_LEADING = 14.4
+SMALL_SIZE = 8.4
 CODE_SIZE = 8.9
 CODE_LEADING = 11.0
 
-TITLE_LINE = "Build an AI Agent from Scratch - Quarkus Edition"
-SUBTITLE_LINE = "A book-like companion PDF generated from the Quarkus/Java reference implementation"
+TITLE_LINE = "Build an AI Agent (From Scratch)"
+SUBTITLE_LINE = "Quarkus Edition"
+SUBTITLE_DESC = "A companion PDF generated from the Quarkus/Java reference implementation"
 SMALL_CAPS_LINE = "Companion Edition"
+BOOK_AUTHOR_LINE = "Jungjun Hur and Younghee Song"
+BOOK_SUBJECT_LINE = "MEAP V03"
+PDF_PRODUCER_LINE = "Codex standard library PDF builder"
 
 
 @dataclass
@@ -105,7 +109,8 @@ class PdfDocument:
 
     def _draw_running_header(self, page: Page) -> None:
         top_y = PAGE_HEIGHT - TOP_MARGIN + 12
-        page.add_text(LEFT_MARGIN, top_y, page.section_title, BODY_BOLD, 8.4)
+        page.add_text(LEFT_MARGIN, top_y, page.section_title, BODY_BOLD, 8.2)
+        page.add_text(PAGE_WIDTH - RIGHT_MARGIN - 30, top_y, str(page.number), BODY_BOLD, 8.2)
         page.add_rule(top_y - 6, 0.55)
 
     def _new_section_page(self, section: Section) -> Page:
@@ -116,9 +121,11 @@ class PdfDocument:
 
     def _draw_section_intro(self, page: Page, section: Section) -> None:
         if section.category == "chapter":
-            page.add_text(LEFT_MARGIN, page.cursor_y + 20, SMALL_CAPS_LINE, BODY_BOLD, 8.2)
+            chapter_label = self._chapter_label(section.title)
+            if chapter_label:
+                page.add_text(LEFT_MARGIN, page.cursor_y + 24, chapter_label, BODY_BOLD, 9.0)
         page.add_text(LEFT_MARGIN, page.cursor_y, section.title, BODY_BOLD, SECTION_TITLE_SIZE)
-        page.cursor_y -= 22
+        page.cursor_y -= 24
         page.add_text(
             LEFT_MARGIN,
             page.cursor_y,
@@ -126,9 +133,9 @@ class PdfDocument:
             BODY_ITALIC,
             SMALL_SIZE,
         )
-        page.cursor_y -= 18
+        page.cursor_y -= 20
         page.add_rule(page.cursor_y, 0.7)
-        page.cursor_y -= 18
+        page.cursor_y -= 20
 
     def render(self, output_path: Path, sections: list[Section]) -> None:
         for section in sections:
@@ -235,30 +242,32 @@ class PdfDocument:
 
     def _build_cover_page(self) -> Page:
         page = Page(number=0, section_title="Cover")
-        page.add_raw("0 0 0 rg")
+        page.add_box(0, 0, PAGE_WIDTH, PAGE_HEIGHT, 0.98)
+        page.add_box(0, 498, PAGE_WIDTH, 150, 0.89)
         page.add_text(LEFT_MARGIN, 578, SMALL_CAPS_LINE, BODY_BOLD, 10)
-        page.add_text(LEFT_MARGIN, 540, "Build an AI", BODY_BOLD, 20)
-        page.add_text(LEFT_MARGIN, 512, "Agent from Scratch", BODY_BOLD, 24)
-        page.add_text(LEFT_MARGIN, 474, "Quarkus Edition", BODY_BOLD, 20)
-        page.add_rule(450, 1.2)
-        page.add_text(LEFT_MARGIN, 424, SUBTITLE_LINE, BODY_FONT, 12)
-        page.add_text(LEFT_MARGIN, 392, "Java 21  |  Quarkus  |  Maven", BODY_FONT, 11)
-        page.add_text(LEFT_MARGIN, 350, "Companion PDF compiled from the chapter docs", BODY_FONT, 10.8)
-        page.add_text(LEFT_MARGIN, 312, "Included inside:", BODY_BOLD, 11.5)
+        page.add_text(LEFT_MARGIN, 544, TITLE_LINE, BODY_BOLD, 24)
+        page.add_text(LEFT_MARGIN, 510, SUBTITLE_LINE, BODY_BOLD, 18)
+        page.add_rule(488, 1.2)
+        page.add_text(LEFT_MARGIN, 456, SUBTITLE_DESC, BODY_FONT, 12)
+        page.add_text(LEFT_MARGIN, 430, "Java 21  |  Quarkus  |  Maven", BODY_BOLD, 10.8)
+        page.add_text(LEFT_MARGIN, 398, "Companion PDF compiled from the chapter docs", BODY_FONT, 10.5)
+        page.add_text(LEFT_MARGIN, 374, BOOK_AUTHOR_LINE, BODY_ITALIC, 10.3)
+        page.add_text(LEFT_MARGIN, 360, BOOK_SUBJECT_LINE, BODY_FONT, 9.6)
+        page.add_text(LEFT_MARGIN, 334, "Included inside:", BODY_BOLD, 11.3)
         bullets = [
             "Chapter-by-chapter Quarkus translations of the Python reference zip",
             "Architecture notes and Python-to-Quarkus mapping",
             "Demo-first implementations with explicit production placeholders",
             "RAG, memory, planning, code agents, multi-agent routing, and evaluation",
         ]
-        y = 292
+        y = 314
         for bullet in bullets:
-            page.add_text(LEFT_MARGIN + 12, y, f"• {bullet}", BODY_FONT, 10.2)
+            page.add_text(LEFT_MARGIN + 12, y, f"• {bullet}", BODY_FONT, 10.1)
             y -= 20
-        page.add_text(LEFT_MARGIN, 132, "Generated from the repository docs", BODY_ITALIC, 9.5)
-        page.add_text(LEFT_MARGIN, 114, "Reference book materials are included in docs/book", BODY_FONT, 8.9)
-        page.add_text(LEFT_MARGIN, 96, "Source repository: quarkus-agent-edition", BODY_FONT, 9.2)
-        page.add_text(LEFT_MARGIN, 76, "Companion edition, not original book code", BODY_BOLD, 9.2)
+        page.add_text(LEFT_MARGIN, 124, "Generated from the repository docs", BODY_ITALIC, 9.4)
+        page.add_text(LEFT_MARGIN, 106, "Reference book materials are included in docs/book", BODY_FONT, 8.9)
+        page.add_text(LEFT_MARGIN, 88, "Source repository: quarkus-agent-edition", BODY_FONT, 9.0)
+        page.add_text(LEFT_MARGIN, 68, "Companion edition, not original book code", BODY_BOLD, 9.0)
         return page
 
     def _build_toc_page(self, sections: list[Section]) -> Page:
@@ -268,10 +277,10 @@ class PdfDocument:
         y = 540
         for section in sections:
             display = self._toc_label(section)
-            page.add_text(LEFT_MARGIN, y, display, BODY_FONT, 10.6)
-            page.add_text(334, y, self._toc_leader(display, section.page_start), BODY_FONT, 10.6)
-            page.add_text(362, y, str(section.page_start), BODY_BOLD, 10.6)
-            y -= 20
+            page.add_text(LEFT_MARGIN, y, display, BODY_FONT, 10.4)
+            page.add_text(320, y, self._toc_leader(display, section.page_start), BODY_FONT, 10.4)
+            page.add_text(365, y, str(section.page_start), BODY_BOLD, 10.4)
+            y -= 19
             if y < 58:
                 break
         page.add_text(LEFT_MARGIN, 42, "Page numbers refer to the content pages after the front matter.", BODY_ITALIC, 8.6)
@@ -289,8 +298,14 @@ class PdfDocument:
         return section.title
 
     def _toc_leader(self, label: str, page_number: int) -> str:
-        leader_len = max(0, 34 - len(label) // 2)
+        leader_len = max(8, 44 - len(label))
         return "." * leader_len
+
+    def _chapter_label(self, title: str) -> str:
+        match = re.match(r"Chapter\s+(\d+)\s*[-–]\s*(.*)", title)
+        if not match:
+            return ""
+        return f"Chapter {match.group(1)}"
 
 
 def normalize_inline(text: str) -> str:
@@ -502,8 +517,8 @@ def build_pdf_bytes(pages: list[Page]) -> bytes:
 
     info_id = next_id
     object_bodies[info_id] = (
-        "<< /Producer (Codex standard library PDF builder) /Title (Quarkus Edition Companion PDF) "
-        "/Author (Codex) /Subject (Book-like companion reference) >>"
+        f"<< /Producer ({PDF_PRODUCER_LINE}) /Title ({TITLE_LINE} - Quarkus Edition) "
+        f"/Author ({BOOK_AUTHOR_LINE}) /Subject (Book-like companion reference based on {BOOK_SUBJECT_LINE}) >>"
     ).encode("cp1252")
 
     buffer = bytearray()
