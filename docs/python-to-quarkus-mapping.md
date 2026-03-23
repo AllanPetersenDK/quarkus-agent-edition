@@ -19,6 +19,12 @@ This document maps the Python reference zip from the book to the Quarkus compani
 - `scratch_agents/models/llm_request.py` -> `src/main/java/dk/ashlan/agent/llm/LlmRequest.java` - Direct port
 - `scratch_agents/models/llm_response.py` -> `src/main/java/dk/ashlan/agent/llm/LlmResponse.java` - Direct port
 - `scratch_agents/models/openai.py` -> `src/main/java/dk/ashlan/agent/llm/OpenAiLlmClient.java` - Adapted port
+- `scratch_agents/agents/execution_context_ch4.py` -> `src/main/java/dk/ashlan/agent/agents/ExecutionContextCh4.java` - Direct port
+- `scratch_agents/agents/execution_context_ch6.py` -> `src/main/java/dk/ashlan/agent/agents/ExecutionContextCh6.java` - Direct port
+- `scratch_agents/agents/tool_calling_agent_ch4_base.py` -> `src/main/java/dk/ashlan/agent/agents/ToolCallingAgentCh4Base.java` - Adapted port
+- `scratch_agents/agents/tool_calling_agent_ch4_callback.py` -> `src/main/java/dk/ashlan/agent/agents/ToolCallingAgentCh4Callback.java` - Adapted port
+- `scratch_agents/agents/tool_calling_agent_ch4_structured_output.py` -> `src/main/java/dk/ashlan/agent/agents/ToolCallingAgentCh4StructuredOutput.java` - Adapted port
+- `scratch_agents/agents/tool_calling_agent_ch6.py` -> `src/main/java/dk/ashlan/agent/agents/ToolCallingAgentCh6.java` - Adapted port
 
 ## `chapter_03_tool_use/`
 
