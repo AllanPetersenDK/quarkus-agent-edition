@@ -16,11 +16,14 @@ This document maps the Python reference zip from the book to the Quarkus compani
 - `04_asynchronous_llm_call.py` -> `src/main/java/dk/ashlan/agent/chapters/chapter02/AsyncLlmCallDemo.java` - Adapted port
 - `05_potato_problem.py` -> `src/main/java/dk/ashlan/agent/chapters/chapter02/PotatoProblemDemo.java` - Direct port
 - `scratch_agents/models/base_llm.py` -> `src/main/java/dk/ashlan/agent/llm/LlmClient.java` - Adapted port
+- `scratch_agents/models/base_llm.py` -> `src/main/java/dk/ashlan/agent/llm/BaseLlmClient.java` - Direct compatibility port
 - `scratch_agents/models/llm_request.py` -> `src/main/java/dk/ashlan/agent/llm/LlmRequest.java` - Direct port
 - `scratch_agents/models/llm_response.py` -> `src/main/java/dk/ashlan/agent/llm/LlmResponse.java` - Direct port
 - `scratch_agents/models/openai.py` -> `src/main/java/dk/ashlan/agent/llm/OpenAiLlmClient.java` - Adapted port
+- `scratch_agents/models/*` -> `src/main/java/dk/ashlan/agent/llm/LlmModelConfig.java` - Quarkus companion extension
 - `scratch_agents/agents/execution_context_ch4.py` -> `src/main/java/dk/ashlan/agent/agents/ExecutionContextCh4.java` - Direct port
 - `scratch_agents/agents/execution_context_ch6.py` -> `src/main/java/dk/ashlan/agent/agents/ExecutionContextCh6.java` - Direct port
+- `scratch_agents/agents/conversation_state.py` -> `src/main/java/dk/ashlan/agent/agents/ConversationState.java` - Adapted port
 - `scratch_agents/agents/tool_calling_agent_ch4_base.py` -> `src/main/java/dk/ashlan/agent/agents/ToolCallingAgentCh4Base.java` - Adapted port
 - `scratch_agents/agents/tool_calling_agent_ch4_callback.py` -> `src/main/java/dk/ashlan/agent/agents/ToolCallingAgentCh4Callback.java` - Adapted port
 - `scratch_agents/agents/tool_calling_agent_ch4_structured_output.py` -> `src/main/java/dk/ashlan/agent/agents/ToolCallingAgentCh4StructuredOutput.java` - Adapted port

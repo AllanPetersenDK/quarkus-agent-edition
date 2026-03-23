@@ -10,7 +10,7 @@ import java.util.List;
 
 @ApplicationScoped
 @Alternative
-public class OpenAiLlmClient implements LlmClient {
+public class OpenAiLlmClient implements BaseLlmClient {
     private final String apiKey;
     private final String model;
 
