@@ -37,11 +37,11 @@ TITLE_SIZE = 25
 SUBTITLE_SIZE = 12
 SECTION_TITLE_SIZE = 19
 SUBSECTION_SIZE = 13
-BODY_SIZE = 10.2
-BODY_LEADING = 15.4
+BODY_SIZE = 9.9
+BODY_LEADING = 16.2
 SMALL_SIZE = 8.2
-CODE_SIZE = 8.5
-CODE_LEADING = 12.0
+CODE_SIZE = 8.4
+CODE_LEADING = 12.4
 
 TITLE_LINE = "Build an AI Agent (From Scratch)"
 SUBTITLE_LINE = "Quarkus Edition"
@@ -122,9 +122,9 @@ class PdfDocument:
         if section.category == "chapter":
             chapter_label = self._chapter_label(section.title)
             if chapter_label:
-                page.add_text(LEFT_MARGIN, page.cursor_y + 24, chapter_label, BODY_BOLD, 9.0)
-        page.add_text(LEFT_MARGIN, page.cursor_y, section.title, BODY_BOLD, 18.0)
-        page.cursor_y -= 28
+                page.add_text(LEFT_MARGIN, page.cursor_y + 30, chapter_label, BODY_BOLD, 8.9)
+        page.add_text(LEFT_MARGIN, page.cursor_y, section.title, BODY_BOLD, 18.4)
+        page.cursor_y -= 30
         page.add_text(
             LEFT_MARGIN,
             page.cursor_y,
@@ -132,9 +132,9 @@ class PdfDocument:
             BODY_ITALIC,
             SMALL_SIZE,
         )
-        page.cursor_y -= 22
-        page.add_rule(page.cursor_y, 0.7)
         page.cursor_y -= 24
+        page.add_rule(page.cursor_y, 0.7)
+        page.cursor_y -= 26
 
     def render(self, output_path: Path, sections: list[Section]) -> None:
         for section in sections:
@@ -167,13 +167,13 @@ class PdfDocument:
     def _ensure_space(self, page: Page, needed: float) -> Page:
         if page.cursor_y - needed < BOTTOM_MARGIN:
             page = self.new_page(len(self.content_pages) + 1, page.section_title)
-            page.cursor_y = PAGE_HEIGHT - TOP_MARGIN - 8
+            page.cursor_y = PAGE_HEIGHT - TOP_MARGIN - 12
         return page
 
     def _add_heading(self, page: Page, level: int, text: str) -> Page:
         size_map = {1: 15.2, 2: 13.4, 3: 12.2}
         size = size_map.get(level, 11.6)
-        needed = size + 18
+        needed = size + 20
         page = self._ensure_space(page, needed)
         page.add_text(LEFT_MARGIN, page.cursor_y, text, BODY_BOLD, size)
         page.cursor_y -= needed
@@ -181,34 +181,34 @@ class PdfDocument:
 
     def _add_paragraph(self, page: Page, text: str) -> Page:
         wrapped = wrap_text(normalize_inline(text), BODY_SIZE, CONTENT_WIDTH)
-        needed = len(wrapped) * BODY_LEADING + 8
+        needed = len(wrapped) * BODY_LEADING + 10
         page = self._ensure_space(page, needed)
         for line in wrapped:
             if page.cursor_y < BOTTOM_MARGIN + BODY_LEADING:
                 page = self.new_page(len(self.content_pages) + 1, page.section_title)
-                page.cursor_y = PAGE_HEIGHT - TOP_MARGIN - 8
+                page.cursor_y = PAGE_HEIGHT - TOP_MARGIN - 12
             page.add_text(LEFT_MARGIN, page.cursor_y, line, BODY_FONT, BODY_SIZE)
             page.cursor_y -= BODY_LEADING
-        page.cursor_y -= 6
+        page.cursor_y -= 8
         return page
 
     def _add_quote(self, page: Page, text: str) -> Page:
         wrapped = wrap_text(normalize_inline(text), BODY_SIZE, CONTENT_WIDTH - 18)
-        needed = len(wrapped) * BODY_LEADING + 12
+        needed = len(wrapped) * BODY_LEADING + 14
         page = self._ensure_space(page, needed)
         box_height = needed - 4
         page.add_box(LEFT_MARGIN - 4, page.cursor_y - box_height + 4, CONTENT_WIDTH + 8, box_height, 0.96)
-        page.cursor_y -= 4
+        page.cursor_y -= 5
         for line in wrapped:
             page.add_text(LEFT_MARGIN + 8, page.cursor_y, line, BODY_ITALIC, BODY_SIZE)
             page.cursor_y -= BODY_LEADING
-        page.cursor_y -= 6
+        page.cursor_y -= 8
         return page
 
     def _add_bullets(self, page: Page, items: list[str]) -> Page:
         for item in items:
             wrapped = wrap_text(normalize_inline(item), BODY_SIZE, CONTENT_WIDTH - 22)
-            needed = len(wrapped) * BODY_LEADING + 6
+            needed = len(wrapped) * BODY_LEADING + 8
             page = self._ensure_space(page, needed)
             first = True
             for line in wrapped:
@@ -216,23 +216,23 @@ class PdfDocument:
                 page.add_text(LEFT_MARGIN + 8, page.cursor_y, prefix + line, BODY_FONT, BODY_SIZE)
                 page.cursor_y -= BODY_LEADING
                 first = False
-            page.cursor_y -= 4
-        page.cursor_y -= 4
+            page.cursor_y -= 5
+        page.cursor_y -= 5
         return page
 
     def _add_code_block(self, page: Page, lines: list[str]) -> Page:
         if not lines:
             return page
         prepared = [line.rstrip("\n") for line in lines]
-        needed = len(prepared) * CODE_LEADING + 18
+        needed = len(prepared) * CODE_LEADING + 20
         page = self._ensure_space(page, needed)
         block_height = needed - 2
         page.add_box(LEFT_MARGIN - 4, page.cursor_y - block_height + 4, CONTENT_WIDTH + 8, block_height, 0.95)
-        page.cursor_y -= 8
+        page.cursor_y -= 9
         for line in prepared:
             page.add_text(LEFT_MARGIN + 6, page.cursor_y, line, MONO_FONT, CODE_SIZE)
             page.cursor_y -= CODE_LEADING
-        page.cursor_y -= 6
+        page.cursor_y -= 8
         return page
 
     def _draw_page_number(self, page: Page) -> None:
@@ -244,29 +244,29 @@ class PdfDocument:
         page.add_box(0, 0, PAGE_WIDTH, PAGE_HEIGHT, 0.98)
         page.add_box(0, 498, PAGE_WIDTH, 150, 0.89)
         page.add_text(LEFT_MARGIN, 578, SMALL_CAPS_LINE, BODY_BOLD, 10)
-        page.add_text(LEFT_MARGIN, 548, TITLE_LINE, BODY_BOLD, 23)
-        page.add_text(LEFT_MARGIN, 514, SUBTITLE_LINE, BODY_BOLD, 17)
+        page.add_text(LEFT_MARGIN, 552, TITLE_LINE, BODY_BOLD, 22.5)
+        page.add_text(LEFT_MARGIN, 516, SUBTITLE_LINE, BODY_BOLD, 16.5)
         page.add_rule(488, 1.2)
-        page.add_text(LEFT_MARGIN, 454, SUBTITLE_DESC, BODY_FONT, 11.6)
-        page.add_text(LEFT_MARGIN, 430, "Java 21  |  Quarkus  |  Maven", BODY_BOLD, 10.6)
-        page.add_text(LEFT_MARGIN, 400, "Companion PDF compiled from the chapter docs", BODY_FONT, 10.0)
-        page.add_text(LEFT_MARGIN, 376, BOOK_AUTHOR_LINE, BODY_ITALIC, 10.1)
-        page.add_text(LEFT_MARGIN, 362, BOOK_SUBJECT_LINE, BODY_FONT, 9.4)
-        page.add_text(LEFT_MARGIN, 336, "Included inside:", BODY_BOLD, 11.0)
+        page.add_text(LEFT_MARGIN, 456, SUBTITLE_DESC, BODY_FONT, 11.2)
+        page.add_text(LEFT_MARGIN, 431, "Java 21  |  Quarkus  |  Maven", BODY_BOLD, 10.4)
+        page.add_text(LEFT_MARGIN, 401, "Companion PDF compiled from the chapter docs", BODY_FONT, 9.8)
+        page.add_text(LEFT_MARGIN, 377, BOOK_AUTHOR_LINE, BODY_ITALIC, 9.9)
+        page.add_text(LEFT_MARGIN, 363, BOOK_SUBJECT_LINE, BODY_FONT, 9.3)
+        page.add_text(LEFT_MARGIN, 338, "Included inside:", BODY_BOLD, 10.8)
         bullets = [
             "Chapter-by-chapter Quarkus translations of the Python reference zip",
             "Architecture notes and Python-to-Quarkus mapping",
             "Demo-first implementations with explicit production placeholders",
             "RAG, memory, planning, code agents, multi-agent routing, and evaluation",
         ]
-        y = 316
+        y = 318
         for bullet in bullets:
-            page.add_text(LEFT_MARGIN + 12, y, f"• {bullet}", BODY_FONT, 9.8)
-            y -= 21
-        page.add_text(LEFT_MARGIN, 124, "Generated from the repository docs", BODY_ITALIC, 9.2)
-        page.add_text(LEFT_MARGIN, 106, "Reference book materials are included in docs/book", BODY_FONT, 8.8)
-        page.add_text(LEFT_MARGIN, 88, "Source repository: quarkus-agent-edition", BODY_FONT, 8.9)
-        page.add_text(LEFT_MARGIN, 68, "Companion edition, not original book code", BODY_BOLD, 8.9)
+            page.add_text(LEFT_MARGIN + 12, y, f"• {bullet}", BODY_FONT, 9.5)
+            y -= 22
+        page.add_text(LEFT_MARGIN, 124, "Generated from the repository docs", BODY_ITALIC, 9.1)
+        page.add_text(LEFT_MARGIN, 106, "Reference book materials are included in docs/book", BODY_FONT, 8.7)
+        page.add_text(LEFT_MARGIN, 88, "Source repository: quarkus-agent-edition", BODY_FONT, 8.8)
+        page.add_text(LEFT_MARGIN, 68, "Companion edition, not original book code", BODY_BOLD, 8.8)
         return page
 
     def _build_toc_page(self, sections: list[Section]) -> Page:
@@ -276,10 +276,10 @@ class PdfDocument:
         y = 540
         for section in sections:
             display = self._toc_label(section)
-            page.add_text(LEFT_MARGIN, y, display, BODY_FONT, 10.0)
-            page.add_text(320, y, self._toc_leader(display, section.page_start), BODY_FONT, 10.0)
-            page.add_text(365, y, str(section.page_start), BODY_BOLD, 10.0)
-            y -= 21
+            page.add_text(LEFT_MARGIN, y, display, BODY_FONT, 9.6)
+            page.add_text(320, y, self._toc_leader(display, section.page_start), BODY_FONT, 9.6)
+            page.add_text(366, y, str(section.page_start), BODY_BOLD, 9.6)
+            y -= 22
             if y < 58:
                 break
         page.add_text(LEFT_MARGIN, 42, "Page numbers refer to the content pages after the front matter.", BODY_ITALIC, 8.6)
