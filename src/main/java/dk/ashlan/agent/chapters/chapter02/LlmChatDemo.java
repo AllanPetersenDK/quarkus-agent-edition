@@ -1,6 +1,5 @@
 package dk.ashlan.agent.chapters.chapter02;
 
-import dk.ashlan.agent.llm.LlmRequest;
 import dk.ashlan.agent.llm.LlmResponse;
 
 public class LlmChatDemo {

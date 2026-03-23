@@ -1,6 +1,5 @@
 package dk.ashlan.agent.planning;
 
-import dk.ashlan.agent.core.AgentOrchestrator;
 import dk.ashlan.agent.core.AgentRunner;
 import dk.ashlan.agent.core.AgentRunResult;
 import dk.ashlan.agent.core.StopReason;
