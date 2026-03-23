@@ -1,0 +1,19 @@
+package dk.ashlan.agent.chapters.chapter03;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class Chapter03SmokeTest {
+    @Test
+    void chapter03DemosWork() {
+        assertTrue(new CalculatorToolDemo().run().contains("100"));
+        assertTrue(new TavilySearchToolDemo().run("quarkus").contains("quarkus"));
+        assertTrue(new WikipediaToolDemo().run("java").contains("java"));
+        assertTrue(new ToolDefinitionDemo().run().contains("arithmetic"));
+        assertTrue(new ToolsExerciseDemo().run().contains("Tools exercise"));
+        assertTrue(new ToolAbstractionDemo().run().name().contains("abstract"));
+        assertTrue(new ToolDecoratorDemo().run("x").contains("[decorated]"));
+        assertTrue(new McpTavilyCustomDemo().run("x").contains("MCP"));
+    }
+}
