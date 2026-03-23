@@ -16,6 +16,10 @@ The code agent is built around a workspace root and explicit file tools, with pa
 - `dk.ashlan.agent.code.TestExecutionTool`
 - `dk.ashlan.agent.code.CodeGenerationTool`
 - `dk.ashlan.agent.code.CodeAgentOrchestrator`
+- `dk.ashlan.agent.chapters.chapter08.Chapter08Support`
+- `dk.ashlan.agent.chapters.chapter08.WorkspaceSafetyDemo`
+- `dk.ashlan.agent.chapters.chapter08.WorkspaceRoundTripDemo`
+- `dk.ashlan.agent.chapters.chapter08.CodeAgentDemo`
 
 ## Design Choices
 

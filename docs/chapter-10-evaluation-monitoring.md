@@ -16,6 +16,10 @@ The edition keeps evaluation and trace capture in dedicated services instead of 
 - `dk.ashlan.agent.eval.AgentTrace`
 - `dk.ashlan.agent.eval.AgentTraceService`
 - `dk.ashlan.agent.eval.RunMetrics`
+- `dk.ashlan.agent.chapters.chapter10.Chapter10Support`
+- `dk.ashlan.agent.chapters.chapter10.EvaluationRunDemo`
+- `dk.ashlan.agent.chapters.chapter10.TraceDemo`
+- `dk.ashlan.agent.chapters.chapter10.MetricsDemo`
 
 ## Design Choices
 

@@ -16,6 +16,10 @@ The multi-agent design is expressed as CDI-managed specialists, a router, and a 
 - `dk.ashlan.agent.multiagent.ReviewerAgent`
 - `dk.ashlan.agent.multiagent.AgentRouter`
 - `dk.ashlan.agent.multiagent.CoordinatorAgent`
+- `dk.ashlan.agent.chapters.chapter09.Chapter09Support`
+- `dk.ashlan.agent.chapters.chapter09.ResearchCoordinationDemo`
+- `dk.ashlan.agent.chapters.chapter09.CodingCoordinationDemo`
+- `dk.ashlan.agent.chapters.chapter09.ReviewerDemo`
 
 ## Design Choices
 

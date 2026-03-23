@@ -19,6 +19,9 @@ The RAG module is implemented as an in-memory companion edition that keeps the c
 - `dk.ashlan.agent.chapters.chapter05.Chapter05Support`
 - `dk.ashlan.agent.chapters.chapter05.RagIngestionDemo`
 - `dk.ashlan.agent.chapters.chapter05.KnowledgeBaseToolDemo`
+- `dk.ashlan.agent.chapters.chapter05.Chapter05Support`
+- `dk.ashlan.agent.chapters.chapter05.RagIngestionDemo`
+- `dk.ashlan.agent.chapters.chapter05.KnowledgeBaseToolDemo`
 
 ## Design Choices
 

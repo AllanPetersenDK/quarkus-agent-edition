@@ -15,6 +15,10 @@ The Java edition keeps planning and reflection as explicit services around the m
 - `dk.ashlan.agent.planning.PlannerService`
 - `dk.ashlan.agent.planning.ReflectionService`
 - `dk.ashlan.agent.planning.PlannedAgentOrchestrator`
+- `dk.ashlan.agent.chapters.chapter07.Chapter07Support`
+- `dk.ashlan.agent.chapters.chapter07.PlanningDemo`
+- `dk.ashlan.agent.chapters.chapter07.ReflectionDemo`
+- `dk.ashlan.agent.chapters.chapter07.ImprovementLoopDemo`
 
 ## Design Choices
 

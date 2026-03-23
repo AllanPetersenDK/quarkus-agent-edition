@@ -17,7 +17,12 @@ reference implementation.
 - `src/main/java/dk/ashlan/agent/chapters/chapter02` Java demos mapped from `chapter_02_llm/`.
 - `src/main/java/dk/ashlan/agent/chapters/chapter03` Java demos mapped from `chapter_03_tool_use/`.
 - `src/main/java/dk/ashlan/agent/chapters/chapter04` Java demos mapped from `chapter_04_basic_agent/`.
+- `src/main/java/dk/ashlan/agent/chapters/chapter05` Java demos and RAG companion flows.
 - `src/main/java/dk/ashlan/agent/chapters/chapter06` Java demos mapped from `chapter_06_memory/`.
+- `src/main/java/dk/ashlan/agent/chapters/chapter07` Planning and reflection companion demos.
+- `src/main/java/dk/ashlan/agent/chapters/chapter08` Code-agent companion demos.
+- `src/main/java/dk/ashlan/agent/chapters/chapter09` Multi-agent companion demos.
+- `src/main/java/dk/ashlan/agent/chapters/chapter10` Evaluation and monitoring companion demos.
 - `src/main/java/dk/ashlan/agent/core` Agent loop, execution context, and orchestration.
 - `src/main/java/dk/ashlan/agent/llm` LLM abstractions and model layer.
 - `src/main/java/dk/ashlan/agent/tools` Generic tool contracts, registry, and execution.
@@ -70,6 +75,7 @@ Demo and fake components are intentionally marked and include:
 - `InMemoryTaskMemoryStore`
 - `CodeGenerationTool`
 - `TestExecutionTool`
+- `WorkspaceService` defaults to `target/workspace` for safe local runs.
 
 ## Production Hardening Ideas
 

@@ -26,6 +26,8 @@ public class PlannedAgentOrchestrator {
             return initial;
         }
         AgentRunResult improved = agentRunner.run(goal + " Please expand the answer and include more detail.");
-        return new AgentRunResult(improved.finalAnswer(), reflection.accepted() ? improved.stopReason() : StopReason.REFLECTION_REJECTED, improved.iterations(), improved.trace());
+        ReflectionResult improvedReflection = reflectionService.reflect(improved.finalAnswer());
+        StopReason stopReason = improvedReflection.accepted() ? improved.stopReason() : StopReason.REFLECTION_REJECTED;
+        return new AgentRunResult(improved.finalAnswer(), stopReason, improved.iterations(), improved.trace());
     }
 }

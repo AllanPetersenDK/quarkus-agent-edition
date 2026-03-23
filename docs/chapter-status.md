@@ -7,14 +7,18 @@
 - Chapter 04 Basic Agent
 - Chapter 05 RAG
 - Chapter 06 Memory
+- Chapter 07 Planning and Reflection
+- Chapter 08 Code Agents
+- Chapter 09 Multi-Agent
+- Chapter 10 Evaluation and Monitoring
 
 ## Quarkus Companion Extensions
 
-- RAG
-- Planning and reflection
-- Code agents
-- Multi-agent coordination
-- Evaluation and monitoring
+- `rag`
+- `planning`
+- `code`
+- `multiagent`
+- `eval`
 
 ## Notes
 
