@@ -40,7 +40,7 @@ public class AgentOrchestrator implements AgentRunner {
         this(selectClient(llmClients, config), toolRegistry, toolExecutor, memoryService, maxIterations, systemPrompt);
     }
 
-    protected AgentOrchestrator(
+    public AgentOrchestrator(
             LlmClient llmClient,
             ToolRegistry toolRegistry,
             ToolExecutor toolExecutor,
@@ -96,7 +96,7 @@ public class AgentOrchestrator implements AgentRunner {
         return new AgentRunResult(context.getFinalAnswer(), stopReason, Math.min(iterations + 1, maxIterations), trace);
     }
 
-    private LlmClient selectClient(Instance<LlmClient> llmClients, Config config) {
+    private static LlmClient selectClient(Instance<LlmClient> llmClients, Config config) {
         String openAiApiKey = config.getOptionalValue("openai.api-key", String.class).orElse("");
         boolean useOpenAi = openAiApiKey != null && !openAiApiKey.isBlank();
         if (useOpenAi) {
