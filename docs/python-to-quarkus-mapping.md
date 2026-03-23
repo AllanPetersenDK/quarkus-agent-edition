@@ -33,6 +33,7 @@ This document maps the Python reference zip from the book to the Quarkus compani
 ## `chapter_03_tool_use/`
 
 - calculator -> `src/main/java/dk/ashlan/agent/tools/CalculatorTool.java` - Direct port
+- clock -> `src/main/java/dk/ashlan/agent/tools/ClockTool.java` - Direct port
 - Tavily search -> `src/main/java/dk/ashlan/agent/tools/WebSearchTool.java` - Adapted port
 - Wikipedia -> `src/main/java/dk/ashlan/agent/chapters/chapter03/WikipediaToolDemo.java` and later `tools/WikipediaTool.java` placeholder support - Adapted port
 - tool definition -> `src/main/java/dk/ashlan/agent/tools/ToolDefinition.java` - Direct port
@@ -42,6 +43,7 @@ This document maps the Python reference zip from the book to the Quarkus compani
 - `scratch_agents/tools/decorator.py` -> `src/main/java/dk/ashlan/agent/tools/ToolDecorator.java` - Adapted port
 - `scratch_agents/tools/*.py` -> `src/main/java/dk/ashlan/agent/tools/*` - Adapted port
 - `scratch_agents/tools/function_tool.py` -> `src/main/java/dk/ashlan/agent/tools/FunctionToolAdapter.java` - Adapted port
+- `chapter_03_tool_use/*` -> `src/main/java/dk/ashlan/agent/chapters/chapter03/Chapter03Support.java` - Quarkus companion extension
 
 ## `chapter_04_basic_agent/`
 

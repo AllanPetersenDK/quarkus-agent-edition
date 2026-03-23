@@ -12,9 +12,9 @@ class Chapter03SmokeTest {
         assertTrue(new WikipediaToolDemo().run("java").contains("java"));
         assertTrue(new ToolDefinitionDemo().run().contains("arithmetic"));
         assertTrue(new ToolSchemaDemo().run().contains("calculator"));
-        assertTrue(new ToolsExerciseDemo().run().contains("Tools exercise"));
+        assertTrue(new ToolsExerciseDemo().run().contains("100"));
         assertTrue(new ToolAbstractionDemo().run().name().contains("abstract"));
-        assertTrue(new ToolDecoratorDemo().run("x").contains("[decorated]"));
+        assertTrue(new ToolDecoratorDemo().run("25 * 4").contains("[decorated]"));
         assertTrue(new ToolDecoratorWrapperDemo().run().contains("[wrapped]"));
         assertTrue(new McpTavilyCustomDemo().run("x").contains("MCP"));
     }

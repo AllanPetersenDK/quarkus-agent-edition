@@ -19,8 +19,14 @@ This chapter maps the Python tool system into a generic Quarkus tool framework.
 - `dk.ashlan.agent.tools.ToolRegistry`
 - `dk.ashlan.agent.tools.ToolExecutor`
 - `dk.ashlan.agent.tools.CalculatorTool`
+- `dk.ashlan.agent.tools.ClockTool`
 - `dk.ashlan.agent.tools.WebSearchTool`
+- `dk.ashlan.agent.tools.WikipediaTool`
+- `dk.ashlan.agent.tools.FunctionToolAdapter`
+- `dk.ashlan.agent.tools.ToolDecorator`
+- `dk.ashlan.agent.tools.SchemaUtils`
 - `dk.ashlan.agent.chapters.chapter03.*`
+- `dk.ashlan.agent.chapters.chapter03.Chapter03Support`
 
 ## Design Notes
 
@@ -30,5 +36,5 @@ This chapter maps the Python tool system into a generic Quarkus tool framework.
 
 ## Demo vs Production
 
-- Demo: calculator and placeholder web search.
+- Demo: calculator, clock, placeholder web search, and generic function-backed tooling.
 - Production placeholder: external search providers and richer tool schema generation.
