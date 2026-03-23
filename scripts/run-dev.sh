@@ -45,4 +45,5 @@ exec "$mvn_bin" \
   -Dmaven.repo.local="$repo_local" \
   io.quarkus.platform:quarkus-maven-plugin:"$quarkus_version":dev \
   -Dquarkus.http.host="$host" \
+  -Dquarkus.enforceBuildGoal=false \
   -Ddebug=false
