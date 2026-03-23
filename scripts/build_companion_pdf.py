@@ -17,11 +17,8 @@ regenerate as the repo evolves.
 from __future__ import annotations
 
 import re
-import zlib
 from dataclasses import dataclass, field
-from functools import lru_cache
 from pathlib import Path
-from typing import Iterable
 
 
 PAGE_WIDTH = 432.0  # 6 inches
@@ -553,7 +550,6 @@ def build_sections(repo_root: Path) -> list[Section]:
     book_dir = docs / "book"
     book_pdf = book_dir / "Build_an_AI_Agent_(From_Scratch)_v3_MEAP.pdf"
     book_meta = read_pdf_metadata(book_pdf)
-    book_samples = extract_book_samples(book_pdf)
     source_repo_url = "https://github.com/shangrilar/ai-agent-from-scratch"
     reference_materials = Section(
         title="Source Book Snapshot",
@@ -590,7 +586,8 @@ def build_sections(repo_root: Path) -> list[Section]:
                     "The book PDF defines the learning order, and the Python zip defines the concrete "
                     "source files. The Quarkus edition keeps that progression, then rewrites the "
                     "examples into Java classes, Quarkus REST resources, CDI beans, and companion "
-                    "modules."
+                    "modules. The result is a companion text, not a literal reproduction, so the "
+                    "examples are adapted where Java and Quarkus give us a better fit."
                 ),
             ),
         ],
@@ -618,37 +615,400 @@ def build_sections(repo_root: Path) -> list[Section]:
             ),
         ],
     )
-    chapter_specs = [
-        (parse_markdown_doc(repo_root / "README.md", "preface", "Build an AI Agent from Scratch - Quarkus Edition"), []),
-        (parse_markdown_doc(docs / "architecture.md", "overview"), ["architecture", "agent", "workflow"]),
-        (parse_markdown_doc(docs / "chapter-status.md", "overview"), ["chapter", "agent", "memory"]),
-        (parse_markdown_doc(docs / "chapter-01-agent-vs-workflow.md", "chapter"), ["workflow", "agent", "tool"]),
-        (parse_markdown_doc(docs / "chapter-02-llm.md", "chapter"), ["conversation", "structured output", "async", "llm"]),
-        (parse_markdown_doc(docs / "chapter-03-tool-use.md", "chapter"), ["tool calling", "tool", "web search", "custom tools"]),
-        (parse_markdown_doc(docs / "chapter-04-basic-agent.md", "chapter"), ["agent loop", "human-in-the-loop", "tool call"]),
-        (parse_markdown_doc(docs / "chapter-05-rag.md", "chapter"), ["retrieval", "rag", "context engineering"]),
-        (parse_markdown_doc(docs / "chapter-06-memory.md", "chapter"), ["session", "memory", "long-term"]),
-        (parse_markdown_doc(docs / "chapter-07-planning-reflection.md", "chapter"), ["planning", "reflection"]),
-        (parse_markdown_doc(docs / "chapter-08-code-agents.md", "chapter"), ["code", "workspace", "safety"]),
-        (parse_markdown_doc(docs / "chapter-09-multi-agent.md", "chapter"), ["multi-agent", "reviewer", "coordinator"]),
-        (parse_markdown_doc(docs / "chapter-10-evaluation-monitoring.md", "chapter"), ["evaluation", "metrics", "trace"]),
-        (parse_markdown_doc(docs / "python-to-quarkus-mapping.md", "appendix"), ["python", "quarkus", "mapping"]),
+    chapters = [
+        make_companion_chapter(
+            title="Chapter 01 - Agent vs Workflow",
+            source=docs / "chapter-01-agent-vs-workflow.md",
+            book_thread=(
+                "The opening idea in the book is that not every AI product needs an agent. "
+                "Some problems are best solved with a predictable workflow, while others need "
+                "an agent that can inspect context, call tools, and iterate. In Quarkus, that "
+                "distinction becomes a clean architectural choice between explicit workflow code "
+                "and an orchestration layer that loops until the task is complete."
+            ),
+            python_files=[
+                "chapter_01 does not exist as a standalone zip folder, so this chapter is the conceptual bridge into the reference structure.",
+                "The Quarkus edition pairs the concept with /workflow-demo and /agent REST endpoints.",
+            ],
+            quarkus_translation=(
+                "The Quarkus version keeps the comparison tangible. `WorkflowResource` shows a "
+                "fixed path; `AgentResource` shows the iterative path. The `DemoToolCallingLlmClient` "
+                "is intentionally small so readers can see the control flow rather than a hidden "
+                "framework."
+            ),
+            central_classes=[
+                "dk.ashlan.agent.api.WorkflowResource",
+                "dk.ashlan.agent.api.AgentResource",
+                "dk.ashlan.agent.core.AgentOrchestrator",
+                "dk.ashlan.agent.llm.DemoToolCallingLlmClient",
+            ],
+            design_choices=[
+                "Use REST endpoints so the workflow-versus-agent contrast is visible in a running app.",
+                "Keep the loop explicit instead of burying it in a large abstraction.",
+                "Mark the demo client clearly as fake so the learning path remains honest.",
+            ],
+            demo_vs_production=[
+                "Demo: hard-coded tool choices and prompt-driven behavior for the learning exercises.",
+                "Production placeholder: a real provider-backed LLM client with tool calling and retries.",
+            ],
+        ),
+        make_companion_chapter(
+            title="Chapter 02 - LLM Integration",
+            source=docs / "chapter-02-llm.md",
+            book_thread=(
+                "This chapter in the book teaches the smallest useful LLM surface: chat, structured "
+                "output, asynchronous calls, and a few deliberately awkward edge cases. The Quarkus "
+                "edition keeps those learning goals intact, but turns them into typed request and "
+                "response objects that fit the Java toolchain."
+            ),
+            python_files=[
+                "chapter_02_llm/01_llm_chat.py",
+                "chapter_02_llm/02_conversation_management.py",
+                "chapter_02_llm/03_structured_output.py",
+                "chapter_02_llm/04_asynchronous_llm_call.py",
+                "chapter_02_llm/05_potato_problem.py",
+                "scratch_agents/models/base_llm.py",
+                "scratch_agents/models/llm_request.py",
+                "scratch_agents/models/llm_response.py",
+                "scratch_agents/models/openai.py",
+            ],
+            quarkus_translation=(
+                "The Java version uses `LlmRequest`, `LlmResponse`, `LlmClient`, and "
+                "`StructuredOutputParser` as the core vocabulary. The demo client reproduces the "
+                "book's early learning steps without pretending to be a production LLM provider."
+            ),
+            central_classes=[
+                "dk.ashlan.agent.llm.LlmRequest",
+                "dk.ashlan.agent.llm.LlmResponse",
+                "dk.ashlan.agent.llm.LlmClient",
+                "dk.ashlan.agent.llm.OpenAiLlmClient",
+                "dk.ashlan.agent.llm.StructuredOutputParser",
+                "dk.ashlan.agent.chapters.chapter02.*",
+            ],
+            design_choices=[
+                "Use records and small DTOs so message flow stays easy to inspect.",
+                "Model structured output explicitly instead of hoping free-form text can be parsed later.",
+                "Keep async examples in the companion because Quarkus can express them naturally.",
+            ],
+            demo_vs_production=[
+                "Demo: `DemoToolCallingLlmClient` returns deterministic answers for the exercises.",
+                "Production placeholder: `OpenAiLlmClient` is the real integration seam.",
+            ],
+        ),
+        make_companion_chapter(
+            title="Chapter 03 - Tool Use",
+            source=docs / "chapter-03-tool-use.md",
+            book_thread=(
+                "The book's tool chapter introduces the idea that agents gain power when they can "
+                "reach beyond the prompt and call a calculator, search service, or domain-specific "
+                "helper. In Quarkus, tools become CDI-friendly, testable classes with explicit "
+                "definitions and a generic executor."
+            ),
+            python_files=[
+                "chapter_03_tool_use/calculator.py",
+                "chapter_03_tool_use/tavily_search_tool.py",
+                "chapter_03_tool_use/wikipedia.py",
+                "chapter_03_tool_use/tool_definition.py",
+                "chapter_03_tool_use/tool_abstraction.py",
+                "chapter_03_tool_use/tool_decorator.py",
+                "scratch_agents/tools/base_tool.py",
+                "scratch_agents/tools/function_tool.py",
+                "scratch_agents/tools/decorator.py",
+                "scratch_agents/tools/schema_utils.py",
+            ],
+            quarkus_translation=(
+                "The companion maps the tool ideas into `Tool`, `ToolDefinition`, `ToolRegistry`, "
+                "`ToolExecutor`, and concrete implementations such as `CalculatorTool`, `ClockTool`, "
+                "and `WebSearchTool`. The `FunctionToolAdapter` and `ToolDecorator` classes keep the "
+                "model open for future extensions."
+            ),
+            central_classes=[
+                "dk.ashlan.agent.tools.Tool",
+                "dk.ashlan.agent.tools.ToolDefinition",
+                "dk.ashlan.agent.tools.ToolRegistry",
+                "dk.ashlan.agent.tools.ToolExecutor",
+                "dk.ashlan.agent.tools.CalculatorTool",
+                "dk.ashlan.agent.tools.ClockTool",
+                "dk.ashlan.agent.tools.WebSearchTool",
+            ],
+            design_choices=[
+                "Expose tools as plain Java objects so they are easy to register and unit test.",
+                "Keep the executor generic so new tools do not require a new control path.",
+                "Treat Wikipedia and web search as adapters or placeholders where the original book expects external APIs.",
+            ],
+            demo_vs_production=[
+                "Demo: calculator, clock, and mocked search flows for deterministic tests.",
+                "Production placeholder: a real search API client with credentials and retry handling.",
+            ],
+        ),
+        make_companion_chapter(
+            title="Chapter 04 - Basic Agent",
+            source=docs / "chapter-04-basic-agent.md",
+            book_thread=(
+                "The basic agent chapter is where the idea becomes operational: think, act, observe, repeat. "
+                "The Quarkus edition preserves that rhythm, but moves the state into explicit execution "
+                "contexts and trace objects so the loop is easy to understand and easy to test."
+            ),
+            python_files=[
+                "chapter_04_basic_agent/01_solve_kipchoge_problem.py",
+                "chapter_04_basic_agent/02_agent_structured_output.py",
+                "chapter_04_basic_agent/03_human_in_the_loop.py",
+                "scratch_agents/agents/execution_context_ch4.py",
+                "scratch_agents/agents/tool_calling_agent_ch4_base.py",
+                "scratch_agents/agents/tool_calling_agent_ch4_callback.py",
+                "scratch_agents/agents/tool_calling_agent_ch4_structured_output.py",
+                "scratch_agents/types/contents.py",
+                "scratch_agents/types/events.py",
+            ],
+            quarkus_translation=(
+                "The core loop lives in `AgentOrchestrator`, while callback and structured-output "
+                "variants are factored into dedicated helpers. `ExecutionContext`, `ConversationTranscript`, "
+                "and the `ContentItem`/`Event` hierarchy make the evolving state visible rather than "
+                "hidden inside a monolith."
+            ),
+            central_classes=[
+                "dk.ashlan.agent.core.ExecutionContext",
+                "dk.ashlan.agent.core.AgentOrchestrator",
+                "dk.ashlan.agent.core.CallbackAwareAgentOrchestrator",
+                "dk.ashlan.agent.core.StructuredOutputAgentOrchestrator",
+                "dk.ashlan.agent.types.ContentItem",
+                "dk.ashlan.agent.types.Event",
+                "dk.ashlan.agent.agents.ConversationTranscript",
+            ],
+            design_choices=[
+                "Prefer explicit event objects over stringly typed state transitions.",
+                "Keep human-in-the-loop behavior separate from the core loop so it can be reused.",
+                "Let the tests prove the loop converges rather than relying on the prompt alone.",
+            ],
+            demo_vs_production=[
+                "Demo: the chapter demos and callback helpers that make the loop visible.",
+                "Production placeholder: a policy layer that would govern retries, safety, and escalation.",
+            ],
+        ),
+        make_companion_chapter(
+            title="Chapter 05 - RAG",
+            source=docs / "chapter-05-rag.md",
+            book_thread=(
+                "Retrieval-augmented generation adds knowledge to the agent without making the model "
+                "remember everything forever. In the Quarkus companion, the RAG chapter is the bridge "
+                "from prompt-driven behavior to a service that can ingest, chunk, embed, and retrieve "
+                "documents in a predictable way."
+            ),
+            python_files=[
+                "This chapter is a Quarkus companion extension rather than a direct Python zip chapter.",
+                "It is inspired by the book's retrieval and context engineering ideas.",
+            ],
+            quarkus_translation=(
+                "`Chunker`, `FakeEmbeddingClient`, `InMemoryVectorStore`, `Retriever`, and `RagService` "
+                "form a complete local pipeline. The `KnowledgeBaseTool` turns retrieval into something "
+                "the agent can call like any other tool."
+            ),
+            central_classes=[
+                "dk.ashlan.agent.rag.Chunker",
+                "dk.ashlan.agent.rag.FakeEmbeddingClient",
+                "dk.ashlan.agent.rag.InMemoryVectorStore",
+                "dk.ashlan.agent.rag.Retriever",
+                "dk.ashlan.agent.rag.RagService",
+                "dk.ashlan.agent.rag.KnowledgeBaseTool",
+            ],
+            design_choices=[
+                "Use fake embeddings so the chapter remains self-contained and runnable offline.",
+                "Keep top-K retrieval and cosine similarity explicit for teaching value.",
+                "Make ingestion a service so test fixtures can load data the same way production code would.",
+            ],
+            demo_vs_production=[
+                "Demo: in-memory vector storage and fake embeddings.",
+                "Production placeholder: Postgres/pgvector or another durable vector backend.",
+            ],
+        ),
+        make_companion_chapter(
+            title="Chapter 06 - Memory",
+            source=docs / "chapter-06-memory.md",
+            book_thread=(
+                "Memory turns a stateless chat into an ongoing relationship. The book explores short-term, "
+                "sliding-window, summary, and long-term memory strategies, and the Quarkus edition keeps "
+                "those distinctions while translating them into sessions and stores that are easy to test."
+            ),
+            python_files=[
+                "chapter_06_memory/01_session_agent.py",
+                "chapter_06_memory/02_core_memory_strategy.py",
+                "chapter_06_memory/03_core_memory_update.py",
+                "chapter_06_memory/04_sliding_window.py",
+                "chapter_06_memory/05_summarization.py",
+                "chapter_06_memory/06_conversation_search.py",
+                "chapter_06_memory/07_task_long_term.py",
+                "chapter_06_memory/08_user_long_term.py",
+                "scratch_agents/memory/base_memory_strategy.py",
+                "scratch_agents/memory/core_memory_strategy.py",
+                "scratch_agents/memory/sliding_window_strategy.py",
+                "scratch_agents/memory/summarization_strategy.py",
+                "scratch_agents/sessions/base_session_manager.py",
+                "scratch_agents/sessions/base_cross_session_manager.py",
+                "scratch_agents/sessions/session.py",
+            ],
+            quarkus_translation=(
+                "`SessionManager`, `CrossSessionManager`, `MemoryStrategy`, and `MemoryService` "
+                "capture the same ideas in Java. Short-term context lives in the execution context, "
+                "while task and user memories are maintained as separate stores so retrieval can stay "
+                "focused and deterministic."
+            ),
+            central_classes=[
+                "dk.ashlan.agent.memory.MemoryStrategy",
+                "dk.ashlan.agent.memory.CoreMemoryStrategy",
+                "dk.ashlan.agent.memory.SlidingWindowStrategy",
+                "dk.ashlan.agent.memory.SummarizationStrategy",
+                "dk.ashlan.agent.sessions.SessionManager",
+                "dk.ashlan.agent.sessions.CrossSessionManager",
+                "dk.ashlan.agent.memory.MemoryService",
+            ],
+            design_choices=[
+                "Separate short-term, summary, and long-term memory so each concern is testable.",
+                "Use in-memory stores first to keep the chapter runnable without external services.",
+                "Keep retrieval logic explicit so the memory path is understandable from the tests.",
+            ],
+            demo_vs_production=[
+                "Demo: local session continuity and in-memory cross-session retrieval.",
+                "Production placeholder: durable persistence and search-backed memory stores.",
+            ],
+        ),
+        make_companion_chapter(
+            title="Chapter 07 - Planning and Reflection",
+            source=docs / "chapter-07-planning-reflection.md",
+            book_thread=(
+                "Planning and reflection take the agent from reactive to deliberate. Instead of answering "
+                "immediately, the system first builds a plan, then evaluates the output, then decides "
+                "whether another pass is required."
+            ),
+            python_files=[
+                "This chapter is a Quarkus companion extension rather than a direct Python zip chapter.",
+                "It continues the book's reasoning theme with plan generation and reflection loops.",
+            ],
+            quarkus_translation=(
+                "`ExecutionPlan`, `PlanStep`, `PlannerService`, `ReflectionService`, and "
+                "`PlannedAgentOrchestrator` encode the thinking loop in explicit Java types."
+            ),
+            central_classes=[
+                "dk.ashlan.agent.planning.ExecutionPlan",
+                "dk.ashlan.agent.planning.PlanStep",
+                "dk.ashlan.agent.planning.PlannerService",
+                "dk.ashlan.agent.planning.ReflectionService",
+                "dk.ashlan.agent.planning.PlannedAgentOrchestrator",
+            ],
+            design_choices=[
+                "Let planning happen before execution so the agent can be inspected and tested.",
+                "Treat reflection as a gate that can reject outputs that are too thin or incomplete.",
+                "Use a re-entry loop when a better answer is justified by the evaluation step.",
+            ],
+            demo_vs_production=[
+                "Demo: deterministic planning and reflection rules suitable for tests.",
+                "Production placeholder: model-backed plan generation with richer scoring.",
+            ],
+        ),
+        make_companion_chapter(
+            title="Chapter 08 - Code Agents",
+            source=docs / "chapter-08-code-agents.md",
+            book_thread=(
+                "Code agents need a workspace, file safety, and a way to verify changes. The Quarkus companion "
+                "turns that into a constrained workspace service and explicit file and test execution tools."
+            ),
+            python_files=[
+                "This chapter is a Quarkus companion extension rather than a direct Python zip chapter.",
+                "It extends the book's agent patterns into safe workspace automation.",
+            ],
+            quarkus_translation=(
+                "`WorkspaceService`, `FileReadTool`, `FileWriteTool`, `TestExecutionTool`, and "
+                "`CodeGenerationTool` keep every action rooted inside a safe workspace. The chapter "
+                "demos show how the agent can work on files without giving it unrestricted access."
+            ),
+            central_classes=[
+                "dk.ashlan.agent.code.WorkspaceService",
+                "dk.ashlan.agent.code.FileReadTool",
+                "dk.ashlan.agent.code.FileWriteTool",
+                "dk.ashlan.agent.code.TestExecutionTool",
+                "dk.ashlan.agent.code.CodeGenerationTool",
+                "dk.ashlan.agent.code.CodeAgentOrchestrator",
+            ],
+            design_choices=[
+                "Enforce path safety so code generation cannot escape the workspace root.",
+                "Keep file operations and test execution separate for clearer review and security.",
+                "Make the workspace configurable so the same logic can run locally or in CI.",
+            ],
+            demo_vs_production=[
+                "Demo: local workspace operations and deterministic safety tests.",
+                "Production placeholder: hardened sandboxes, containerized execution, and stricter policy controls.",
+            ],
+        ),
+        make_companion_chapter(
+            title="Chapter 09 - Multi-Agent",
+            source=docs / "chapter-09-multi-agent.md",
+            book_thread=(
+                "When one agent is not enough, the system needs specialization. The multi-agent chapter turns "
+                "the single-agent loop into a coordinator that routes work to research, coding, and review "
+                "specialists."
+            ),
+            python_files=[
+                "This chapter is a Quarkus companion extension rather than a direct Python zip chapter.",
+                "It generalizes the book's orchestration ideas into specialist agents and routing.",
+            ],
+            quarkus_translation=(
+                "`SpecialistAgent`, `AgentRouter`, `CoordinatorAgent`, `ResearchAgent`, `CodingAgent`, and "
+                "`ReviewerAgent` give the application a team-based structure."
+            ),
+            central_classes=[
+                "dk.ashlan.agent.multiagent.SpecialistAgent",
+                "dk.ashlan.agent.multiagent.AgentRouter",
+                "dk.ashlan.agent.multiagent.CoordinatorAgent",
+                "dk.ashlan.agent.multiagent.ResearchAgent",
+                "dk.ashlan.agent.multiagent.CodingAgent",
+                "dk.ashlan.agent.multiagent.ReviewerAgent",
+            ],
+            design_choices=[
+                "Route tasks by capability instead of asking one model to do everything.",
+                "Keep reviewer feedback separate so quality gates are explicit.",
+                "Return task results as structured values instead of free-form narrative where possible.",
+            ],
+            demo_vs_production=[
+                "Demo: deterministic routing and reviewer scoring for the companion examples.",
+                "Production placeholder: policy-driven orchestration with queueing and audit trails.",
+            ],
+        ),
+        make_companion_chapter(
+            title="Chapter 10 - Evaluation and Monitoring",
+            source=docs / "chapter-10-evaluation-monitoring.md",
+            book_thread=(
+                "The final chapter closes the loop by asking whether the system is any good. Evaluation, "
+                "tracing, and metrics turn the agent from a demo into something that can be measured."
+            ),
+            python_files=[
+                "This chapter is a Quarkus companion extension rather than a direct Python zip chapter.",
+                "It extends the book's ideas into repeatable evaluation and traceability.",
+            ],
+            quarkus_translation=(
+                "`EvalCase`, `EvalResult`, `EvaluationRunner`, `AgentTrace`, `AgentTraceService`, and "
+                "`RunMetrics` provide a compact monitoring story. The admin endpoint makes the evaluation "
+                "path observable from the outside."
+            ),
+            central_classes=[
+                "dk.ashlan.agent.eval.EvalCase",
+                "dk.ashlan.agent.eval.EvalResult",
+                "dk.ashlan.agent.eval.EvaluationRunner",
+                "dk.ashlan.agent.eval.AgentTrace",
+                "dk.ashlan.agent.eval.AgentTraceService",
+                "dk.ashlan.agent.eval.RunMetrics",
+            ],
+            design_choices=[
+                "Treat evaluation cases as first-class inputs so agent quality can be regression-tested.",
+                "Record traces separately from metrics so debugging and reporting stay distinct.",
+                "Expose admin endpoints only for the companion demo, with production auth left as a hardening step.",
+            ],
+            demo_vs_production=[
+                "Demo: in-memory evaluation runs and trace capture.",
+                "Production placeholder: persistent metrics, dashboards, and secure admin access.",
+            ],
+        ),
     ]
 
-    sections = [reference_materials, how_to_use]
-    for section, keywords in chapter_specs:
-        if keywords:
-            excerpt = find_book_excerpt(book_samples, keywords)
-            if excerpt:
-                section.blocks.insert(
-                    0,
-                    Block(
-                        kind="paragraph",
-                        text="Book anchor: an extracted snippet from the source PDF that motivates the Quarkus rewrite.",
-                    ),
-                )
-                section.blocks.insert(1, Block(kind="quote", text=excerpt))
-        sections.append(section)
+    sections = [reference_materials, how_to_use, *chapters]
 
     python_index = Section(
         title="Python Reference File Index",
@@ -670,202 +1030,68 @@ def build_sections(repo_root: Path) -> list[Section]:
         ],
     )
     sections.append(python_index)
+
+    architecture_map = Section(
+        title="Companion Architecture Map",
+        source=docs / "architecture.md",
+        category="appendix",
+        blocks=[
+            Block(
+                kind="paragraph",
+                text=(
+                    "The Quarkus edition is organized into a runtime core and a set of companion "
+                    "extensions. The runtime core covers LLM integration, tools, orchestration, "
+                    "memory, sessions, and typed conversation events. The companion extensions add "
+                    "RAG, planning, code agents, multi-agent routing, and evaluation."
+                ),
+            ),
+            Block(
+                kind="bullets",
+                items=[
+                    "Runtime core: `llm`, `tools`, `core`, `types`, `memory`, `sessions`.",
+                    "Companion extensions: `rag`, `planning`, `code`, `multiagent`, `eval`.",
+                    "API surface: `AgentResource`, `WorkflowResource`, `CodeAgentResource`, `MultiAgentResource`, `AdminEvaluationResource`.",
+                    "Test strategy: unit tests for small services and smoke tests for the REST layer.",
+                ],
+            ),
+            Block(
+                kind="paragraph",
+                text=(
+                    "The design keeps demo implementations clearly labeled while leaving room for real "
+                    "providers, persistence, and observability if the companion is hardened further."
+                ),
+            ),
+        ],
+    )
+    sections.append(architecture_map)
     return sections
 
 
-@lru_cache(maxsize=1)
-def extract_book_samples(pdf_path: Path) -> list[str]:
-    data = pdf_path.read_bytes()
-    samples: list[str] = []
-    for stream in iter_flate_streams(data):
-        chunks = extract_text_chunks(stream)
-        if not chunks:
-            continue
-        paragraph = normalize_book_text(" ".join(chunks))
-        if len(paragraph) > 80:
-            samples.append(paragraph)
-    return dedupe_preserve_order(samples)
-
-
-def iter_flate_streams(pdf_bytes: bytes) -> Iterable[bytes]:
-    pattern = re.compile(rb'<<[^>]*?/FlateDecode[^>]*?>>\s*stream\r?\n')
-    for match in pattern.finditer(pdf_bytes):
-        start = match.end()
-        end = pdf_bytes.find(b'endstream', start)
-        if end == -1:
-            continue
-        yield pdf_bytes[start:end].strip(b'\r\n')
-
-
-def extract_text_chunks(compressed_stream: bytes) -> list[str]:
-    try:
-        decoded = zlib.decompress(compressed_stream)
-    except Exception:
-        return []
-    chunks: list[str] = []
-    for hx in re.findall(rb'<([0-9A-Fa-f]{8,})>', decoded):
-        text = decode_pdf_hex_string(hx)
-        if text:
-            chunks.append(text)
-    for lit in re.findall(rb'\(([^()]*)\)\s*Tj', decoded):
-        text = decode_pdf_literal_bytes(lit)
-        if text:
-            chunks.append(text)
-    return chunks
-
-
-def decode_pdf_hex_string(hex_bytes: bytes) -> str:
-    try:
-        raw = bytes.fromhex(hex_bytes.decode())
-    except Exception:
-        return ""
-    return try_decode_pdf_bytes(raw)
-
-
-def decode_pdf_literal_bytes(raw: bytes) -> str:
-    return try_decode_pdf_bytes(raw)
-
-
-def try_decode_pdf_bytes(raw: bytes) -> str:
-    candidates: list[str] = []
-    for enc in ("utf-16-be", "utf-16-le", "latin1"):
-        try:
-            decoded = raw.decode(enc)
-        except Exception:
-            continue
-        candidates.append(decoded)
-        candidates.append(rot3_letters(decoded))
-    if not candidates:
-        return ""
-    best = max(candidates, key=readability_score)
-    return normalize_book_text(best)
-
-
-def readability_score(text: str) -> int:
-    lower = text.lower()
-    score = sum(ch.isalpha() for ch in text)
-    for word in ("the", "and", "agent", "tool", "memory", "planning", "reflection", "workflow", "session", "chapter", "book", "you", "with", "this"):
-        score += lower.count(word) * 20
-    return score
-
-
-def normalize_book_text(text: str) -> str:
-    if not text:
-        return ""
-    text = text.lower()
-    replacements = {
-        "\x03": " ",
-        "\u2019": "'",
-        "\u2018": "'",
-        "\u201c": '"',
-        "\u201d": '"',
-    }
-    for old, new in replacements.items():
-        text = text.replace(old, new)
-    token_map = {
-        "lw": "it",
-        "lv": "is",
-        "zh": "we",
-        "wkdw": "that",
-        "wkh": "the",
-        "ior": "for",
-        "rx": "you",
-        "duh": "are",
-        "rq": "on",
-        "xvh": "use",
-        "jhw": "get",
-        "qhhg": "need",
-        "ru": "or",
-        "dq": "an",
-        "lq": "in",
-        "wkruxjk": "through",
-        "zhe": "web",
-        "vhdufk": "search",
-        "ixqfwlrq": "function",
-        "ixqfwlrqv": "functions",
-        "hfxwlrq": "execution",
-        "ghy": "dev",
-        "doo": "all",
-        "frq": "con",
-        "xvinj": "using",
-        "zklfk": "which",
-        "sureohpv": "problems",
-        "vwhsv": "steps",
-        "prgho": "model",
-        "suhglfw": "predict",
-        "dssur": "appro",
-        "uhjlrq": "region",
-        "frpsohwinj": "completing",
-        "wkdqnv": "thanks",
-        "qrz": "now",
-        "ghflghg": "decided",
-        "glj": "dig",
-        "ghhshu": "deeper",
-        "hdf": "each",
-        "gdu": "our",
-        "vkrxog": "should",
-        "frpsohwh": "complete",
-        "edvlfv": "basics",
-        "frpiruwdeoh": "comfortable",
-        "zulwlqj": "writing",
-        "vlpsoh": "simple",
-        "pdfklqh": "machine",
-        "wv": "ts",
-    }
-    for old, new in token_map.items():
-        text = re.sub(rf"\b{re.escape(old)}\b", new, text)
-    text = re.sub(r"[\x00-\x1f\x7f-\uffff]", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    text = text.replace(" ,", ",").replace(" .", ".").replace(" ;", ";").replace(" :", ":")
-    return text
-
-
-def rot3_letters(text: str) -> str:
-    out: list[str] = []
-    for ch in text:
-        o = ord(ch)
-        if 65 <= o <= 90:
-            out.append(chr((o - 65 - 3) % 26 + 65))
-        elif 97 <= o <= 122:
-            out.append(chr((o - 97 - 3) % 26 + 97))
-        else:
-            out.append(ch)
-    return "".join(out)
-
-
-def find_book_excerpt(samples: list[str], keywords: list[str]) -> str:
-    lowered_keywords = [k.lower() for k in keywords]
-    best = ""
-    best_score = -1
-    for sample in samples:
-        lower = sample.lower()
-        score = sum(1 for k in lowered_keywords if k in lower)
-        if score > best_score and len(sample) > 100:
-            best = sample
-            best_score = score
-        if score == len(lowered_keywords) and score > 0:
-            return trim_excerpt(sample)
-    return trim_excerpt(best) if best else ""
-
-
-def trim_excerpt(text: str, max_len: int = 760) -> str:
-    if len(text) <= max_len:
-        return text
-    cut = text.rfind(" ", 0, max_len)
-    if cut < 0:
-        cut = max_len
-    return text[:cut].rstrip() + "..."
-
-
-def dedupe_preserve_order(items: list[str]) -> list[str]:
-    seen: set[str] = set()
-    result: list[str] = []
-    for item in items:
-        key = item.lower()
-        if key not in seen:
-            seen.add(key)
-            result.append(item)
-    return result
+def make_companion_chapter(
+    *,
+    title: str,
+    source: Path,
+    book_thread: str,
+    python_files: list[str],
+    quarkus_translation: str,
+    central_classes: list[str],
+    design_choices: list[str],
+    demo_vs_production: list[str],
+) -> Section:
+    blocks: list[Block] = [
+        Block(kind="paragraph", text=book_thread),
+        Block(kind="heading", level=2, text="Python Reference"),
+        Block(kind="bullets", items=python_files),
+        Block(kind="heading", level=2, text="Quarkus Translation"),
+        Block(kind="paragraph", text=quarkus_translation),
+        Block(kind="heading", level=2, text="Central Classes"),
+        Block(kind="bullets", items=central_classes),
+        Block(kind="heading", level=2, text="Design Choices"),
+        Block(kind="bullets", items=design_choices),
+        Block(kind="heading", level=2, text="Demo vs Production"),
+        Block(kind="bullets", items=demo_vs_production),
+    ]
+    return Section(title=title, source=source, category="chapter", blocks=blocks)
 
 
 def read_pdf_metadata(pdf_path: Path) -> dict[str, str]:
