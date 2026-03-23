@@ -68,6 +68,7 @@ This document maps the Python reference zip from the book to the Quarkus compani
 - `user long-term` -> `src/main/java/dk/ashlan/agent/chapters/chapter06/UserLongTermDemo.java` - Direct port
 - `scratch_agents/memory/*` -> `src/main/java/dk/ashlan/agent/memory/*` - Adapted port
 - `scratch_agents/sessions/*` -> `src/main/java/dk/ashlan/agent/sessions/*` - Adapted port
+- `scratch_agents/sessions/session.py` -> `src/main/java/dk/ashlan/agent/memory/SessionState.java` - Direct port
 - `scratch_agents/sessions/base_session_manager.py` -> `src/main/java/dk/ashlan/agent/sessions/BaseSessionManager.java` - Direct port
 - `scratch_agents/sessions/base_cross_session_manager.py` -> `src/main/java/dk/ashlan/agent/sessions/BaseCrossSessionManager.java` - Direct port
 

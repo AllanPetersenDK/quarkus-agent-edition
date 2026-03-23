@@ -37,6 +37,8 @@ This chapter maps the Python memory and session model into Java services and str
 - Session continuity stays in-memory and simple.
 - Cross-session memory is split from per-session state.
 - Strategy classes keep the architecture close to the Python reference.
+- `SessionState` is the mutable per-session core, while `dk.ashlan.agent.sessions.Session` is the companion runtime-facing session object.
+- The chapter demos are intentionally tiny and use seeded in-memory data so the memory behaviors remain easy to observe.
 
 ## Demo vs Production
 

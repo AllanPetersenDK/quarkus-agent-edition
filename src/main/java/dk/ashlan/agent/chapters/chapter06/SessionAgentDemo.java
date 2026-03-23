@@ -1,7 +1,14 @@
 package dk.ashlan.agent.chapters.chapter06;
 
+import dk.ashlan.agent.sessions.Session;
+
+import java.util.List;
+
 public class SessionAgentDemo {
-    public String run() {
-        return "Session agent demo";
+    public List<String> run() {
+        Session session = Chapter06Support.sessions().getOrCreate("chapter-06");
+        session.addEvent("hello");
+        session.addEvent("still here");
+        return session.events();
     }
 }
