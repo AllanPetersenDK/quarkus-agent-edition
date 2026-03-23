@@ -3,12 +3,16 @@ package dk.ashlan.agent.core;
 import dk.ashlan.agent.llm.LlmClient;
 import dk.ashlan.agent.llm.LlmCompletion;
 import dk.ashlan.agent.llm.LlmToolCall;
+import dk.ashlan.agent.llm.OpenAiLlmClient;
+import dk.ashlan.agent.llm.DemoToolCallingLlmClient;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.tools.JsonToolResult;
 import dk.ashlan.agent.tools.ToolExecutor;
 import dk.ashlan.agent.tools.ToolRegistry;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.ArrayList;
@@ -25,12 +29,24 @@ public class AgentOrchestrator implements AgentRunner {
 
     @Inject
     public AgentOrchestrator(
-            LlmClient llmClient,
+            Instance<LlmClient> llmClients,
             ToolRegistry toolRegistry,
             ToolExecutor toolExecutor,
             MemoryService memoryService,
             @ConfigProperty(name = "agent.max-iterations") int maxIterations,
-            @ConfigProperty(name = "agent.system-prompt") String systemPrompt
+            @ConfigProperty(name = "agent.system-prompt") String systemPrompt,
+            Config config
+    ) {
+        this(selectClient(llmClients, config), toolRegistry, toolExecutor, memoryService, maxIterations, systemPrompt);
+    }
+
+    protected AgentOrchestrator(
+            LlmClient llmClient,
+            ToolRegistry toolRegistry,
+            ToolExecutor toolExecutor,
+            MemoryService memoryService,
+            int maxIterations,
+            String systemPrompt
     ) {
         this.llmClient = llmClient;
         this.toolRegistry = toolRegistry;
@@ -78,5 +94,26 @@ public class AgentOrchestrator implements AgentRunner {
         }
         StopReason stopReason = context.isFinalAnswer() ? StopReason.FINAL_ANSWER : StopReason.MAX_ITERATIONS;
         return new AgentRunResult(context.getFinalAnswer(), stopReason, Math.min(iterations + 1, maxIterations), trace);
+    }
+
+    private LlmClient selectClient(Instance<LlmClient> llmClients, Config config) {
+        String openAiApiKey = config.getOptionalValue("openai.api-key", String.class).orElse("");
+        boolean useOpenAi = openAiApiKey != null && !openAiApiKey.isBlank();
+        if (useOpenAi) {
+            for (LlmClient candidate : llmClients) {
+                if (candidate instanceof OpenAiLlmClient) {
+                    return candidate;
+                }
+            }
+        }
+        for (LlmClient candidate : llmClients) {
+            if (candidate instanceof DemoToolCallingLlmClient) {
+                return candidate;
+            }
+        }
+        for (LlmClient candidate : llmClients) {
+            return candidate;
+        }
+        throw new IllegalStateException("No LLM client available");
     }
 }

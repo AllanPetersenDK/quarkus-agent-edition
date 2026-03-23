@@ -31,4 +31,4 @@ This chapter maps the Python `chapter_02_llm/` scripts and the shared `scratch_a
 ## Demo vs Production
 
 - Demo: deterministic message handling, simple parsing, and async placeholder calls.
-- Production placeholder: `OpenAiLlmClient`.
+- Production: `OpenAiLlmClient` when `openai.api-key` is configured.

@@ -7,6 +7,7 @@ import jakarta.inject.Inject;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Collection;
 
 @ApplicationScoped
 public class ToolRegistry {
@@ -27,6 +28,10 @@ public class ToolRegistry {
 
     public Tool find(String name) {
         return tools.get(name);
+    }
+
+    public Collection<Tool> tools() {
+        return tools.values();
     }
 
     public Map<String, ToolDefinition> definitions() {

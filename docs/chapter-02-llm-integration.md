@@ -9,7 +9,7 @@ Introduce an LLM abstraction that can be swapped between a demo client and a rea
 The Java version uses a CDI-managed `LlmClient` interface with:
 
 - `DemoToolCallingLlmClient` for deterministic chapter demos
-- `OpenAiLlmClient` as a production placeholder
+- `OpenAiLlmClient` as a real HTTP integration seam for OpenAI Chat Completions
 
 ## Central Classes
 
@@ -23,9 +23,9 @@ The Java version uses a CDI-managed `LlmClient` interface with:
 
 - Messages are modeled explicitly instead of passing raw strings through the app.
 - The demo client is predictable so the tests can prove control flow.
-- The OpenAI client is a placeholder to keep the edition honest about production readiness.
+- The OpenAI client is a real integration seam, but the demo client remains the default unless you configure `openai.api-key`.
 
 ## Demo vs Production
 
 - Demo: deterministic tool-calling based on user input.
-- Production placeholder: provider-backed LLM calls.
+- Production: provider-backed LLM calls via `OpenAiLlmClient`.

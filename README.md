@@ -97,10 +97,19 @@ extracts book snippets and rewrites them with Quarkus-focused chapter content.
 
 The repository currently contains a working Quarkus companion implementation with deterministic demo
 components for the learning chapters. It compiles and the test suite is green in the current setup.
+`OpenAiLlmClient` is now a real HTTP integration seam for OpenAI Chat Completions, but the demo client
+still remains the default unless `openai.api-key` is configured.
+
+To enable it locally, set an API key via config or environment variable:
+
+```bash
+export OPENAI_API_KEY=your-key-here
+```
 
 Demo and fake components are intentionally marked and include:
 
 - `DemoToolCallingLlmClient`
+- `OpenAiLlmClient` when `openai.api-key` is configured
 - `FakeEmbeddingClient`
 - `InMemoryVectorStore`
 - `InMemoryTaskMemoryStore`
@@ -119,7 +128,7 @@ Demo and fake components are intentionally marked and include:
 
 ## Known Limitations
 
-- The OpenAI client is a placeholder, not a real provider integration.
+- The OpenAI integration is real, but it only activates when `openai.api-key` is configured.
 - The RAG, memory, and evaluation layers are in-memory demo implementations.
 - Code generation and command execution are intentionally conservative placeholders.
 - The multi-agent router is deterministic and intentionally simple.
