@@ -5,6 +5,7 @@
 - Chapter 02 LLM
 - Chapter 03 Tool Use
 - Chapter 04 Basic Agent
+- Chapter 05 RAG
 - Chapter 06 Memory
 
 ## Quarkus Companion Extensions

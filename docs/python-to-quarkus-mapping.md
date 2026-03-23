@@ -77,6 +77,7 @@ This document maps the Python reference zip from the book to the Quarkus compani
 
 ## Quarkus Companion Extensions
 
+- `src/main/java/dk/ashlan/agent/chapters/chapter05/*`
 - `src/main/java/dk/ashlan/agent/rag/*`
 - `src/main/java/dk/ashlan/agent/planning/*`
 - `src/main/java/dk/ashlan/agent/code/*`
