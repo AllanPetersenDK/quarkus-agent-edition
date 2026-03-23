@@ -62,6 +62,14 @@ The application listens on `http://localhost:8080`.
 mvn test
 ```
 
+## Build the Companion PDF
+
+```bash
+python3 scripts/build_companion_pdf.py
+```
+
+The generated file is written to `target/quarkus-agent-edition-companion.pdf`.
+
 ## Current Status
 
 The repository currently contains a working Quarkus companion implementation with deterministic demo
