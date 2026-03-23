@@ -752,27 +752,68 @@ def readability_score(text: str) -> int:
 def normalize_book_text(text: str) -> str:
     if not text:
         return ""
+    text = text.lower()
     replacements = {
         "\x03": " ",
         "\u2019": "'",
         "\u2018": "'",
         "\u201c": '"',
         "\u201d": '"',
-        "\\ou": "you",
-        "e[pert": "expert",
-        "e[ample": "example",
-        "e[ecut": "execut",
-        "e[ec": "exec",
-        "7h": "th",
-        "7H": "Th",
-        "7his": "this",
-        "7he": "the",
-        "7o": "to",
-        "7ou": "you",
-        "[": "x",
     }
     for old, new in replacements.items():
         text = text.replace(old, new)
+    token_map = {
+        "lw": "it",
+        "lv": "is",
+        "zh": "we",
+        "wkdw": "that",
+        "wkh": "the",
+        "ior": "for",
+        "rx": "you",
+        "duh": "are",
+        "rq": "on",
+        "xvh": "use",
+        "jhw": "get",
+        "qhhg": "need",
+        "ru": "or",
+        "dq": "an",
+        "lq": "in",
+        "wkruxjk": "through",
+        "zhe": "web",
+        "vhdufk": "search",
+        "ixqfwlrq": "function",
+        "ixqfwlrqv": "functions",
+        "hfxwlrq": "execution",
+        "ghy": "dev",
+        "doo": "all",
+        "frq": "con",
+        "xvinj": "using",
+        "zklfk": "which",
+        "sureohpv": "problems",
+        "vwhsv": "steps",
+        "prgho": "model",
+        "suhglfw": "predict",
+        "dssur": "appro",
+        "uhjlrq": "region",
+        "frpsohwinj": "completing",
+        "wkdqnv": "thanks",
+        "qrz": "now",
+        "ghflghg": "decided",
+        "glj": "dig",
+        "ghhshu": "deeper",
+        "hdf": "each",
+        "gdu": "our",
+        "vkrxog": "should",
+        "frpsohwh": "complete",
+        "edvlfv": "basics",
+        "frpiruwdeoh": "comfortable",
+        "zulwlqj": "writing",
+        "vlpsoh": "simple",
+        "pdfklqh": "machine",
+        "wv": "ts",
+    }
+    for old, new in token_map.items():
+        text = re.sub(rf"\b{re.escape(old)}\b", new, text)
     text = re.sub(r"[\x00-\x1f\x7f-\uffff]", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
     text = text.replace(" ,", ",").replace(" .", ".").replace(" ;", ";").replace(" :", ":")
