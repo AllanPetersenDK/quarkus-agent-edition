@@ -86,10 +86,21 @@ mvn test
 
 - OpenAPI: `http://localhost:8080/openapi`
 - Swagger UI: `http://localhost:8080/swagger-ui`
+- Health: `http://localhost:8080/q/health`
+- Readiness: `http://localhost:8080/q/health/ready`
+- Liveness: `http://localhost:8080/q/health/live`
 - `POST /api/agent/run`
 - `GET /api/agent/tools`
 
 See [`docs/api.md`](docs/api.md) for request/response examples, Quarkus OpenAPI properties, and the note on deferred session and memory endpoints.
+See [`docs/fault-tolerance.md`](docs/fault-tolerance.md) for the current resilience policy on provider calls.
+See [`docs/persistence.md`](docs/persistence.md) for the first H2-backed persistence layer.
+
+Tracing is prepared with OpenTelemetry spans around agent runs and tool execution, while OTLP export stays disabled by default so the repo does not depend on a collector during normal dev.
+
+`OpenAiLlmClient` now uses Quarkus REST Client under the hood for OpenAI Chat Completions. The transport
+is still isolated, tool-call round-tripping preserves provider `tool_call_id` metadata, and the
+provider path is guarded with selective timeout plus retry via SmallRye Fault Tolerance.
 
 ## Build the Companion PDF
 
@@ -106,8 +117,11 @@ extracts book snippets and rewrites them with Quarkus-focused chapter content.
 
 The repository currently contains a working Quarkus companion implementation with deterministic demo
 components for the learning chapters. It compiles and the test suite is green in the current setup.
-`OpenAiLlmClient` is now a real HTTP integration seam for OpenAI Chat Completions, but the demo client
-still remains the default unless `openai.api-key` is configured.
+`OpenAiLlmClient` is now a real HTTP integration seam for OpenAI Chat Completions, and tool-call
+round-tripping keeps provider `tool_call_id` metadata intact. The demo client still remains the
+default unless `openai.api-key` is configured.
+Session state is now persisted to file-based H2 through `SessionManager`, while RAG chunk storage
+and the remaining demo stores stay in-memory for now.
 
 To enable it locally, set an API key via config or environment variable:
 
@@ -125,20 +139,24 @@ Demo and fake components are intentionally marked and include:
 - `CodeGenerationTool`
 - `TestExecutionTool`
 - `WorkspaceService` defaults to `target/workspace` for safe local runs.
+- Micrometer timers/counters are enabled for agent runs and tool execution.
+- SmallRye Fault Tolerance backs the OpenAI retry policy, and the provider call is wrapped in a local timeout boundary.
 
 ## Production Hardening Ideas
 
 - Real LLM provider integration
 - PostgreSQL with `pgvector`
-- Redis-backed session and memory storage
+- Redis-backed memory or session storage
 - Micrometer metrics and OpenTelemetry tracing
+- REST Client-backed provider calls
+- timeout boundary and retry on provider calls
 - Authentication and authorization
 - Durable persistence for traces, memory, and evaluation results
 
 ## Known Limitations
 
 - The OpenAI integration is real, but it only activates when `openai.api-key` is configured.
-- The RAG, memory, and evaluation layers are in-memory demo implementations.
+- RAG and evaluation layers are still in-memory demo implementations, while session memory is now persisted in H2.
 - Code generation and command execution are intentionally conservative placeholders.
 - The multi-agent router is deterministic and intentionally simple.
 

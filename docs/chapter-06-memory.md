@@ -34,7 +34,7 @@ This chapter maps the Python memory and session model into Java services and str
 
 ## Design Notes
 
-- Session continuity stays in-memory and simple.
+- Session continuity is now persisted through H2-backed session state, so restart-like reloads preserve messages.
 - Cross-session memory is split from per-session state.
 - Strategy classes keep the architecture close to the Python reference.
 - `SessionState` is the mutable per-session core, while `dk.ashlan.agent.sessions.Session` is the companion runtime-facing session object.
@@ -43,4 +43,5 @@ This chapter maps the Python memory and session model into Java services and str
 ## Demo vs Production
 
 - Demo: in-memory strategies and cross-session stores.
-- Production placeholder: Redis or database-backed implementations.
+- Persistent layer: file-based H2 for session continuity.
+- Still in-memory: RAG chunk store, cross-session demo stores, and strategy-level demo helpers.

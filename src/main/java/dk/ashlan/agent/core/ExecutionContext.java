@@ -58,6 +58,10 @@ public class ExecutionContext {
         messages.add(LlmMessage.tool(toolName, content));
     }
 
+    public void addToolMessage(String toolName, String toolCallId, String content) {
+        messages.add(LlmMessage.tool(toolName, toolCallId, content));
+    }
+
     public void addSystemMessage(String content) {
         messages.add(LlmMessage.system(content));
     }
