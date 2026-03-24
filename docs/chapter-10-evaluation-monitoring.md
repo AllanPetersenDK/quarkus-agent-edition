@@ -26,8 +26,10 @@ The edition keeps evaluation and trace capture in dedicated services instead of 
 - Evaluation runs on a list of cases.
 - Traces are recorded per case.
 - Metrics are modeled explicitly so later observability work has a clean target.
+- The companion demo measures real wall-clock duration for the evaluation run instead of relying on a synthetic constant.
 
 ## Demo vs Production
 
 - Demo: in-memory results and traces.
-- Production placeholders: Micrometer, OpenTelemetry, and durable evaluation storage.
+- Runtime default: local evaluation runner with explicit duration measurement.
+- Production placeholders: Micrometer, OpenTelemetry, durable evaluation storage, and admin/auth protection if the endpoint is exposed outside the companion app.

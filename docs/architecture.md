@@ -20,6 +20,12 @@ constructor injection, and chapter-aligned modules.
 - Provider-backed tool calls preserve provider call IDs, so the agent loop can round-trip tool execution metadata without losing protocol fidelity.
 - Micrometer records agent and tool runtime metrics, while OpenTelemetry still covers tracing spans.
 
+## Mode Model
+
+- Demo: deterministic chapter walkthroughs, placeholder code execution, and local stand-ins for search or embeddings.
+- Runtime default: CDI-backed runtime with OpenAI transport only when configured, H2-backed session/RAG storage, and the normal agent flow.
+- Production seam: external search, sandboxed execution, auth, durable storage, and any real provider-facing integration.
+
 ## Demo vs Production
 
 - Demo: calculator, clock, fake embeddings, in-memory vector store in the chapter demos, H2-backed session state, code generation placeholder.

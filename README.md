@@ -36,6 +36,16 @@ reference implementation.
 - `src/main/java/dk/ashlan/agent/eval` Evaluation and trace collection.
 - `docs/` Architecture notes and chapter-by-chapter companion documentation.
 
+## Mode Model
+
+The repo uses three explicit modes so the companion story stays honest:
+
+| Mode | Meaning | Examples |
+|---|---|---|
+| Demo | Deterministic chapter walkthroughs and local stand-ins | `DemoToolCallingLlmClient`, chapter 03/04/05/06 demo helpers, chapter 08 placeholder code execution |
+| Runtime default | The normal CDI-backed runtime path in this companion app | `OpenAiLlmClient` when configured, H2-backed session state, H2-backed RAG chunks |
+| Production seam | Real external integration points that are intentionally isolated | OpenAI provider transport, external search, sandboxed code execution, auth, durable storage |
+
 ## Python-to-Quarkus Mapping
 
 See [`docs/python-to-quarkus-mapping.md`](docs/python-to-quarkus-mapping.md) for the file-by-file
@@ -95,6 +105,8 @@ mvn test
 See [`docs/api.md`](docs/api.md) for request/response examples, Quarkus OpenAPI properties, and the note on deferred session and memory endpoints.
 See [`docs/fault-tolerance.md`](docs/fault-tolerance.md) for the current resilience policy on provider calls.
 See [`docs/persistence.md`](docs/persistence.md) for the first H2-backed persistence layer.
+See [`docs/security.md`](docs/security.md) for the current security stance on the public and admin seams.
+See [`docs/storage-roadmap.md`](docs/storage-roadmap.md) for the next storage candidates after H2.
 
 Tracing is prepared with OpenTelemetry spans around agent runs and tool execution, while OTLP export stays disabled by default so the repo does not depend on a collector during normal dev.
 
@@ -141,6 +153,7 @@ Demo and fake components are intentionally marked and include:
 - `JdbcVectorStore` in the runtime CDI path
 - `InMemoryTaskMemoryStore`
 - `InMemorySessionStateStore` as the explicit fallback path
+- `WebSearchTool` and `WikipediaTool` as lightweight local placeholders
 - `CodeGenerationTool`
 - `TestExecutionTool`
 - `WorkspaceService` defaults to `target/workspace` for safe local runs.
@@ -164,6 +177,7 @@ Demo and fake components are intentionally marked and include:
 - Chapter demos still use in-memory RAG and memory helpers where that keeps the book mapping easier to follow.
 - H2 is the first persistence step, not the final production datastore.
 - Retrieval still uses simple cosine similarity over persisted rows rather than a dedicated vector index.
+- `code-agent`, `multi-agent`, and `admin/evaluations` are production seams and are not protected by auth yet.
 - Code generation and command execution are intentionally conservative placeholders.
 - The multi-agent router is deterministic and intentionally simple.
 

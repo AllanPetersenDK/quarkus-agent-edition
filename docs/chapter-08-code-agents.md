@@ -30,4 +30,5 @@ The code agent is built around a workspace root and explicit file tools, with pa
 ## Demo vs Production
 
 - Demo: generated text files and placeholder test execution.
-- Production placeholders: actual patch generation and sandboxed command execution.
+- Runtime default: safe workspace-local file operations.
+- Production placeholders: actual patch generation, sandboxed command execution, and endpoint-level auth around the seam.

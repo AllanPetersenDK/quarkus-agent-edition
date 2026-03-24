@@ -85,3 +85,10 @@ The tool list is sourced from the existing `ToolRegistry` and uses each tool's `
 Session and memory endpoints are intentionally deferred for now.
 
 The current session/memory layer is useful internally, but it is not yet a stable public API surface, so exposing it now would create a half-finished contract.
+
+## Security Stance
+
+- `POST /api/agent/run` is the main companion API and is safe for local/private use as-is.
+- `GET /api/agent/tools` is harmless metadata and can remain open in the companion app.
+- `POST /code-agent`, `POST /multi-agent`, and `POST /admin/evaluations` are production seams and should be treated as internal-only until an auth layer is added.
+- If those seams need external exposure, add Quarkus OIDC and role checks instead of ad hoc request-time logic.

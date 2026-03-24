@@ -33,8 +33,8 @@ final class Chapter10Support {
         );
     }
 
-    static RunMetrics metrics(EvaluationRunner runner, List<EvalResult> results) {
-        return runner.metrics(results, 42L);
+    static RunMetrics metrics(EvaluationRunner runner, List<EvalResult> results, long durationMillis) {
+        return runner.metrics(results, durationMillis);
     }
 
     static AgentTrace trace(AgentTraceService traceService, String caseId) {

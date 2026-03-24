@@ -8,6 +8,12 @@ This document maps the Python reference zip from the book to the Quarkus compani
 - Adapted port: the Java class keeps the idea but reshapes it for Quarkus or Java.
 - Quarkus companion extension: the Java class has no direct Python equivalent in the zip and extends the reference implementation.
 
+## Mode Model
+
+- Demo: deterministic, chapter-friendly stand-ins that keep the book flow readable.
+- Runtime default: the normal CDI-backed path that the companion app uses when run locally.
+- Production seam: the explicitly isolated integration boundary for external providers, storage, auth, or sandboxing.
+
 ## `chapter_02_llm/`
 
 - `01_llm_chat.py` -> `src/main/java/dk/ashlan/agent/chapters/chapter02/LlmChatDemo.java` - Adapted port
@@ -89,3 +95,4 @@ This document maps the Python reference zip from the book to the Quarkus compani
 - `src/main/java/dk/ashlan/agent/eval/*`
 
 These modules are intentional Quarkus-native extensions that were not present in the Python zip in the same form.
+They are primarily runtime-default or production-seam modules, not book-accurate demos.

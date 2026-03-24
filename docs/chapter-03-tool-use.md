@@ -32,9 +32,10 @@ This chapter maps the Python tool system into a generic Quarkus tool framework.
 
 - Tools are CDI beans and can be discovered generically.
 - The registry stays generic so new tools can be added without rewriting the executor.
-- Wikipedia and decorator examples are intentionally lightweight demo ports.
+- Wikipedia, web search, and decorator examples are intentionally lightweight demo ports or placeholders rather than real external integrations.
 
 ## Demo vs Production
 
 - Demo: calculator, clock, placeholder web search, and generic function-backed tooling.
-- Production placeholder: external search providers and richer tool schema generation.
+- Runtime default: local tool registry, adapter, and decorator flows.
+- Production seam: external search providers and richer tool schema generation.

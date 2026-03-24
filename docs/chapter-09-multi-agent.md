@@ -30,4 +30,5 @@ The multi-agent design is expressed as CDI-managed specialists, a router, and a 
 ## Demo vs Production
 
 - Demo: static specialist responses and a lightweight reviewer.
-- Production placeholder: richer routing heuristics and tool-using specialists.
+- Runtime default: deterministic routing and review in the companion app.
+- Production placeholder: richer routing heuristics, tool-using specialists, and endpoint-level auth if exposed externally.
