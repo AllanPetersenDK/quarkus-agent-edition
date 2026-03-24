@@ -17,20 +17,14 @@ import io.smallrye.faulttolerance.core.timer.ThreadTimer;
 import io.smallrye.faulttolerance.vertx.VertxEventLoop;
 
 import java.lang.reflect.Type;
-import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+@SuppressWarnings("deprecation")
 public final class StandaloneSmallRyeSpi implements Spi {
     private static final CircuitBreakerMaintenance CIRCUIT_BREAKER_MAINTENANCE = new BasicCircuitBreakerMaintenanceImpl();
-    private static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor(runnable -> {
-        Thread thread = new Thread(runnable, "smallrye-ft-test-timer");
-        thread.setDaemon(true);
-        return thread;
-    });
     private static final ExecutorService ASYNC_EXECUTOR = Executors.newCachedThreadPool(runnable -> {
         Thread thread = new Thread(runnable, "smallrye-ft-test-async");
         thread.setDaemon(true);

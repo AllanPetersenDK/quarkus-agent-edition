@@ -1,6 +1,5 @@
 package dk.ashlan.agent.memory;
 
-import dk.ashlan.agent.memory.InMemoryTaskMemoryStore;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

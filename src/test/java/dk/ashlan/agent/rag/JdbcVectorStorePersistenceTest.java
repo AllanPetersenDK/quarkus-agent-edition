@@ -30,7 +30,6 @@ class JdbcVectorStorePersistenceTest {
         FakeEmbeddingClient embeddingClient = new FakeEmbeddingClient();
         JdbcVectorStore store = new JdbcVectorStore(dataSource);
         DocumentIngestionService ingestionService = new DocumentIngestionService(chunker, embeddingClient, store);
-        Retriever retriever = new Retriever(embeddingClient, store);
 
         ingestionService.ingest("docs", """
                 Quarkus is a fast Java framework for cloud-native applications.
