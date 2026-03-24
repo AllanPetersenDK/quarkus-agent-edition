@@ -9,13 +9,13 @@ public record AgentRunRequest(
         @Schema(
                 description = "The user message to send to the agent.",
                 required = true,
-                example = "What is 25 * 4?"
+                examples = {"What is 25 * 4?"}
         )
         String message,
         @Schema(
                 description = "Conversation session identifier used for memory lookup.",
                 defaultValue = "default",
-                example = "default"
+                examples = {"default"}
         )
         String sessionId
 ) {

@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class OpenApiSupportTest {
@@ -28,7 +27,7 @@ class OpenApiSupportTest {
                 .get("/swagger-ui")
                 .then()
                 .statusCode(200)
-                .body(containsString("Swagger UI"))
+                .body(containsString("OpenAPI UI"))
                 .body(containsString("swagger-ui"));
     }
 }
