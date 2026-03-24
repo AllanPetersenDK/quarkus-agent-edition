@@ -16,10 +16,10 @@ class AgentResourceTest {
                 .contentType(ContentType.JSON)
                 .body("{\"message\":\"What is 25 * 4?\"}")
                 .when()
-                .post("/agent")
+                .post("/api/agent/run")
                 .then()
                 .statusCode(200)
                 .body("stopReason", equalTo("FINAL_ANSWER"))
-                .body("finalAnswer", containsString("100"));
+                .body("answer", containsString("100"));
     }
 }

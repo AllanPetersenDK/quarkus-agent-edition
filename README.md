@@ -82,6 +82,15 @@ bash scripts/run-chapter-10.sh
 mvn test
 ```
 
+## API
+
+- OpenAPI: `http://localhost:8080/openapi`
+- Swagger UI: `http://localhost:8080/swagger-ui`
+- `POST /api/agent/run`
+- `GET /api/agent/tools`
+
+See [`docs/api.md`](docs/api.md) for request/response examples, Quarkus OpenAPI properties, and the note on deferred session and memory endpoints.
+
 ## Build the Companion PDF
 
 ```bash
