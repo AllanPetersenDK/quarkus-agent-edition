@@ -51,6 +51,7 @@ public class OpenAiLlmClient implements BaseLlmClient {
     private final String apiKey;
     private final String model;
     private final String baseUrl;
+    private final Duration requestTimeout;
     private final OpenAiTransport transport;
     private final ObjectMapper objectMapper;
 
@@ -74,6 +75,7 @@ public class OpenAiLlmClient implements BaseLlmClient {
         this.apiKey = apiKey == null ? "" : apiKey.trim();
         this.model = model == null || model.isBlank() ? "gpt-4.1-mini" : model.trim();
         this.baseUrl = normalizeBaseUrl(baseUrl);
+        this.requestTimeout = Duration.ofSeconds(Math.max(1, timeoutSeconds));
         this.transport = transport;
         this.objectMapper = objectMapper;
     }
@@ -88,7 +90,7 @@ public class OpenAiLlmClient implements BaseLlmClient {
 
         try {
             String payload = buildPayload(messages, toolRegistry);
-            OpenAiResponse response = transport.post(URI.create(baseUrl + "/chat/completions"), apiKey, payload, Duration.ofSeconds(60));
+            OpenAiResponse response = transport.post(URI.create(baseUrl + "/chat/completions"), apiKey, payload, requestTimeout);
             return parseCompletion(response.body());
         } catch (ProcessingException exception) {
             throw new OpenAiTransientException("OpenAI transport failed", exception);
@@ -101,7 +103,6 @@ public class OpenAiLlmClient implements BaseLlmClient {
         ObjectNode payload = objectMapper.createObjectNode();
         payload.put("model", model);
         payload.put("temperature", 0.0);
-        payload.put("tool_choice", "auto");
 
         ArrayNode messageArray = payload.putArray("messages");
         for (LlmMessage message : messages) {
@@ -113,11 +114,12 @@ public class OpenAiLlmClient implements BaseLlmClient {
             node.put("content", message.content() == null ? "" : message.content());
         }
 
-        if (toolRegistry != null && !toolRegistry.definitions().isEmpty()) {
+        if (toolRegistry != null && !toolRegistry.tools().isEmpty()) {
             ArrayNode toolsArray = payload.putArray("tools");
             for (Tool tool : toolRegistry.tools()) {
                 toolsArray.add(toolSchema(tool));
             }
+            payload.put("tool_choice", "auto");
         }
 
         return objectMapper.writeValueAsString(payload);

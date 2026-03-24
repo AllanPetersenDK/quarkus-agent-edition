@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,8 +17,10 @@ class OpenAiLlmClientTest {
     @Test
     void completeReturnsAssistantAnswerFromOpenAiResponse() throws Exception {
         AtomicReference<String> requestBody = new AtomicReference<>();
+        AtomicReference<Duration> requestTimeout = new AtomicReference<>();
         OpenAiLlmClient.OpenAiTransport transport = (uri, apiKey, payload, timeout) -> {
             requestBody.set(payload);
+            requestTimeout.set(timeout);
             return new OpenAiLlmClient.OpenAiResponse(200, """
                     {
                       "choices": [
@@ -41,9 +44,11 @@ class OpenAiLlmClientTest {
 
         assertEquals("Hello from OpenAI", completion.content());
         assertTrue(completion.toolCalls().isEmpty());
+        assertEquals(Duration.ofSeconds(10), requestTimeout.get());
         assertTrue(requestBody.get().contains("\"model\":\"gpt-4.1-mini\""));
         assertTrue(requestBody.get().contains("\"role\":\"system\""));
         assertTrue(requestBody.get().contains("\"content\":\"Hello\""));
+        assertFalse(requestBody.get().contains("\"tool_choice\""));
     }
 
     @Test

@@ -82,7 +82,8 @@ public class JdbcVectorStore implements VectorStore {
                 );
                 double[] storedVector = deserializeVector(resultSet.getString("embedding_json"));
                 if (storedVector.length != vector.length) {
-                    throw new IOException("Embedding dimension mismatch for chunk " + chunk.id());
+                    throw new IOException("Embedding dimension mismatch for chunk " + chunk.id()
+                            + ": expected " + vector.length + ", found " + storedVector.length);
                 }
                 results.add(new RetrievalResult(chunk, cosineSimilarity(vector, storedVector)));
             }

@@ -12,6 +12,7 @@ import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Path("/admin/evaluations")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -25,8 +26,10 @@ public class AdminEvaluationResource {
 
     @POST
     public Map<String, Object> run(List<EvalCase> cases) {
+        long startedAt = System.nanoTime();
         List<EvalResult> results = evaluationRunner.run(cases);
-        RunMetrics metrics = evaluationRunner.metrics(results, 0L);
+        long durationMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
+        RunMetrics metrics = evaluationRunner.metrics(results, durationMillis);
         return Map.of("results", results, "metrics", metrics);
     }
 }

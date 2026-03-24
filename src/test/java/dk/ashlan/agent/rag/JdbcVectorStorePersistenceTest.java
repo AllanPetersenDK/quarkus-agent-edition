@@ -109,6 +109,7 @@ class JdbcVectorStorePersistenceTest {
         JdbcVectorStore store = new JdbcVectorStore(dataSource);
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> store.search(new double[]{1.0, 0.0}, 1));
         assertTrue(exception.getMessage().contains("Unable to search persisted RAG chunks"));
+        assertTrue(exception.getCause().getMessage().contains("expected 2, found 1"));
     }
 
     private JdbcDataSource dataSource() {

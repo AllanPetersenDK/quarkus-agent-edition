@@ -27,6 +27,7 @@ The edition keeps evaluation and trace capture in dedicated services instead of 
 - Traces are recorded per case.
 - Metrics are modeled explicitly so later observability work has a clean target.
 - The companion demo measures real wall-clock duration for the evaluation run instead of relying on a synthetic constant.
+- The admin evaluation endpoint now uses the same real elapsed-time pattern, so chapter demo and runtime API stay aligned.
 
 ## Demo vs Production
 
