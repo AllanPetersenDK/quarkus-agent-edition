@@ -35,6 +35,8 @@ This chapter maps the Python memory and session model into Java services and str
 ## Design Notes
 
 - Session continuity is now persisted through H2-backed session state, so restart-like reloads preserve messages.
+- The no-arg memory session path now uses an explicit in-memory store instead of a null-based fallback, which keeps the dev/test path clear.
+- CDI runtime still resolves the JDBC-backed store, while the in-memory store is only the explicit default path for manual construction.
 - Cross-session memory is split from per-session state.
 - Strategy classes keep the architecture close to the Python reference.
 - `SessionState` is the mutable per-session core, while `dk.ashlan.agent.sessions.Session` is the companion runtime-facing session object.

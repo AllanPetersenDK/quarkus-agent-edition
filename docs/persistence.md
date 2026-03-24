@@ -7,6 +7,14 @@
 
 This is the first persistence layer because session continuity is the most immediately useful restart-sensitive state in the current agent architecture.
 
+## Hardening Review
+
+- Write frequency: every session mutation still persists once, which is acceptable for short conversational state.
+- Coupling: the persistence callback is now paired with an explicit in-memory fallback store, and Quarkus CDI selects the JDBC-backed beans in runtime while the in-memory beans remain explicit defaults for manual instantiation.
+- Concurrency: `SessionState` now synchronizes access, which avoids lost updates when multiple threads touch the same session.
+- Failures: corrupt payloads and datasource problems surface as explicit `IllegalStateException`s instead of being hidden.
+- Storage model: JSON is still a good fit here because the persisted payload is intentionally small and session-shaped.
+
 ## Why H2
 
 - H2 gives a file-based datastore with no external infrastructure.
@@ -21,7 +29,7 @@ This is the first persistence layer because session continuity is the most immed
 
 ## What Is Still In Memory
 
-- RAG chunk/vector storage
+- RAG chunk/vector storage in the chapter demos and local manual instantiations
 - Long-term memory extraction data outside the session state
 - Chapter demo stores and helper stacks that are intentionally deterministic
 
@@ -29,8 +37,15 @@ This is the first persistence layer because session continuity is the most immed
 
 - H2 is a first persistence step, not the final production datastore.
 - The current model persists session messages only, not a full relational conversation graph.
-- The RAG layer still uses in-memory retrieval structures.
+- The RAG layer now persists chunks and embeddings in H2 for the main runtime path, but retrieval still uses an in-process cosine-similarity scan rather than a real vector index.
 - There is no H2 console enabled by default, because the repo currently treats the database as a local embedded store rather than an interactive admin surface.
+
+## RAG Persistence
+
+- `dk.ashlan.agent.rag.JdbcVectorStore` persists `DocumentChunk` rows and their embedding vectors.
+- Retrieval stays simple: rows are read back and ranked in Java with cosine similarity.
+- Embeddings remain deterministic and lightweight, which keeps the chapter mechanics visible.
+- Blank or corrupt persisted metadata or embeddings now fail loudly instead of silently degrading to empty results.
 
 ## Next Step
 

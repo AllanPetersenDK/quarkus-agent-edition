@@ -2,6 +2,7 @@ package dk.ashlan.agent.chapters.chapter06;
 
 import dk.ashlan.agent.memory.CoreMemoryStrategy;
 import dk.ashlan.agent.memory.InMemoryTaskMemoryStore;
+import dk.ashlan.agent.memory.InMemorySessionStateStore;
 import dk.ashlan.agent.memory.MemoryExtractionService;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
@@ -22,7 +23,7 @@ final class Chapter06Support {
     }
 
     static SessionManager memorySessions() {
-        return new SessionManager();
+        return new SessionManager(new InMemorySessionStateStore());
     }
 
     static MemoryService memoryService() {

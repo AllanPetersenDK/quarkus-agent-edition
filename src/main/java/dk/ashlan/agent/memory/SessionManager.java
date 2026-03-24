@@ -13,7 +13,7 @@ public class SessionManager {
     private final SessionStateStore store;
 
     public SessionManager() {
-        this.store = null;
+        this(new InMemorySessionStateStore());
     }
 
     @Inject
@@ -26,9 +26,6 @@ public class SessionManager {
     }
 
     private SessionState loadSessionState(String sessionId) {
-        if (store == null) {
-            return new SessionState(sessionId);
-        }
         List<String> messages = store.loadMessages(sessionId).orElse(List.of());
         return new SessionState(sessionId, messages, store::save);
     }

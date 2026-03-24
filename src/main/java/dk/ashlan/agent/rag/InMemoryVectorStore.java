@@ -1,11 +1,13 @@
 package dk.ashlan.agent.rag;
 
+import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+@DefaultBean
 @ApplicationScoped
 public class InMemoryVectorStore implements VectorStore {
     private record StoredVector(DocumentChunk chunk, double[] vector) {

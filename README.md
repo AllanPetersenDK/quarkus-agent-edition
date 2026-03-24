@@ -120,8 +120,11 @@ components for the learning chapters. It compiles and the test suite is green in
 `OpenAiLlmClient` is now a real HTTP integration seam for OpenAI Chat Completions, and tool-call
 round-tripping keeps provider `tool_call_id` metadata intact. The demo client still remains the
 default unless `openai.api-key` is configured.
-Session state is now persisted to file-based H2 through `SessionManager`, while RAG chunk storage
-and the remaining demo stores stay in-memory for now.
+Session state is now persisted to file-based H2 through `SessionManager`. The main RAG runtime path
+also persists chunk text, metadata, and embeddings to H2 through `JdbcVectorStore`, while the chapter
+demos still use explicit in-memory stores so the learning flow stays visible.
+Quarkus CDI resolves the JDBC-backed persistence beans in runtime; the in-memory stores are the
+explicit default/manual paths.
 
 To enable it locally, set an API key via config or environment variable:
 
@@ -135,7 +138,9 @@ Demo and fake components are intentionally marked and include:
 - `OpenAiLlmClient` when `openai.api-key` is configured
 - `FakeEmbeddingClient`
 - `InMemoryVectorStore`
+- `JdbcVectorStore` in the runtime CDI path
 - `InMemoryTaskMemoryStore`
+- `InMemorySessionStateStore` as the explicit fallback path
 - `CodeGenerationTool`
 - `TestExecutionTool`
 - `WorkspaceService` defaults to `target/workspace` for safe local runs.
@@ -156,7 +161,9 @@ Demo and fake components are intentionally marked and include:
 ## Known Limitations
 
 - The OpenAI integration is real, but it only activates when `openai.api-key` is configured.
-- RAG and evaluation layers are still in-memory demo implementations, while session memory is now persisted in H2.
+- Chapter demos still use in-memory RAG and memory helpers where that keeps the book mapping easier to follow.
+- H2 is the first persistence step, not the final production datastore.
+- Retrieval still uses simple cosine similarity over persisted rows rather than a dedicated vector index.
 - Code generation and command execution are intentionally conservative placeholders.
 - The multi-agent router is deterministic and intentionally simple.
 

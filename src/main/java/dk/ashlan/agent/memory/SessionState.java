@@ -23,14 +23,23 @@ public class SessionState {
         return sessionId;
     }
 
-    public List<String> messages() {
+    public synchronized List<String> messages() {
         return List.copyOf(messages);
     }
 
     public void addMessage(String message) {
-        messages.add(message);
-        if (onChange != null) {
-            onChange.accept(this);
+        Consumer<SessionState> callback;
+        synchronized (this) {
+            messages.add(message);
+            callback = onChange;
         }
+        if (callback != null) {
+            // The callback runs after the mutation is committed, so persistence does not hold the lock.
+            callback.accept(this);
+        }
+    }
+
+    public synchronized int size() {
+        return messages.size();
     }
 }
