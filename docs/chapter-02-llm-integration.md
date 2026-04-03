@@ -29,7 +29,8 @@ The Java version uses a CDI-managed `LlmClient` interface with:
 - Tool calls now round-trip with `tool_call_id` so provider-backed tool use is protocol-correct instead of only demo-correct.
 - The provider seam is selectively hardened with a transport timeout boundary plus a SmallRye retry guard, but without a fallback that could hide a real provider outage.
 - The LangChain4j companion seam exists as a comparison path and is selected explicitly with `agent.llm-provider=langchain4j`.
-- The companion seam now reads the standard `OPENAI_API_KEY` first, then falls back to `QUARKUS_LANGCHAIN4J_OPENAI_API_KEY` for older setups, while the manual OpenAI seam reads `openai.api-key`.
+- The LangChain4j companion seam reads the standard `OPENAI_API_KEY`, while the manual OpenAI seam reads `openai.api-key`.
+- Keep secrets local and untracked; never commit API keys into the repository.
 
 ## Demo vs Production
 

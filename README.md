@@ -149,11 +149,11 @@ explicit default/manual paths.
 To enable the real OpenAI integrations locally, set the standard environment variable:
 
 ```bash
-export OPENAI_API_KEY=your-key-here
+export OPENAI_API_KEY="your_api_key_here"
 ```
 
-If you prefer config instead, set `openai.api-key` directly. The LangChain4j companion seam will also
-fall back to `QUARKUS_LANGCHAIN4J_OPENAI_API_KEY` for older setups.
+The LangChain4j companion seam also reads `OPENAI_API_KEY`. Secrets must never be committed; keep
+them in local environment variables or your untracked `.env` file.
 
 Demo and fake components are intentionally marked and include:
 
