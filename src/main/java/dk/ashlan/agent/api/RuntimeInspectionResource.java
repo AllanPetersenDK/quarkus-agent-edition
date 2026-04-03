@@ -5,11 +5,15 @@ import dk.ashlan.agent.health.RuntimeLivenessHealthCheck;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
 import dk.ashlan.agent.memory.SessionState;
+import dk.ashlan.agent.memory.SessionTraceStore;
 import dk.ashlan.agent.memory.TaskMemory;
+import dk.ashlan.agent.api.dto.AgentStepResponse;
+import dk.ashlan.agent.api.dto.RuntimeSessionTraceResponse;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
@@ -33,17 +37,20 @@ public class RuntimeInspectionResource {
     private final RuntimeLivenessHealthCheck livenessHealthCheck;
     private final SessionManager sessionManager;
     private final MemoryService memoryService;
+    private final SessionTraceStore sessionTraceStore;
 
     public RuntimeInspectionResource(
             @Readiness AgentReadinessHealthCheck readinessHealthCheck,
             @Liveness RuntimeLivenessHealthCheck livenessHealthCheck,
             SessionManager sessionManager,
-            MemoryService memoryService
+            MemoryService memoryService,
+            SessionTraceStore sessionTraceStore
     ) {
         this.readinessHealthCheck = readinessHealthCheck;
         this.livenessHealthCheck = livenessHealthCheck;
         this.sessionManager = sessionManager;
         this.memoryService = memoryService;
+        this.sessionTraceStore = sessionTraceStore;
     }
 
     @GET
@@ -137,6 +144,31 @@ public class RuntimeInspectionResource {
                 .map(MemoryEntryResponse::from)
                 .toList();
         return new MemoryInspectionResponse(sessionId, effectiveQuery, memories);
+    }
+
+    @GET
+    @Path("/sessions/{sessionId}/trace")
+    @Operation(
+            summary = "Inspect a session trace",
+            description = "Book chapter mapping: chapter 4 runtime trace inspection seam. Read-only structured view of the stored step history for a session so chapter-4 ReAct behavior can be inspected without exposing framework plumbing."
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Structured step trace for the requested session.",
+            content = @org.eclipse.microprofile.openapi.annotations.media.Content(schema = @Schema(implementation = RuntimeSessionTraceResponse.class))
+    )
+    @APIResponse(responseCode = "404", description = "No structured trace exists for the requested session id.")
+    public RuntimeSessionTraceResponse trace(
+            @Parameter(description = "Session identifier used by the runtime step trace store.", required = true)
+            @PathParam("sessionId") String sessionId
+    ) {
+        List<AgentStepResponse> steps = sessionTraceStore.load(sessionId)
+                .map(list -> list.stream().map(AgentStepResponse::from).toList())
+                .orElseThrow(() -> new NotFoundException("No runtime trace found for sessionId=" + sessionId));
+        if (steps.isEmpty()) {
+            throw new NotFoundException("No runtime trace found for sessionId=" + sessionId);
+        }
+        return RuntimeSessionTraceResponse.from(sessionId, steps);
     }
 
     public record RuntimeHealthOverviewResponse(

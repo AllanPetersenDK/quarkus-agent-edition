@@ -34,6 +34,7 @@ It stays focused on the basic ReAct-style runtime: execution context, the agent 
 - Tool calls are represented as structured content and routed through the runtime tool layer.
 - The Quarkus version keeps the control flow visible rather than hiding it in a large framework.
 - Chapter-04 scope stops at the basic ReAct agent and its evaluation seam; later callback-heavy or session/memory-oriented patterns belong to later chapters.
+- The Swagger-visible `/api/agent/step`, `/api/agent/run/structured`, and `/api/runtime/sessions/{sessionId}/trace` endpoints are companion inspection seams for the chapter-4 runtime only; they do not broaden the chapter boundary into later memory, RAG, or workflow chapters.
 
 ## Demo vs Production
 

@@ -26,12 +26,15 @@ Swagger now documents the outer runtime and companion seams that are practical t
 Covered in Swagger:
 
 - `POST /api/agent/run` - chapter-4 runtime/basic agent seam
+- `POST /api/agent/step` - chapter-4 ReAct step seam
+- `POST /api/agent/run/structured` - chapter-4 structured-output seam
 - `GET /api/agent/tools` - chapter 3/4 boundary seam for runtime tool discovery
 - `GET /api/runtime/health` - combined readiness and liveness view
 - `GET /api/runtime/health/ready` - readiness snapshot
 - `GET /api/runtime/health/live` - liveness snapshot
 - `GET /api/runtime/sessions/{sessionId}` - session inspection, more naturally chapter 6-oriented than chapter 4-oriented
 - `GET /api/runtime/sessions/{sessionId}/memory` - memory inspection, more naturally chapter 6-oriented than chapter 4-oriented
+- `GET /api/runtime/sessions/{sessionId}/trace` - chapter-4 runtime trace inspection seam
 - `POST /api/rag/ingest` - chapter 5-oriented document ingest into the RAG stack
 - `GET /api/rag/query` - chapter 5-oriented RAG query and answer
 - `POST /admin/evaluations` - evaluation run
@@ -94,6 +97,92 @@ Field notes:
 - `stopReason` maps from the existing `StopReason` enum.
 - `iterations` and `trace` map directly from the existing agent runtime result.
 
+`POST /api/agent/step`
+
+Chapter-4 ReAct step seam. This runs one manual think/act cycle and returns a structured view of that single step instead of the full loop.
+
+Request body:
+
+```json
+{
+  "message": "What is 25 * 4?",
+  "sessionId": "default"
+}
+```
+
+Response body:
+
+```json
+{
+  "sessionId": "default",
+  "stepNumber": 1,
+  "assistantMessage": null,
+  "toolCalls": [
+    {
+      "toolName": "calculator",
+      "arguments": { "expression": "25 * 4" },
+      "callId": "call-123"
+    }
+  ],
+  "toolResults": [
+    {
+      "toolName": "calculator",
+      "success": true,
+      "output": "100",
+      "data": { "output": "100" }
+    }
+  ],
+  "finalAnswer": null,
+  "isFinal": false,
+  "traceEntries": [
+    { "kind": "step", "message": "iteration:1" },
+    { "kind": "tool-call", "message": "calculator" },
+    { "kind": "tool-result", "message": "100" }
+  ]
+}
+```
+
+`POST /api/agent/run/structured`
+
+Chapter-4 structured-output seam. This supports one controlled demo schema named `chapter4-answer` and returns a normalized structured answer plus the raw one-step agent result.
+
+Request body:
+
+```json
+{
+  "message": "Answer in a single sentence.",
+  "sessionId": "default",
+  "mode": "chapter4-answer"
+}
+```
+
+Response body:
+
+```json
+{
+  "sessionId": "default",
+  "mode": "chapter4-answer",
+  "validationStatus": "VALIDATED",
+  "structuredResult": {
+    "answer": "Direct answer: Answer in a single sentence."
+  },
+  "step": {
+    "sessionId": "default",
+    "stepNumber": 1,
+    "assistantMessage": "Direct answer: Answer in a single sentence.",
+    "toolCalls": [],
+    "toolResults": [],
+    "finalAnswer": "Direct answer: Answer in a single sentence.",
+    "isFinal": true,
+    "traceEntries": [
+      { "kind": "step", "message": "iteration:1" },
+      { "kind": "assistant-message", "message": "Direct answer: Answer in a single sentence." }
+    ]
+  },
+  "stopReason": "FINAL_ANSWER"
+}
+```
+
 ### Tool Discovery
 
 `GET /api/agent/tools`
@@ -113,6 +202,10 @@ Read-only session inspection seam that exposes the stored conversation messages.
 `GET /api/runtime/sessions/{sessionId}/memory`
 
 Read-only memory inspection seam that returns the relevant memories for a session and query.
+
+`GET /api/runtime/sessions/{sessionId}/trace`
+
+Read-only chapter-4 trace inspection seam that returns the structured step history recorded for the session.
 
 ### RAG
 

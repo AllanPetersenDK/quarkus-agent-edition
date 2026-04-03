@@ -2,8 +2,14 @@ package dk.ashlan.agent.api;
 
 import dk.ashlan.agent.api.dto.AgentRunRequest;
 import dk.ashlan.agent.api.dto.AgentRunResponse;
+import dk.ashlan.agent.api.dto.AgentStructuredRunRequest;
+import dk.ashlan.agent.api.dto.AgentStructuredRunResponse;
+import dk.ashlan.agent.api.dto.AgentStepResponse;
 import dk.ashlan.agent.core.AgentOrchestrator;
 import dk.ashlan.agent.core.AgentRunResult;
+import dk.ashlan.agent.core.AgentStepResult;
+import dk.ashlan.agent.core.StructuredOutputAgentOrchestrator;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -23,6 +29,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Tag(name = "Runtime API", description = "REST-exposed runtime seam for the manual agent loop and tool registry.")
 public class AgentResource {
     private final AgentOrchestrator orchestrator;
+    private final StructuredOutputAgentOrchestrator structuredOutputOrchestrator = new StructuredOutputAgentOrchestrator();
 
     public AgentResource(AgentOrchestrator orchestrator) {
         this.orchestrator = orchestrator;
@@ -48,5 +55,68 @@ public class AgentResource {
     public AgentRunResponse runAgent(@Valid AgentRunRequest input) {
         AgentRunResult result = orchestrator.run(input.message(), input.sessionId());
         return AgentRunResponse.from(result);
+    }
+
+    @POST
+    @Path("/step")
+    @Operation(
+            summary = "Run one chapter-4 agent step",
+            description = "Book chapter mapping: chapter 4 ReAct step seam. Runs exactly one manual think/act cycle so the assistant message, tool calls, tool results, and step-local trace entries stay inspectable without exposing lower-level runtime internals."
+    )
+    @RequestBody(
+            description = "User message and optional session id for a single chapter-4 agent step.",
+            required = true,
+            content = @Content(schema = @Schema(implementation = AgentRunRequest.class))
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Structured step result from a single manual agent cycle.",
+            content = @Content(schema = @Schema(implementation = AgentStepResponse.class))
+    )
+    @APIResponse(responseCode = "400", description = "Invalid request payload.")
+    public AgentStepResponse step(@Valid AgentRunRequest input) {
+        AgentStepResult result = orchestrator.step(input.message(), input.sessionId());
+        return AgentStepResponse.from(result);
+    }
+
+    @POST
+    @Path("/run/structured")
+    @Operation(
+            summary = "Run the chapter-4 structured-output demo",
+            description = "Book chapter mapping: chapter 4 structured-output seam. Runs one manual step and returns a single supported demo schema (`chapter4-answer`) with validation status, while keeping the outer runtime architecture explicit."
+    )
+    @RequestBody(
+            description = "User message, optional session id, and controlled structured-output mode for the chapter-4 demo seam.",
+            required = true,
+            content = @Content(schema = @Schema(implementation = AgentStructuredRunRequest.class))
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Structured chapter-4 demo result with the raw step response attached for inspection.",
+            content = @Content(schema = @Schema(implementation = AgentStructuredRunResponse.class))
+    )
+    @APIResponse(responseCode = "400", description = "Invalid request payload or unsupported structured-output mode.")
+    public AgentStructuredRunResponse runStructured(@Valid AgentStructuredRunRequest input) {
+        if (!"chapter4-answer".equals(input.mode())) {
+            throw new BadRequestException("Unsupported structured-output mode: " + input.mode());
+        }
+
+        AgentStepResult step = orchestrator.step(input.message(), input.sessionId());
+        String rawAnswer = step.assistantMessage() != null ? step.assistantMessage() : step.finalAnswer();
+        String normalizedAnswer = structuredOutputOrchestrator.normalize(rawAnswer);
+        AgentStructuredRunResponse.StructuredOutputValidationStatus validationStatus =
+                normalizedAnswer.isBlank()
+                        ? AgentStructuredRunResponse.StructuredOutputValidationStatus.INVALID_SCHEMA
+                        : AgentStructuredRunResponse.StructuredOutputValidationStatus.VALIDATED;
+        AgentStructuredRunResponse.StructuredAnswerResponse structuredResult =
+                normalizedAnswer.isBlank() ? null : new AgentStructuredRunResponse.StructuredAnswerResponse(normalizedAnswer);
+        return new AgentStructuredRunResponse(
+                step.sessionId(),
+                input.mode(),
+                validationStatus,
+                structuredResult,
+                AgentStepResponse.from(step),
+                step.isFinal() ? dk.ashlan.agent.core.StopReason.FINAL_ANSWER : null
+        );
     }
 }
