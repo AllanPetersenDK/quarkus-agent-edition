@@ -38,6 +38,9 @@ Covered in Swagger:
 - `GET /admin/evaluations/{caseId}` - evaluation trace lookup
 - `POST /api/companion/langchain4j/run` - LangChain4j companion run
 - `POST /api/companion/langchain4j/agentic-demo` - LangChain4j agentic companion demo
+- `POST /code-agent` - internal chapter demo for the deterministic code workflow
+- `POST /multi-agent` - internal chapter demo for the coordinator/reviewer flow
+- `GET /workflow-demo` - internal deterministic workflow demo
 
 Not covered in Swagger:
 
@@ -138,6 +141,20 @@ Framework-backed companion comparison seam that answers a single prompt.
 `POST /api/companion/langchain4j/agentic-demo`
 
 Framework-backed agentic comparison seam that runs the chapter 07 planning workflow.
+
+### Internal Chapter Demos
+
+`POST /code-agent`
+
+Internal chapter demo for the deterministic code workflow.
+
+`POST /multi-agent`
+
+Internal chapter demo for the coordinator/reviewer flow.
+
+`GET /workflow-demo`
+
+Internal deterministic workflow demo.
 
 ## Design Notes
 

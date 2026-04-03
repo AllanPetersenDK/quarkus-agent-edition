@@ -113,6 +113,9 @@ mvn test
 - `GET /admin/evaluations/{caseId}`
 - `POST /api/companion/langchain4j/run`
 - `POST /api/companion/langchain4j/agentic-demo`
+- `POST /code-agent`
+- `POST /multi-agent`
+- `GET /workflow-demo`
 - MCP server: `http://localhost:8080/mcp`
 
 See [`docs/api.md`](docs/api.md) for the Swagger coverage boundary and the exact split between REST-exposed outer seams and internal chapter mechanics.
@@ -201,6 +204,7 @@ Covered in Swagger:
 - session and memory inspection
 - evaluation run and trace lookup
 - the selected LangChain4j companion run and agentic demo
+- internal chapter demos for code-agent, multi-agent, and workflow
 
 Still internal:
 
