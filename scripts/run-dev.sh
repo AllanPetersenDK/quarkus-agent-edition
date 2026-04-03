@@ -41,7 +41,7 @@ fi
 if [[ -f "$repo_root/.env" ]]; then
   # Load local workspace secrets without committing them.
   set -a
-  # shellcheck disable=SC1090
+  # shellcheck disable=SC1090,SC1091
   source "$repo_root/.env"
   set +a
 fi
