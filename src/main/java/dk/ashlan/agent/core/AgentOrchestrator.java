@@ -3,8 +3,7 @@ package dk.ashlan.agent.core;
 import dk.ashlan.agent.llm.LlmClient;
 import dk.ashlan.agent.llm.LlmCompletion;
 import dk.ashlan.agent.llm.LlmToolCall;
-import dk.ashlan.agent.llm.OpenAiLlmClient;
-import dk.ashlan.agent.llm.DemoToolCallingLlmClient;
+import dk.ashlan.agent.llm.LlmClientSelector;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.tools.JsonToolResult;
 import dk.ashlan.agent.tools.ToolExecutor;
@@ -121,22 +120,7 @@ public class AgentOrchestrator implements AgentRunner {
 
     private static LlmClient selectClient(Instance<LlmClient> llmClients, Config config) {
         String openAiApiKey = config.getOptionalValue("openai.api-key", String.class).orElse("");
-        boolean useOpenAi = openAiApiKey != null && !openAiApiKey.isBlank();
-        if (useOpenAi) {
-            for (LlmClient candidate : llmClients) {
-                if (candidate instanceof OpenAiLlmClient) {
-                    return candidate;
-                }
-            }
-        }
-        for (LlmClient candidate : llmClients) {
-            if (candidate instanceof DemoToolCallingLlmClient) {
-                return candidate;
-            }
-        }
-        for (LlmClient candidate : llmClients) {
-            return candidate;
-        }
-        throw new IllegalStateException("No LLM client available");
+        String requestedProvider = config.getOptionalValue("agent.llm-provider", String.class).orElse("auto");
+        return LlmClientSelector.select(llmClients, requestedProvider, openAiApiKey);
     }
 }

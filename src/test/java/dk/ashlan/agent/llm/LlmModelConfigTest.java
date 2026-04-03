@@ -12,4 +12,12 @@ class LlmModelConfigTest {
         assertEquals("openai", config.provider());
         assertEquals("gpt-4.1-mini", config.model());
     }
+
+    @Test
+    void langChain4jConfigUsesExpectedProviderName() {
+        LlmModelConfig config = LlmModelConfig.langChain4j("gpt-4.1-mini");
+
+        assertEquals("langchain4j", config.provider());
+        assertEquals("gpt-4.1-mini", config.model());
+    }
 }

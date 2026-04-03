@@ -20,11 +20,13 @@ reference implementation.
 - `src/main/java/dk/ashlan/agent/chapters/chapter05` Java demos and RAG companion flows.
 - `src/main/java/dk/ashlan/agent/chapters/chapter06` Java demos mapped from `chapter_06_memory/`.
 - `src/main/java/dk/ashlan/agent/chapters/chapter07` Planning and reflection companion demos.
+- `src/main/java/dk/ashlan/agent/chapters/chapter07/companion` LangChain4j agentic comparison demo.
 - `src/main/java/dk/ashlan/agent/chapters/chapter08` Code-agent companion demos.
 - `src/main/java/dk/ashlan/agent/chapters/chapter09` Multi-agent companion demos.
 - `src/main/java/dk/ashlan/agent/chapters/chapter10` Evaluation and monitoring companion demos.
 - `src/main/java/dk/ashlan/agent/core` Agent loop, execution context, and orchestration.
 - `src/main/java/dk/ashlan/agent/llm` LLM abstractions and model layer.
+- `src/main/java/dk/ashlan/agent/mcp` MCP companion tools exposed on top of existing tool implementations.
 - `src/main/java/dk/ashlan/agent/tools` Generic tool contracts, registry, and execution.
 - `src/main/java/dk/ashlan/agent/memory` Memory strategies and memory services.
 - `src/main/java/dk/ashlan/agent/sessions` Session and cross-session abstractions.
@@ -44,12 +46,14 @@ The repo uses three explicit modes so the companion story stays honest:
 |---|---|---|
 | Demo | Deterministic chapter walkthroughs and local stand-ins | `DemoToolCallingLlmClient`, chapter 03/04/05/06 demo helpers, chapter 08 placeholder code execution |
 | Runtime default | The normal CDI-backed runtime path in this companion app | `OpenAiLlmClient` when configured, H2-backed session state, H2-backed RAG chunks |
+| Companion seam | Optional framework-backed comparison path | `LangChain4jLlmClient`, `CompanionMcpTools`, `LangChain4jAgenticCompanionDemo` |
 | Production seam | Real external integration points that are intentionally isolated | OpenAI provider transport, external search, sandboxed code execution, auth, durable storage |
 
 ## Python-to-Quarkus Mapping
 
 See [`docs/python-to-quarkus-mapping.md`](docs/python-to-quarkus-mapping.md) for the file-by-file
 mapping from the Python reference zip to the Quarkus edition.
+See [`docs/companion-seams.md`](docs/companion-seams.md) for the rule that keeps the manual path primary.
 
 ## Module Structure
 
@@ -101,6 +105,7 @@ mvn test
 - Liveness: `http://localhost:8080/q/health/live`
 - `POST /api/agent/run`
 - `GET /api/agent/tools`
+- MCP server: `http://localhost:8080/mcp`
 
 See [`docs/api.md`](docs/api.md) for request/response examples, Quarkus OpenAPI properties, and the note on deferred session and memory endpoints.
 See [`docs/fault-tolerance.md`](docs/fault-tolerance.md) for the current resilience policy on provider calls.
@@ -113,6 +118,8 @@ Tracing is prepared with OpenTelemetry spans around agent runs and tool executio
 `OpenAiLlmClient` now uses Quarkus REST Client under the hood for OpenAI Chat Completions. The transport
 is still isolated, tool-call round-tripping preserves provider `tool_call_id` metadata, and the
 provider path is guarded with selective timeout plus retry via SmallRye Fault Tolerance.
+The new LangChain4j companion seam is opt-in through `agent.llm-provider=langchain4j`, and the MCP
+server seam exposes only calculator and clock so the internal tool model stays the main learning path.
 
 ## Build the Companion PDF
 
@@ -131,7 +138,8 @@ The repository currently contains a working Quarkus companion implementation wit
 components for the learning chapters. It compiles and the test suite is green in the current setup.
 `OpenAiLlmClient` is now a real HTTP integration seam for OpenAI Chat Completions, and tool-call
 round-tripping keeps provider `tool_call_id` metadata intact. The demo client still remains the
-default unless `openai.api-key` is configured.
+default unless `openai.api-key` is configured. A LangChain4j-backed companion client and a tiny MCP
+server seam are also present, but they are optional comparison paths rather than the main model.
 Session state is now persisted to file-based H2 through `SessionManager`. The main RAG runtime path
 also persists chunk text, metadata, and embeddings to H2 through `JdbcVectorStore`, while the chapter
 demos still use explicit in-memory stores so the learning flow stays visible.
@@ -148,12 +156,14 @@ Demo and fake components are intentionally marked and include:
 
 - `DemoToolCallingLlmClient`
 - `OpenAiLlmClient` when `openai.api-key` is configured
+- `LangChain4jLlmClient` when `agent.llm-provider=langchain4j`
 - `FakeEmbeddingClient`
 - `InMemoryVectorStore`
 - `JdbcVectorStore` in the runtime CDI path
 - `InMemoryTaskMemoryStore`
 - `InMemorySessionStateStore` as the explicit fallback path
 - `WebSearchTool` and `WikipediaTool` as lightweight local placeholders
+- `CompanionMcpTools` as the MCP-facing comparison seam
 - `CodeGenerationTool`
 - `TestExecutionTool`
 - `WorkspaceService` defaults to `target/workspace` for safe local runs.
@@ -183,6 +193,8 @@ Demo and fake components are intentionally marked and include:
 
 ## Companion Extensions Beyond the Python Zip
 
+- `src/main/java/dk/ashlan/agent/mcp`
+- `src/main/java/dk/ashlan/agent/chapters/chapter07/companion`
 - `src/main/java/dk/ashlan/agent/rag`
 - `src/main/java/dk/ashlan/agent/planning`
 - `src/main/java/dk/ashlan/agent/code`

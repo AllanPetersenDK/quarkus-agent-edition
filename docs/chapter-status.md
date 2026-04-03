@@ -14,6 +14,8 @@
 
 ## Quarkus Companion Extensions
 
+- `langchain4j`
+- `mcp`
 - `rag`
 - `planning`
 - `code`
@@ -26,4 +28,4 @@
 - Quarkus-native modules are documented separately as companion extensions.
 - Runtime defaults now use H2-backed persistence for session state and RAG chunks, while the chapter demos still lean on deterministic in-memory stand-ins.
 - Demo, runtime default, and production seam are treated as separate modes in the companion docs so placeholder code is not confused with the normal runtime path.
-- The repo currently covers code, multi-agent, and eval as companion modules, but it does not claim browser automation, MCP, or a full auth story yet.
+- The repo currently covers code, multi-agent, eval, MCP, and LangChain4j comparison seams, but it does not claim browser automation or a full auth story yet.

@@ -10,6 +10,7 @@ The Java version uses a CDI-managed `LlmClient` interface with:
 
 - `DemoToolCallingLlmClient` for deterministic chapter demos
 - `OpenAiLlmClient` as a real Quarkus REST Client integration seam for OpenAI Chat Completions
+- `LangChain4jLlmClient` as an optional framework-backed companion seam
 
 ## Central Classes
 
@@ -18,6 +19,7 @@ The Java version uses a CDI-managed `LlmClient` interface with:
 - `dk.ashlan.agent.llm.LlmMessage`
 - `dk.ashlan.agent.llm.DemoToolCallingLlmClient`
 - `dk.ashlan.agent.llm.OpenAiLlmClient`
+- `dk.ashlan.agent.llm.LangChain4jLlmClient`
 
 ## Design Choices
 
@@ -26,6 +28,8 @@ The Java version uses a CDI-managed `LlmClient` interface with:
 - The OpenAI client is a real integration seam via Quarkus REST Client, but the demo client remains the default unless you configure `openai.api-key`.
 - Tool calls now round-trip with `tool_call_id` so provider-backed tool use is protocol-correct instead of only demo-correct.
 - The provider seam is selectively hardened with a transport timeout boundary plus a SmallRye retry guard, but without a fallback that could hide a real provider outage.
+- The LangChain4j companion seam exists as a comparison path and is selected explicitly with `agent.llm-provider=langchain4j`.
+- The companion seam is intentionally configured separately from the manual OpenAI seam; the repo keeps its LangChain4j API key at a safe dummy default until you opt in.
 
 ## Demo vs Production
 

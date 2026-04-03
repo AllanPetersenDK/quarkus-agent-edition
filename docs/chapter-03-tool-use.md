@@ -27,15 +27,19 @@ This chapter maps the Python tool system into a generic Quarkus tool framework.
 - `dk.ashlan.agent.tools.SchemaUtils`
 - `dk.ashlan.agent.chapters.chapter03.*`
 - `dk.ashlan.agent.chapters.chapter03.Chapter03Support`
+- `dk.ashlan.agent.mcp.CompanionMcpTools`
 
 ## Design Notes
 
 - Tools are CDI beans and can be discovered generically.
 - The registry stays generic so new tools can be added without rewriting the executor.
 - Wikipedia, web search, and decorator examples are intentionally lightweight demo ports or placeholders rather than real external integrations.
+- The internal `ToolRegistry`/`ToolExecutor` path remains the primary tool model.
+- `CompanionMcpTools` exposes only a tiny MCP-facing slice of the existing tool set so chapter 3 can be compared with a server-side protocol seam.
 
 ## Demo vs Production
 
 - Demo: calculator, clock, placeholder web search, and generic function-backed tooling.
 - Runtime default: local tool registry, adapter, and decorator flows.
 - Production seam: external search providers and richer tool schema generation.
+- Companion seam: MCP-exposed calculator and clock tools on top of the existing implementations.

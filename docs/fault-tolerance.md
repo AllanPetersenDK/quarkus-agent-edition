@@ -6,6 +6,7 @@
 - The OpenAI provider call behind `OpenAiLlmClient`
 
 This is the only real external, networked integration in the current repo. The rest of the agent loop is in-process and already covered by deterministic tests.
+The LangChain4j companion seam is intentionally separate and remains a comparison path, not the resilience baseline.
 
 ## Chosen Policy
 

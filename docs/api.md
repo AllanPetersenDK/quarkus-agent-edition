@@ -79,6 +79,7 @@ The tool list is sourced from the existing `ToolRegistry` and uses each tool's `
 - The public API is intentionally thin.
 - The REST layer delegates directly to `AgentOrchestrator` and `ToolRegistry`.
 - The implementation keeps the existing runtime behavior intact rather than introducing a second agent model.
+- A separate MCP server seam is exposed at `/mcp` for calculator and clock only, so the internal tool model remains the primary chapter 3 path.
 
 ## Deferred
 
