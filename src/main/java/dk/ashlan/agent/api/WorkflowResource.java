@@ -15,7 +15,7 @@ public class WorkflowResource {
     @GET
     @Operation(
             summary = "Run the workflow demo",
-            description = "Internal chapter demo endpoint that shows a deterministic workflow over HTTP. It illustrates the comparison path and does not represent the main manual agent loop."
+            description = "Book chapter: 7. Internal chapter demo endpoint for the deterministic workflow comparison."
     )
     @APIResponse(responseCode = "200", description = "Plain-text workflow demo result.")
     public String demo() {

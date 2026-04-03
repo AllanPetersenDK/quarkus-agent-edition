@@ -32,7 +32,7 @@ public class AgentResource {
     @Path("/run")
     @Operation(
             summary = "Run the manual agent loop",
-            description = "REST-exposed runtime seam that delegates to the manual AgentOrchestrator. This is the main public agent flow exposed in Swagger."
+            description = "Book chapter mapping: cross-cutting runtime seam. REST-exposed manual agent loop that delegates to the manual AgentOrchestrator."
     )
     @RequestBody(
             description = "User message and optional session id for the runtime agent loop.",

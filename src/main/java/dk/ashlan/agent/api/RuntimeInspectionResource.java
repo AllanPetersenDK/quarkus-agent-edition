@@ -48,7 +48,7 @@ public class RuntimeInspectionResource {
     @Path("/health")
     @Operation(
             summary = "Inspect runtime health",
-            description = "Swagger-visible wrapper around the app's readiness and liveness checks. It exposes the outer runtime health surface without replacing Quarkus' built-in /q/health endpoints."
+            description = "Book chapter mapping: cross-cutting runtime seam. Swagger-visible wrapper around the app's readiness and liveness checks."
     )
     @APIResponse(
             responseCode = "200",
@@ -66,7 +66,7 @@ public class RuntimeInspectionResource {
     @Path("/health/ready")
     @Operation(
             summary = "Inspect readiness",
-            description = "Swagger-visible readiness check for the manual runtime and its tool registry."
+            description = "Book chapter mapping: cross-cutting runtime seam. Swagger-visible readiness check for the manual runtime and its tool registry."
     )
     @APIResponse(
             responseCode = "200",
@@ -81,7 +81,7 @@ public class RuntimeInspectionResource {
     @Path("/health/live")
     @Operation(
             summary = "Inspect liveness",
-            description = "Swagger-visible liveness check for the companion runtime surface."
+            description = "Book chapter mapping: cross-cutting runtime seam. Swagger-visible liveness check for the companion runtime surface."
     )
     @APIResponse(
             responseCode = "200",
@@ -96,7 +96,7 @@ public class RuntimeInspectionResource {
     @Path("/sessions/{sessionId}")
     @Operation(
             summary = "Inspect a session",
-            description = "Read-only session inspection seam backed by the existing runtime session state. It exposes the stored conversation messages without exposing persistence internals."
+            description = "Book chapter: 6. Read-only session inspection seam backed by the existing runtime session state."
     )
     @APIResponse(
             responseCode = "200",
@@ -115,7 +115,7 @@ public class RuntimeInspectionResource {
     @Path("/sessions/{sessionId}/memory")
     @Operation(
             summary = "Inspect session memory",
-            description = "Read-only memory inspection seam backed by the existing memory service. It exposes the relevant memories for a session and query, while keeping the storage implementation internal."
+            description = "Book chapter: 6. Read-only memory inspection seam backed by the existing memory service."
     )
     @APIResponse(
             responseCode = "200",

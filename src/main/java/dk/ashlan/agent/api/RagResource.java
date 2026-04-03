@@ -40,7 +40,7 @@ public class RagResource {
     @Path("/ingest")
     @Operation(
             summary = "Ingest a document into RAG",
-            description = "Swagger-visible companion seam that ingests document text into the repo's RAG stack. It exposes the outer knowledge-base flow without revealing vector-store internals."
+            description = "Book chapter: 5. Swagger-visible companion seam that ingests document text into the repo's RAG stack."
     )
     @RequestBody(
             description = "Document source id and content to ingest.",
@@ -63,7 +63,7 @@ public class RagResource {
     @Path("/query")
     @Operation(
             summary = "Query the RAG stack",
-            description = "Swagger-visible RAG query seam that returns the matching chunks and a simple answer. It covers the outer knowledge-base flow, not the persistence implementation."
+            description = "Book chapter: 5. Swagger-visible RAG query seam that returns the matching chunks and a simple answer."
     )
     @APIResponse(
             responseCode = "200",

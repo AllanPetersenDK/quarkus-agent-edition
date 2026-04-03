@@ -29,7 +29,7 @@ public class MultiAgentResource {
     @POST
     @Operation(
             summary = "Run the multi-agent chapter demo",
-            description = "Internal chapter demo endpoint that exercises the coordinator/reviewer flow over HTTP. It is a comparison seam, not the primary runtime agent path."
+            description = "Book chapter: 9. Internal chapter demo endpoint for the coordinator/reviewer flow."
     )
     @APIResponse(
             responseCode = "200",

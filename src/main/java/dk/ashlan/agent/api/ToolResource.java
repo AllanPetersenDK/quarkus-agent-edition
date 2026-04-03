@@ -29,7 +29,7 @@ public class ToolResource {
     @Path("/tools")
     @Operation(
             summary = "List runtime tools",
-            description = "Utility/discovery endpoint that lists the tools registered in the runtime. It does not execute tools; it only exposes the tool metadata seen by the manual agent loop and companion seams."
+            description = "Book chapter mapping: cross-cutting runtime seam. Utility/discovery endpoint that lists the tools registered in the runtime."
     )
     @APIResponse(
             responseCode = "200",

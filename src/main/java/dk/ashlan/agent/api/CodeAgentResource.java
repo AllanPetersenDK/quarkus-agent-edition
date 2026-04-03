@@ -29,7 +29,7 @@ public class CodeAgentResource {
     @POST
     @Operation(
             summary = "Run the code-agent chapter demo",
-            description = "Internal chapter demo endpoint that exercises the deterministic code-generation/test placeholder flow over HTTP. It does not replace the manual agent loop."
+            description = "Book chapter: 8. Internal chapter demo endpoint for the deterministic code-generation/test placeholder flow."
     )
     @APIResponse(
             responseCode = "200",

@@ -33,7 +33,7 @@ public class CompanionResource {
     @Path("/run")
     @Operation(
             summary = "Run the LangChain4j companion seam",
-            description = "Framework-backed companion comparison seam that answers a single prompt via LangChain4j. It is exposed for comparison with the manual runtime, not as a replacement for it."
+            description = "Book chapter mapping: chapter 7 companion seam. Framework-backed companion comparison seam that answers a single prompt via LangChain4j."
     )
     @RequestBody(
             description = "Prompt to send to the framework-backed companion assistant.",
@@ -53,7 +53,7 @@ public class CompanionResource {
     @Path("/agentic-demo")
     @Operation(
             summary = "Run the LangChain4j agentic demo",
-            description = "Framework-backed agentic comparison seam that runs the chapter 07 planning workflow over HTTP. It stays separate from the manual orchestrator and is exposed only as a comparison path."
+            description = "Book chapter mapping: chapter 7 companion seam. Framework-backed agentic comparison seam that runs the planning workflow over HTTP."
     )
     @RequestBody(
             description = "Topic to send into the agentic companion workflow.",

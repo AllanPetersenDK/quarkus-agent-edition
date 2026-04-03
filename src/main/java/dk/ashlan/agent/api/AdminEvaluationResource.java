@@ -42,7 +42,7 @@ public class AdminEvaluationResource {
     @POST
     @Operation(
             summary = "Run evaluation cases",
-            description = "Internal admin endpoint that runs chapter evaluation cases and returns both results and metrics. It exposes the evaluation harness over HTTP, but not the lower-level planning, memory, or orchestration internals."
+            description = "Book chapter: 10. Internal admin endpoint that runs evaluation cases and returns results and metrics."
     )
     @RequestBody(
             description = "Evaluation cases to execute.",
@@ -66,7 +66,7 @@ public class AdminEvaluationResource {
     @Path("/{caseId}")
     @Operation(
             summary = "Inspect an evaluation trace",
-            description = "Read-only trace inspection seam for the most recent run of a named evaluation case. It exposes the stored execution trace without exposing the agent internals behind it."
+            description = "Book chapter: 10. Read-only trace inspection seam for the most recent run of a named evaluation case."
     )
     @APIResponse(
             responseCode = "200",
