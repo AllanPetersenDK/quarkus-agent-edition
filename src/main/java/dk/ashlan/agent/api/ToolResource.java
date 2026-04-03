@@ -17,7 +17,7 @@ import java.util.List;
 
 @Path("/api/agent")
 @Produces(MediaType.APPLICATION_JSON)
-@Tag(name = "Tools", description = "Inspect tools registered in the runtime.")
+@Tag(name = "Tool Discovery", description = "Utility endpoint that exposes the runtime tool registry through Swagger.")
 public class ToolResource {
     private final ToolRegistry toolRegistry;
 
@@ -27,10 +27,13 @@ public class ToolResource {
 
     @GET
     @Path("/tools")
-    @Operation(summary = "List registered tools")
+    @Operation(
+            summary = "List runtime tools",
+            description = "Utility/discovery endpoint that lists the tools registered in the runtime. It does not execute tools; it only exposes the tool metadata seen by the manual agent loop and companion seams."
+    )
     @APIResponse(
             responseCode = "200",
-            description = "Registered tools",
+            description = "Tool registry metadata exposed through the runtime surface.",
             content = @Content(schema = @Schema(implementation = ToolSummaryResponse.class))
     )
     public List<ToolSummaryResponse> listTools() {

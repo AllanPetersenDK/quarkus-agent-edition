@@ -1,6 +1,7 @@
 # API
 
 This repository now exposes a small Quarkus REST surface backed by the existing agent runtime and tool registry.
+Swagger documents only the HTTP-exposed companion/runtime seams. Manual chapter demos, planning/reflection internals, memory/RAG internals, and other chapter classes remain implemented in Java and are not fully covered unless a specific REST endpoint exposes them.
 
 ## OpenAPI And Swagger UI
 
@@ -21,6 +22,8 @@ Configured properties:
 ## Agent Endpoint
 
 `POST /api/agent/run`
+
+Runtime API: this is the main REST-exposed manual agent loop.
 
 Request body:
 
@@ -56,6 +59,19 @@ Field notes:
 ## Tools Endpoint
 
 `GET /api/agent/tools`
+
+Utility/discovery endpoint: this lists the runtime tool registry and does not execute tools.
+
+## Companion And Internal Demo Endpoints
+
+The following HTTP endpoints are also documented in Swagger as comparison or internal chapter seams:
+
+- `POST /code-agent` - internal chapter demo for the deterministic code workflow
+- `POST /multi-agent` - internal chapter demo for the coordinator/reviewer flow
+- `POST /admin/evaluations` - internal evaluation harness for chapter ten-style runs
+- `GET /workflow-demo` - internal deterministic workflow demo
+
+These endpoints are useful for comparison and chapter walkthroughs, but they do not cover the full chapter implementation surface. Chapter demo classes and the manual orchestration internals remain outside Swagger unless explicitly exposed over HTTP.
 
 Response body:
 

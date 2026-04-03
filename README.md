@@ -107,7 +107,7 @@ mvn test
 - `GET /api/agent/tools`
 - MCP server: `http://localhost:8080/mcp`
 
-See [`docs/api.md`](docs/api.md) for request/response examples, Quarkus OpenAPI properties, and the note on deferred session and memory endpoints.
+See [`docs/api.md`](docs/api.md) for request/response examples, the Swagger coverage boundary, Quarkus OpenAPI properties, and the note on deferred session and memory endpoints.
 See [`docs/fault-tolerance.md`](docs/fault-tolerance.md) for the current resilience policy on provider calls.
 See [`docs/persistence.md`](docs/persistence.md) for the first H2-backed persistence layer.
 See [`docs/security.md`](docs/security.md) for the current security stance on the public and admin seams.
