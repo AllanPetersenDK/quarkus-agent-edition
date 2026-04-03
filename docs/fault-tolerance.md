@@ -26,7 +26,8 @@ Those paths are still internal demo implementations or pure dispatch code. There
 
 ## Metrics And Observability
 
-- Micrometer already records agent and tool metrics.
+- Micrometer already records agent and tool metrics in the manual loop.
+- OpenTelemetry spans are explicit in the manual path, while LangChain4j AI services can participate in Quarkus observability around service and tool execution.
 - The timeout boundary is handled explicitly at the transport seam, and no extra FT-specific custom counters were added.
 - No fallback is used, so failed provider calls remain visible instead of being silently converted into fake success.
 

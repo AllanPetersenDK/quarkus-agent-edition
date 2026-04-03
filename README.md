@@ -46,7 +46,7 @@ The repo uses three explicit modes so the companion story stays honest:
 |---|---|---|
 | Demo | Deterministic chapter walkthroughs and local stand-ins | `DemoToolCallingLlmClient`, chapter 03/04/05/06 demo helpers, chapter 08 placeholder code execution |
 | Runtime default | The normal CDI-backed runtime path in this companion app | `OpenAiLlmClient` when configured, H2-backed session state, H2-backed RAG chunks |
-| Companion seam | Optional framework-backed comparison path | `LangChain4jLlmClient`, `CompanionMcpTools`, `LangChain4jAgenticCompanionDemo` |
+| Companion seam | Optional framework-backed comparison path | `LangChain4jLlmClient`, `LangChain4jToolCallingCompanionAssistant`, `CompanionMcpTools`, `LangChain4jAgenticCompanionDemo` |
 | Production seam | Real external integration points that are intentionally isolated | OpenAI provider transport, external search, sandboxed code execution, auth, durable storage |
 
 ## Python-to-Quarkus Mapping
@@ -118,8 +118,9 @@ Tracing is prepared with OpenTelemetry spans around agent runs and tool executio
 `OpenAiLlmClient` now uses Quarkus REST Client under the hood for OpenAI Chat Completions. The transport
 is still isolated, tool-call round-tripping preserves provider `tool_call_id` metadata, and the
 provider path is guarded with selective timeout plus retry via SmallRye Fault Tolerance.
-The new LangChain4j companion seam is opt-in through `agent.llm-provider=langchain4j`, and the MCP
-server seam exposes only calculator and clock so the internal tool model stays the main learning path.
+The LangChain4j companion seams are opt-in comparison paths, and the tool-calling companion seam
+exposes only calculator and clock through the existing repo tools so the internal tool model stays
+the main learning path.
 
 ## Build the Companion PDF
 
@@ -138,8 +139,9 @@ The repository currently contains a working Quarkus companion implementation wit
 components for the learning chapters. It compiles and the test suite is green in the current setup.
 `OpenAiLlmClient` is now a real HTTP integration seam for OpenAI Chat Completions, and tool-call
 round-tripping keeps provider `tool_call_id` metadata intact. The demo client still remains the
-default unless `openai.api-key` is configured. A LangChain4j-backed companion client and a tiny MCP
-server seam are also present, but they are optional comparison paths rather than the main model.
+default unless `openai.api-key` is configured. A LangChain4j-backed companion client, a LangChain4j
+tool-calling companion seam, and a tiny MCP server seam are also present, but they are optional
+comparison paths rather than the main model.
 Session state is now persisted to file-based H2 through `SessionManager`. The main RAG runtime path
 also persists chunk text, metadata, and embeddings to H2 through `JdbcVectorStore`, while the chapter
 demos still use explicit in-memory stores so the learning flow stays visible.
@@ -155,11 +157,16 @@ export OPENAI_API_KEY="your_api_key_here"
 The LangChain4j companion seam also reads `OPENAI_API_KEY`. Secrets must never be committed; keep
 them in local environment variables or your untracked `.env` file.
 
+The manual loop still owns the explicit Micrometer counters and OpenTelemetry spans. Quarkus
+LangChain4j AI services can add framework-managed observability around the companion service and its
+tool invocations, which makes them useful for comparing manual and framework-backed instrumentation.
+
 Demo and fake components are intentionally marked and include:
 
 - `DemoToolCallingLlmClient`
 - `OpenAiLlmClient` when `openai.api-key` is configured
 - `LangChain4jLlmClient` when `agent.llm-provider=langchain4j`
+- `LangChain4jToolCallingCompanionAssistant` when `OPENAI_API_KEY` is configured
 - `FakeEmbeddingClient`
 - `InMemoryVectorStore`
 - `JdbcVectorStore` in the runtime CDI path

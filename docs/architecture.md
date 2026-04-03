@@ -7,7 +7,7 @@ constructor injection, and chapter-aligned modules.
 ## Core Ideas
 
 - `core` contains the agent loop, orchestration, execution context, and stop reasons.
-- `llm` contains the LLM abstraction, a demo tool-calling client, the manual OpenAI provider seam, and the new LangChain4j companion seam.
+- `llm` contains the LLM abstraction, a demo tool-calling client, the manual OpenAI provider seam, and the LangChain4j companion seams.
 - `tools` provides generic tool definitions, registry, and execution.
 - `mcp` exposes a small MCP server companion seam over existing tools.
 - `rag`, `memory`, `planning`, `code`, `multiagent`, and `eval` each represent one chapter module.
@@ -32,5 +32,5 @@ constructor injection, and chapter-aligned modules.
 
 - Demo: calculator, clock, fake embeddings, in-memory vector store in the chapter demos, H2-backed session state, code generation placeholder.
 - Production seam: `OpenAiLlmClient`, H2-backed RAG persistence, code execution, and external search integrations.
-- Companion seams: `LangChain4jLlmClient`, `CompanionMcpTools`, and the chapter 07 LangChain4j agentic demo.
+- Companion seams: `LangChain4jLlmClient`, `LangChain4jToolCallingCompanionAssistant`, `CompanionMcpTools`, and the chapter 07 LangChain4j demos.
 - The structure is ready for PostgreSQL, Redis, metrics, tracing, and auth without changing the chapter map.

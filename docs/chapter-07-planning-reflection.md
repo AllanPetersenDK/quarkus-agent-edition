@@ -21,6 +21,7 @@ The Java edition keeps planning and reflection as explicit services around the m
 - `dk.ashlan.agent.chapters.chapter07.ImprovementLoopDemo`
 - `dk.ashlan.agent.chapters.chapter07.companion.CompanionPlanWorkflow`
 - `dk.ashlan.agent.chapters.chapter07.companion.LangChain4jAgenticCompanionDemo`
+- `dk.ashlan.agent.chapters.chapter07.companion.LangChain4jToolCallingCompanionDemo`
 
 ## Design Choices
 
@@ -29,9 +30,11 @@ The Java edition keeps planning and reflection as explicit services around the m
 - The re-entry loop is deterministic in the companion edition so it is easy to test.
 - The manual planning/reflection loop remains the baseline learning path.
 - The LangChain4j agentic demo is a comparison seam that shows a framework-backed workflow without replacing the manual services.
+- The LangChain4j tool-calling companion demo is a separate comparison seam that exercises the framework-backed tool path without replacing the manual services.
 
 ## Demo vs Production
 
 - Demo: simple planning and length-based reflection.
 - Production placeholder: LLM-generated plans and reviewer-style grading.
 - Companion demo: `LangChain4jAgenticCompanionDemo` for the framework-backed comparison path.
+- Companion tool-calling demo: `LangChain4jToolCallingCompanionDemo` for the framework-backed tool-calling comparison path.
