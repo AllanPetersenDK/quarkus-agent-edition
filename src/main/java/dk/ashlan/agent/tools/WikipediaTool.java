@@ -13,7 +13,7 @@ public class WikipediaTool extends AbstractTool {
 
     @Override
     public ToolDefinition definition() {
-        return new ToolDefinition(name(), "Demo Wikipedia search placeholder.");
+        return new ToolDefinition(name(), "Search Wikipedia when the user explicitly asks for Wikipedia or needs a sourced lookup. Not for simple stable facts.");
     }
 
     @Override

@@ -22,7 +22,7 @@ public class KnowledgeBaseTool implements Tool {
 
     @Override
     public ToolDefinition definition() {
-        return new ToolDefinition(name(), "Search the in-memory knowledge base.");
+        return new ToolDefinition(name(), "Search the in-memory knowledge base for repo or RAG questions. Not for simple stable facts or basic general knowledge.");
     }
 
     @Override

@@ -3,6 +3,10 @@ package dk.ashlan.agent.llm;
 import dk.ashlan.agent.core.ExecutionContext;
 import dk.ashlan.agent.tools.ToolRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dk.ashlan.agent.rag.KnowledgeBaseTool;
+import dk.ashlan.agent.rag.RagService;
+import dk.ashlan.agent.tools.WebSearchTool;
+import dk.ashlan.agent.tools.WikipediaTool;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -157,5 +161,46 @@ class OpenAiLlmClientTest {
         assertTrue(requestBody.get().contains("\"role\":\"assistant\""));
         assertTrue(requestBody.get().contains("\"tool_calls\""));
         assertTrue(requestBody.get().contains("\"tool_call_id\":\"call-123\""));
+    }
+
+    @Test
+    void completeSerializesLookupToolDescriptionsAsLookupOnlyGuidance() throws Exception {
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        OpenAiLlmClient.OpenAiTransport transport = (uri, apiKey, payload, timeout) -> {
+            requestBody.set(payload);
+            return new OpenAiLlmClient.OpenAiResponse(200, """
+                    {
+                      "choices": [
+                        {
+                          "message": {
+                            "role": "assistant",
+                            "content": "Direct answer"
+                          }
+                        }
+                      ]
+                    }
+                    """);
+        };
+
+        RagService ragService = new RagService(null, null) {
+            @Override
+            public String answer(String query, int topK) {
+                return "knowledge";
+            }
+        };
+        OpenAiLlmClient client = new OpenAiLlmClient("test-key", "gpt-4.1-mini", "http://example.com/v1", 10, transport, new ObjectMapper());
+        client.complete(
+                List.of(LlmMessage.user("What is the capital of France?")),
+                new ToolRegistry(List.of(
+                        new KnowledgeBaseTool(ragService),
+                        new WebSearchTool(),
+                        new WikipediaTool()
+                )),
+                new ExecutionContext("What is the capital of France?")
+        );
+
+        assertTrue(requestBody.get().contains("Search the in-memory knowledge base for repo or RAG questions. Not for simple stable facts or basic general knowledge."));
+        assertTrue(requestBody.get().contains("Search the web for current, external, or explicitly requested lookup tasks. Not for simple stable facts."));
+        assertTrue(requestBody.get().contains("Search Wikipedia when the user explicitly asks for Wikipedia or needs a sourced lookup. Not for simple stable facts."));
     }
 }

@@ -13,7 +13,7 @@ public class WebSearchTool extends AbstractTool {
 
     @Override
     public ToolDefinition definition() {
-        return new ToolDefinition(name(), "Demo web search placeholder.");
+        return new ToolDefinition(name(), "Search the web for current, external, or explicitly requested lookup tasks. Not for simple stable facts.");
     }
 
     @Override
