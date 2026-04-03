@@ -33,13 +33,13 @@ This chapter maps the Python tool system into a generic Quarkus tool framework.
 
 - Tools are CDI beans and can be discovered generically.
 - The registry stays generic so new tools can be added without rewriting the executor.
-- Wikipedia, web search, and decorator examples are intentionally lightweight demo ports or placeholders rather than real external integrations.
+- Web search now uses a narrow OpenAI Responses API integration, while Wikipedia remains a lightweight demo placeholder.
 - The internal `ToolRegistry`/`ToolExecutor` path remains the primary tool model.
 - `CompanionMcpTools` exposes only a tiny MCP-facing slice of the existing tool set so chapter 3 can be compared with a server-side protocol seam.
 
 ## Demo vs Production
 
-- Demo: calculator, clock, placeholder web search, and generic function-backed tooling.
+- Demo: calculator, clock, generic function-backed tooling, and the chapter-03 web-search tool backed by OpenAI Responses API.
 - Runtime default: local tool registry, adapter, and decorator flows.
 - Production seam: external search providers and richer tool schema generation.
 - Companion seam: MCP-exposed calculator and clock tools on top of the existing implementations.

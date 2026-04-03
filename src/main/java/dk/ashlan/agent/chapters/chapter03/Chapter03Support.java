@@ -9,6 +9,7 @@ import dk.ashlan.agent.tools.ToolExecutor;
 import dk.ashlan.agent.tools.ToolRegistry;
 import dk.ashlan.agent.tools.WebSearchTool;
 import dk.ashlan.agent.tools.WikipediaTool;
+import dk.ashlan.agent.tools.OpenAiWebSearchService;
 
 import java.util.List;
 import java.util.Map;
@@ -21,8 +22,15 @@ final class Chapter03Support {
         return new ToolRegistry(List.of(
                 new CalculatorTool(),
                 new ClockTool(),
-                new WebSearchTool(),
+                webSearchTool(),
                 new WikipediaTool()
+        ));
+    }
+
+    static WebSearchTool webSearchTool() {
+        return new WebSearchTool(query -> new OpenAiWebSearchService.WebSearchResult(
+                "Chapter 03 web-search demo result for: " + query,
+                List.of(new OpenAiWebSearchService.WebSearchSource("Chapter 03 demo source", "https://example.com/chapter03/web-search"))
         ));
     }
 

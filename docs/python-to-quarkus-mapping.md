@@ -40,7 +40,7 @@ This document maps the Python reference zip from the book to the Quarkus compani
 
 - calculator -> `src/main/java/dk/ashlan/agent/tools/CalculatorTool.java` - Direct port
 - clock -> `src/main/java/dk/ashlan/agent/tools/ClockTool.java` - Direct port
-- Tavily search -> `src/main/java/dk/ashlan/agent/tools/WebSearchTool.java` - Adapted port
+- Tavily search -> `src/main/java/dk/ashlan/agent/tools/WebSearchTool.java` and `src/main/java/dk/ashlan/agent/tools/OpenAiWebSearchService.java` - Adapted port with a real OpenAI-backed lookup seam
 - Wikipedia -> `src/main/java/dk/ashlan/agent/chapters/chapter03/WikipediaToolDemo.java` and later `tools/WikipediaTool.java` placeholder support - Adapted port
 - tool definition -> `src/main/java/dk/ashlan/agent/tools/ToolDefinition.java` - Direct port
 - tool abstraction -> `src/main/java/dk/ashlan/agent/tools/Tool.java` - Direct port

@@ -5,6 +5,7 @@ import dk.ashlan.agent.tools.ToolRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.ashlan.agent.rag.KnowledgeBaseTool;
 import dk.ashlan.agent.rag.RagService;
+import dk.ashlan.agent.tools.OpenAiWebSearchService;
 import dk.ashlan.agent.tools.WebSearchTool;
 import dk.ashlan.agent.tools.WikipediaTool;
 import org.junit.jupiter.api.Test;
@@ -193,14 +194,17 @@ class OpenAiLlmClientTest {
                 List.of(LlmMessage.user("What is the capital of France?")),
                 new ToolRegistry(List.of(
                         new KnowledgeBaseTool(ragService),
-                        new WebSearchTool(),
+                        new WebSearchTool(query -> new OpenAiWebSearchService.WebSearchResult(
+                                "Demo web search for: " + query,
+                                List.of()
+                        )),
                         new WikipediaTool()
                 )),
                 new ExecutionContext("What is the capital of France?")
         );
 
         assertTrue(requestBody.get().contains("Search the in-memory knowledge base for repo or RAG questions. Not for simple stable facts or basic general knowledge."));
-        assertTrue(requestBody.get().contains("Search the web for current, external, or explicitly requested lookup tasks. Not for simple stable facts."));
+        assertTrue(requestBody.get().contains("Search the live web through OpenAI Responses API for current, external, or explicitly requested lookup tasks. Not for simple stable facts or common general knowledge."));
         assertTrue(requestBody.get().contains("Search Wikipedia when the user explicitly asks for Wikipedia or needs a sourced lookup. Not for simple stable facts."));
     }
 }
