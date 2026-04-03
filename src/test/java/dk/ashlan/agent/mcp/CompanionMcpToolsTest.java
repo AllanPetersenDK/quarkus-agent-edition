@@ -15,14 +15,14 @@ class CompanionMcpToolsTest {
     void calculatorDelegatesToTheExistingCalculatorTool() {
         CompanionMcpTools tools = new CompanionMcpTools(new CalculatorTool(), new ClockTool());
 
-        assertEquals("100", tools.calculator("25 * 4"));
+        assertEquals("100", tools.mcpCalculator("25 * 4"));
     }
 
     @Test
     void clockDelegatesToTheExistingClockTool() {
         CompanionMcpTools tools = new CompanionMcpTools(new CalculatorTool(), new ClockTool());
 
-        String clock = tools.clock();
+        String clock = tools.mcpClock();
 
         assertFalse(clock.isBlank());
         assertDoesNotThrow(() -> OffsetDateTime.parse(clock));

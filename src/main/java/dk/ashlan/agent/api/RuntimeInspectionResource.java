@@ -14,11 +14,13 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.health.Readiness;
 
 import java.util.List;
 import java.util.Map;
@@ -33,8 +35,8 @@ public class RuntimeInspectionResource {
     private final MemoryService memoryService;
 
     public RuntimeInspectionResource(
-            AgentReadinessHealthCheck readinessHealthCheck,
-            RuntimeLivenessHealthCheck livenessHealthCheck,
+            @Readiness AgentReadinessHealthCheck readinessHealthCheck,
+            @Liveness RuntimeLivenessHealthCheck livenessHealthCheck,
             SessionManager sessionManager,
             MemoryService memoryService
     ) {

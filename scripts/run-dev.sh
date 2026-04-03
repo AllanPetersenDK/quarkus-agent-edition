@@ -5,7 +5,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
 quarkus_version="3.32.2"
-host="127.0.0.1"
+host="0.0.0.0"
 
 choose_mvn() {
   if command -v mvn >/dev/null 2>&1; then

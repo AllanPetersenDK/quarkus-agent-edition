@@ -68,7 +68,7 @@ See [`docs/companion-seams.md`](docs/companion-seams.md) for the rule that keeps
 mvn quarkus:dev
 ```
 
-The application listens on `http://localhost:8080`.
+The application listens on `http://localhost:8080` and the helper script binds dev mode to `0.0.0.0` so WSL and browser access are both usable.
 
 If your local Maven is older than 3.9, use the helper script instead:
 
@@ -113,6 +113,7 @@ mvn test
 - `GET /admin/evaluations/{caseId}`
 - `POST /api/companion/langchain4j/run`
 - `POST /api/companion/langchain4j/agentic-demo`
+- `POST /api/companion/llm/completions`
 - `POST /code-agent`
 - `POST /multi-agent`
 - `GET /workflow-demo`
