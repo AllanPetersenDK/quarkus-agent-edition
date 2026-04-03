@@ -100,14 +100,22 @@ mvn test
 
 - OpenAPI: `http://localhost:8080/openapi`
 - Swagger UI: `http://localhost:8080/swagger-ui`
-- Health: `http://localhost:8080/q/health`
-- Readiness: `http://localhost:8080/q/health/ready`
-- Liveness: `http://localhost:8080/q/health/live`
 - `POST /api/agent/run`
 - `GET /api/agent/tools`
+- `GET /api/runtime/health`
+- `GET /api/runtime/health/ready`
+- `GET /api/runtime/health/live`
+- `GET /api/runtime/sessions/{sessionId}`
+- `GET /api/runtime/sessions/{sessionId}/memory`
+- `POST /api/rag/ingest`
+- `GET /api/rag/query`
+- `POST /admin/evaluations`
+- `GET /admin/evaluations/{caseId}`
+- `POST /api/companion/langchain4j/run`
+- `POST /api/companion/langchain4j/agentic-demo`
 - MCP server: `http://localhost:8080/mcp`
 
-See [`docs/api.md`](docs/api.md) for request/response examples, the Swagger coverage boundary, Quarkus OpenAPI properties, and the note on deferred session and memory endpoints.
+See [`docs/api.md`](docs/api.md) for the Swagger coverage boundary and the exact split between REST-exposed outer seams and internal chapter mechanics.
 See [`docs/fault-tolerance.md`](docs/fault-tolerance.md) for the current resilience policy on provider calls.
 See [`docs/persistence.md`](docs/persistence.md) for the first H2-backed persistence layer.
 See [`docs/security.md`](docs/security.md) for the current security stance on the public and admin seams.
@@ -180,6 +188,30 @@ Demo and fake components are intentionally marked and include:
 - Micrometer timers/counters are enabled for agent runs and tool execution.
 - SmallRye Fault Tolerance backs the OpenAI retry policy, and the provider call is wrapped in a local timeout boundary.
 
+## Swagger Coverage
+
+Swagger documents the outer runtime and companion seams, not the internal learning mechanics.
+
+Covered in Swagger:
+
+- manual agent runs
+- tool discovery
+- runtime health, readiness, and liveness
+- RAG query and document ingest
+- session and memory inspection
+- evaluation run and trace lookup
+- the selected LangChain4j companion run and agentic demo
+
+Still internal:
+
+- `AgentOrchestrator` loop internals
+- `LlmClientSelector`
+- prompt and request builders
+- manual `ToolRegistry` / `ToolExecutor` wiring
+- `JdbcVectorStore` implementation details
+- chapter helper classes that are only there to teach the learning flow
+- the MCP server at `/mcp`
+
 ## Production Hardening Ideas
 
 - Real LLM provider integration
@@ -197,7 +229,7 @@ Demo and fake components are intentionally marked and include:
 - Chapter demos still use in-memory RAG and memory helpers where that keeps the book mapping easier to follow.
 - H2 is the first persistence step, not the final production datastore.
 - Retrieval still uses simple cosine similarity over persisted rows rather than a dedicated vector index.
-- `code-agent`, `multi-agent`, and `admin/evaluations` are production seams and are not protected by auth yet.
+- `code-agent`, `multi-agent`, `admin/evaluations`, runtime inspection, and RAG seams are production-style endpoints and are not protected by auth yet.
 - Code generation and command execution are intentionally conservative placeholders.
 - The multi-agent router is deterministic and intentionally simple.
 

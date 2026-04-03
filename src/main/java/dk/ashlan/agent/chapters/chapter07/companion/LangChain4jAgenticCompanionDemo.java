@@ -13,7 +13,7 @@ public class LangChain4jAgenticCompanionDemo {
         this(workflows.isResolvable() ? workflows.get() : null);
     }
 
-    LangChain4jAgenticCompanionDemo(CompanionPlanWorkflow workflow) {
+    public LangChain4jAgenticCompanionDemo(CompanionPlanWorkflow workflow) {
         this.workflow = workflow;
     }
 

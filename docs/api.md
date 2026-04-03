@@ -1,7 +1,7 @@
 # API
 
-This repository now exposes a small Quarkus REST surface backed by the existing agent runtime and tool registry.
-Swagger documents only the HTTP-exposed companion/runtime seams. Manual chapter demos, planning/reflection internals, memory/RAG internals, and other chapter classes remain implemented in Java and are not fully covered unless a specific REST endpoint exposes them.
+This repository exposes a Swagger-visible surface for selected outer runtime and companion seams.
+It does not turn the from-scratch orchestration internals into HTTP endpoints.
 
 ## OpenAPI And Swagger UI
 
@@ -17,9 +17,42 @@ Configured properties:
 - `quarkus.swagger-ui.path=/swagger-ui`
 - `quarkus.smallrye-openapi.info-title=Quarkus Agent Edition API`
 - `quarkus.smallrye-openapi.info-version=0.1.0`
-- `quarkus.smallrye-openapi.info-description=OpenAPI for quarkus-agent-edition`
+- `quarkus.smallrye-openapi.info-description=Quarkus companion edition of Build an AI Agent from Scratch. Swagger documents the HTTP-exposed outer seams: manual agent runs, tool discovery, runtime health, RAG query and ingest, session and memory inspection, evaluation run and trace lookup, and the selected LangChain4j companion demos. Manual orchestration internals, selector logic, prompt builders, and low-level storage details remain Java-only unless a specific endpoint exposes them.`
 
-## Agent Endpoint
+## Swagger Coverage
+
+Swagger now documents the outer runtime and companion seams that are practical to exercise over HTTP.
+
+Covered in Swagger:
+
+- `POST /api/agent/run` - manual runtime agent loop
+- `GET /api/agent/tools` - runtime tool discovery
+- `GET /api/runtime/health` - combined readiness and liveness view
+- `GET /api/runtime/health/ready` - readiness snapshot
+- `GET /api/runtime/health/live` - liveness snapshot
+- `GET /api/runtime/sessions/{sessionId}` - session inspection
+- `GET /api/runtime/sessions/{sessionId}/memory` - memory inspection
+- `POST /api/rag/ingest` - document ingest into the RAG stack
+- `GET /api/rag/query` - RAG query and answer
+- `POST /admin/evaluations` - evaluation run
+- `GET /admin/evaluations/{caseId}` - evaluation trace lookup
+- `POST /api/companion/langchain4j/run` - LangChain4j companion run
+- `POST /api/companion/langchain4j/agentic-demo` - LangChain4j agentic companion demo
+
+Not covered in Swagger:
+
+- `AgentOrchestrator` loop internals
+- `LlmClientSelector`
+- request/prompt builders
+- manual `ToolRegistry` and `ToolExecutor` wiring
+- `JdbcVectorStore` implementation details
+- internal chapter helper classes whose value is teaching flow rather than external invocation
+- the built-in Quarkus health endpoints under `/q/health`
+- the MCP server at `/mcp`
+
+## Endpoint Notes
+
+### Manual Runtime
 
 `POST /api/agent/run`
 
@@ -56,56 +89,66 @@ Field notes:
 - `stopReason` maps from the existing `StopReason` enum.
 - `iterations` and `trace` map directly from the existing agent runtime result.
 
-## Tools Endpoint
+### Tool Discovery
 
 `GET /api/agent/tools`
 
 Utility/discovery endpoint: this lists the runtime tool registry and does not execute tools.
 
-## Companion And Internal Demo Endpoints
+### Runtime Inspection
 
-The following HTTP endpoints are also documented in Swagger as comparison or internal chapter seams:
+`GET /api/runtime/health`
 
-- `POST /code-agent` - internal chapter demo for the deterministic code workflow
-- `POST /multi-agent` - internal chapter demo for the coordinator/reviewer flow
-- `POST /admin/evaluations` - internal evaluation harness for chapter ten-style runs
-- `GET /workflow-demo` - internal deterministic workflow demo
+Read-only runtime inspection seam that shows readiness and liveness together.
 
-These endpoints are useful for comparison and chapter walkthroughs, but they do not cover the full chapter implementation surface. Chapter demo classes and the manual orchestration internals remain outside Swagger unless explicitly exposed over HTTP.
+`GET /api/runtime/sessions/{sessionId}`
 
-Response body:
+Read-only session inspection seam that exposes the stored conversation messages.
 
-```json
-[
-  {
-    "name": "calculator",
-    "description": "Evaluate a simple arithmetic expression."
-  },
-  {
-    "name": "clock",
-    "description": "Return the current time in ISO-8601 format."
-  }
-]
-```
+`GET /api/runtime/sessions/{sessionId}/memory`
 
-The tool list is sourced from the existing `ToolRegistry` and uses each tool's `ToolDefinition` metadata.
+Read-only memory inspection seam that returns the relevant memories for a session and query.
+
+### RAG
+
+`POST /api/rag/ingest`
+
+Swagger-visible companion seam for document ingest into the repo's RAG stack.
+
+`GET /api/rag/query`
+
+Swagger-visible companion seam for querying the stored knowledge base.
+
+### Evaluation
+
+`POST /admin/evaluations`
+
+Internal admin seam that runs chapter evaluation cases and returns results plus metrics.
+
+`GET /admin/evaluations/{caseId}`
+
+Read-only trace lookup for the most recent stored evaluation run with the given case id.
+
+### LangChain4j Companion
+
+`POST /api/companion/langchain4j/run`
+
+Framework-backed companion comparison seam that answers a single prompt.
+
+`POST /api/companion/langchain4j/agentic-demo`
+
+Framework-backed agentic comparison seam that runs the chapter 07 planning workflow.
 
 ## Design Notes
 
 - The public API is intentionally thin.
-- The REST layer delegates directly to `AgentOrchestrator` and `ToolRegistry`.
+- The REST layer delegates to the existing runtime, RAG, memory, health, and evaluation beans.
 - The implementation keeps the existing runtime behavior intact rather than introducing a second agent model.
-- A separate MCP server seam is exposed at `/mcp` for calculator and clock only, so the internal tool model remains the primary chapter 3 path.
-
-## Deferred
-
-Session and memory endpoints are intentionally deferred for now.
-
-The current session/memory layer is useful internally, but it is not yet a stable public API surface, so exposing it now would create a half-finished contract.
+- Internal chapter demos remain Java classes unless a specific endpoint exposes them as a comparison seam.
 
 ## Security Stance
 
 - `POST /api/agent/run` is the main companion API and is safe for local/private use as-is.
 - `GET /api/agent/tools` is harmless metadata and can remain open in the companion app.
-- `POST /code-agent`, `POST /multi-agent`, and `POST /admin/evaluations` are production seams and should be treated as internal-only until an auth layer is added.
+- `POST /api/rag/ingest`, `GET /api/rag/query`, `POST /admin/evaluations`, and the runtime inspection endpoints should be treated as companion/admin seams until a fuller auth layer is added.
 - If those seams need external exposure, add Quarkus OIDC and role checks instead of ad hoc request-time logic.
