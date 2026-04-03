@@ -17,12 +17,12 @@ public class CompanionMcpTools {
     }
 
     @Tool(description = "Evaluate a small arithmetic expression using the existing calculator tool.")
-    public String calculator(@ToolArg(description = "Arithmetic expression to evaluate.") String expression) {
+    public String mcpCalculator(@ToolArg(description = "Arithmetic expression to evaluate.") String expression) {
         return calculatorTool.calculate(expression);
     }
 
     @Tool(description = "Return the current time in ISO-8601 format using the existing clock tool.")
-    public String clock() {
+    public String mcpClock() {
         return clockTool.getTime();
     }
 }
