@@ -22,7 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-@SuppressWarnings("deprecation")
+@SuppressWarnings({"deprecation", "removal"})
 public final class StandaloneSmallRyeSpi implements Spi {
     private static final CircuitBreakerMaintenance CIRCUIT_BREAKER_MAINTENANCE = new BasicCircuitBreakerMaintenanceImpl();
     private static final ExecutorService ASYNC_EXECUTOR = Executors.newCachedThreadPool(runnable -> {

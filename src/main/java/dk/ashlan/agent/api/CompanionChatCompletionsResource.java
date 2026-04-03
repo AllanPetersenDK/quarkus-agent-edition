@@ -77,7 +77,6 @@ public class CompanionChatCompletionsResource {
             )
             String model,
             @NotEmpty
-            @Valid
             @Schema(
                     description = "Unified chat messages sent to the companion/debug seam.",
                     required = true
