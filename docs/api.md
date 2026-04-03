@@ -25,15 +25,15 @@ Swagger now documents the outer runtime and companion seams that are practical t
 
 Covered in Swagger:
 
-- `POST /api/agent/run` - manual runtime agent loop
-- `GET /api/agent/tools` - runtime tool discovery
+- `POST /api/agent/run` - chapter-4 runtime/basic agent seam
+- `GET /api/agent/tools` - chapter 3/4 boundary seam for runtime tool discovery
 - `GET /api/runtime/health` - combined readiness and liveness view
 - `GET /api/runtime/health/ready` - readiness snapshot
 - `GET /api/runtime/health/live` - liveness snapshot
-- `GET /api/runtime/sessions/{sessionId}` - session inspection
-- `GET /api/runtime/sessions/{sessionId}/memory` - memory inspection
-- `POST /api/rag/ingest` - document ingest into the RAG stack
-- `GET /api/rag/query` - RAG query and answer
+- `GET /api/runtime/sessions/{sessionId}` - session inspection, more naturally chapter 6-oriented than chapter 4-oriented
+- `GET /api/runtime/sessions/{sessionId}/memory` - memory inspection, more naturally chapter 6-oriented than chapter 4-oriented
+- `POST /api/rag/ingest` - chapter 5-oriented document ingest into the RAG stack
+- `GET /api/rag/query` - chapter 5-oriented RAG query and answer
 - `POST /admin/evaluations` - evaluation run
 - `GET /admin/evaluations/{caseId}` - evaluation trace lookup
 - `POST /api/companion/langchain4j/run` - LangChain4j companion run
