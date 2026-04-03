@@ -114,6 +114,7 @@ mvn test
 - `POST /api/companion/langchain4j/run`
 - `POST /api/companion/langchain4j/agentic-demo`
 - `POST /api/companion/llm/completions`
+- `POST /api/companion/llm/async-batch`
 - `POST /code-agent`
 - `POST /multi-agent`
 - `GET /workflow-demo`

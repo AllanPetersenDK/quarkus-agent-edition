@@ -34,6 +34,7 @@ This chapter maps the Python `chapter_02_llm/` scripts and the shared `scratch_a
 - The manual OpenAI seam stays the primary provider integration path.
 - The LangChain4j companion seam exists alongside it as a framework-backed comparison path, not a replacement.
 - The LangChain4j tool-calling companion seam is a narrow comparison path that reuses the repo's calculator and clock tools through a thin adapter.
+- The direct chat companion seam now has a tiny async batch variant that fans out multiple prompts concurrently with `CompletableFuture` and gathers the answers in input order.
 
 ## Demo vs Production
 

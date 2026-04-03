@@ -23,9 +23,11 @@ import java.util.List;
 @Tag(name = "Chapter 02 Companion Debug", description = "Swagger-visible chapter-02 companion/debug seam for direct chat-completions-style requests.")
 public class CompanionChatCompletionsResource {
     private final CompanionChatCompletionsService service;
+    private final CompanionAsyncBatchService asyncBatchService;
 
-    public CompanionChatCompletionsResource(CompanionChatCompletionsService service) {
+    public CompanionChatCompletionsResource(CompanionChatCompletionsService service, CompanionAsyncBatchService asyncBatchService) {
         this.service = service;
+        this.asyncBatchService = asyncBatchService;
     }
 
     @POST
@@ -46,6 +48,26 @@ public class CompanionChatCompletionsResource {
     )
     public CompanionChatCompletionResponse complete(@Valid CompanionChatCompletionRequest request) {
         return service.complete(request);
+    }
+
+    @POST
+    @Path("/async-batch")
+    @Operation(
+            summary = "Run a concurrent async batch of direct prompts",
+            description = "Book chapter: 2. Companion async batch demo that mirrors the chapter-02 concurrent LLM-call example by sending multiple direct prompts through server-side CompletableFuture fan-out. This is a companion/debug seam, not the main manual agent runtime API."
+    )
+    @RequestBody(
+            description = "Chapter-02 async batch companion payload for concurrent direct prompt handling.",
+            required = true,
+            content = @Content(schema = @Schema(implementation = CompanionAsyncBatchRequest.class))
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Ordered batch results collected from the concurrent companion calls.",
+            content = @Content(schema = @Schema(implementation = CompanionAsyncBatchResponse.class))
+    )
+    public CompanionAsyncBatchResponse asyncBatch(@Valid CompanionAsyncBatchRequest request) {
+        return asyncBatchService.asyncBatch(request);
     }
 
     public record CompanionChatCompletionRequest(
@@ -104,6 +126,48 @@ public class CompanionChatCompletionsResource {
                 String role,
                 @Schema(description = "Assistant message content.")
                 String content
+        ) {
+        }
+    }
+
+    public record CompanionAsyncBatchRequest(
+            @Schema(
+                    description = "Requested model label. Defaults to the repo's configured OpenAI model when omitted.",
+                    example = "gpt-4.1-mini"
+            )
+            String model,
+            @NotEmpty
+            @Schema(
+                    description = "Prompts to send concurrently through the direct-chat companion seam.",
+                    required = true
+            )
+            List<@NotBlank String> prompts,
+            @Schema(
+                    description = "Optional system prompt shared by each direct request.",
+                    example = "You are a helpful assistant."
+            )
+            String systemPrompt,
+            @Schema(
+                    description = "Optional generation temperature. Accepted for parity with unified chat-completions requests, but this companion seam does not promise per-request provider tuning.",
+                    example = "0.0"
+            )
+            Double temperature
+    ) {
+    }
+
+    public record CompanionAsyncBatchResponse(
+            @Schema(description = "Requested or defaulted model label echoed back by the companion seam.")
+            String model,
+            @Schema(description = "Ordered results collected from the concurrent batch execution.")
+            List<BatchResult> results,
+            @Schema(description = "Indicator that makes the companion async batch seam explicit in Swagger responses.")
+            String providerPath
+    ) {
+        public record BatchResult(
+                @Schema(description = "Prompt submitted for this batch item.")
+                String prompt,
+                @Schema(description = "Assistant answer returned for the prompt.")
+                String answer
         ) {
         }
     }
