@@ -38,6 +38,14 @@ if [[ -n "${JAVA_HOME:-}" ]]; then
   export PATH="$JAVA_HOME/bin:$PATH"
 fi
 
+if [[ -f "$repo_root/.env" ]]; then
+  # Load local workspace secrets without committing them.
+  set -a
+  # shellcheck disable=SC1090
+  source "$repo_root/.env"
+  set +a
+fi
+
 mvn_bin="$(choose_mvn)"
 repo_local="${M2_REPO:-$HOME/.m2/repository}"
 

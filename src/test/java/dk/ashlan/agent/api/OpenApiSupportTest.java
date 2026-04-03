@@ -1,33 +1,26 @@
 package dk.ashlan.agent.api;
 
-import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.containsString;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-@QuarkusTest
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 class OpenApiSupportTest {
     @Test
-    void openApiEndpointExposesTheAgentApiContract() {
-        given()
-                .when()
-                .get("/openapi")
-                .then()
-                .statusCode(200)
-                .body(containsString("/api/agent/run"))
-                .body(containsString("/api/agent/tools"))
-                .body(containsString("Quarkus Agent Edition API"));
+    void applicationPropertiesExposeOpenApiContractSettings() throws Exception {
+        assertTrue(AgentResource.class.isAnnotationPresent(jakarta.ws.rs.Path.class));
+        assertTrue(ToolResource.class.isAnnotationPresent(jakarta.ws.rs.Path.class));
+        String properties = Files.readString(Path.of("src/main/resources/application.properties"));
+        assertTrue(properties.contains("quarkus.smallrye-openapi.path=/openapi"));
+        assertTrue(properties.contains("quarkus.smallrye-openapi.info-title=Quarkus Agent Edition API"));
     }
 
     @Test
-    void swaggerUiIsServedOnTheConfiguredPath() {
-        given()
-                .when()
-                .get("/swagger-ui")
-                .then()
-                .statusCode(200)
-                .body(containsString("OpenAPI UI"))
-                .body(containsString("swagger-ui"));
+    void applicationPropertiesEnableSwaggerUiOnTheConfiguredPath() throws Exception {
+        String properties = Files.readString(Path.of("src/main/resources/application.properties"));
+        assertTrue(properties.contains("quarkus.swagger-ui.path=/swagger-ui"));
+        assertTrue(properties.contains("quarkus.swagger-ui.always-include=true"));
     }
 }

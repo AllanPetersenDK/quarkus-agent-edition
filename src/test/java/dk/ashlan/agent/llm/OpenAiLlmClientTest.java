@@ -123,4 +123,39 @@ class OpenAiLlmClientTest {
         assertTrue(requestBody.get().contains("\"tool_call_id\":\"call-123\""));
         assertTrue(requestBody.get().contains("\"content\":\"100\""));
     }
+
+    @Test
+    void completeSerializesAssistantToolCallsBeforeToolResponses() throws Exception {
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        OpenAiLlmClient.OpenAiTransport transport = (uri, apiKey, payload, timeout) -> {
+            requestBody.set(payload);
+            return new OpenAiLlmClient.OpenAiResponse(200, """
+                    {
+                      "choices": [
+                        {
+                          "message": {
+                            "role": "assistant",
+                            "content": "Done"
+                          }
+                        }
+                      ]
+                    }
+                    """);
+        };
+
+        OpenAiLlmClient client = new OpenAiLlmClient("test-key", "gpt-4.1-mini", "http://example.com/v1", 10, transport, new ObjectMapper());
+        client.complete(
+                List.of(
+                        LlmMessage.user("What is 25 * 4?"),
+                        LlmMessage.assistant(List.of(new LlmToolCall("calculator", java.util.Map.of("expression", "25 * 4"), "call-123"))),
+                        LlmMessage.tool("calculator", "call-123", "100")
+                ),
+                new ToolRegistry(List.of()),
+                new ExecutionContext("What is 25 * 4?")
+        );
+
+        assertTrue(requestBody.get().contains("\"role\":\"assistant\""));
+        assertTrue(requestBody.get().contains("\"tool_calls\""));
+        assertTrue(requestBody.get().contains("\"tool_call_id\":\"call-123\""));
+    }
 }

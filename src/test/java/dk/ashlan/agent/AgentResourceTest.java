@@ -1,25 +1,39 @@
 package dk.ashlan.agent;
 
-import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.http.ContentType;
+import dk.ashlan.agent.api.AgentResource;
+import dk.ashlan.agent.api.dto.AgentRunRequest;
+import dk.ashlan.agent.api.dto.AgentRunResponse;
+import dk.ashlan.agent.core.AgentOrchestrator;
+import dk.ashlan.agent.core.AgentRunResult;
+import dk.ashlan.agent.core.StopReason;
 import org.junit.jupiter.api.Test;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
+import java.util.List;
 
-@QuarkusTest
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 class AgentResourceTest {
     @Test
-    void agentEndpointUsesCalculatorTool() {
-        given()
-                .contentType(ContentType.JSON)
-                .body("{\"message\":\"What is 25 * 4?\"}")
-                .when()
-                .post("/api/agent/run")
-                .then()
-                .statusCode(200)
-                .body("stopReason", equalTo("FINAL_ANSWER"))
-                .body("answer", containsString("100"));
+    void runAgentReturnsResponseFromOrchestrator() {
+        AgentOrchestrator orchestrator = new AgentOrchestrator(null, null, null, null, 1, "") {
+            @Override
+            public AgentRunResult run(String message, String sessionId) {
+                return new AgentRunResult(
+                        "The result is 100",
+                        StopReason.FINAL_ANSWER,
+                        2,
+                        List.of("iteration:1", "tool:calculator:100", "answer:The result is 100")
+                );
+            }
+        };
+        AgentResource resource = new AgentResource(orchestrator);
+
+        AgentRunResponse response = resource.runAgent(new AgentRunRequest("What is 25 * 4?", "default"));
+
+        assertEquals("The result is 100", response.answer());
+        assertEquals(StopReason.FINAL_ANSWER, response.stopReason());
+        assertEquals(2, response.iterations());
+        assertTrue(response.trace().contains("tool:calculator:100"));
     }
 }

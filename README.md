@@ -146,11 +146,14 @@ demos still use explicit in-memory stores so the learning flow stays visible.
 Quarkus CDI resolves the JDBC-backed persistence beans in runtime; the in-memory stores are the
 explicit default/manual paths.
 
-To enable it locally, set an API key via config or environment variable:
+To enable the real OpenAI integrations locally, set the standard environment variable:
 
 ```bash
 export OPENAI_API_KEY=your-key-here
 ```
+
+If you prefer config instead, set `openai.api-key` directly. The LangChain4j companion seam will also
+fall back to `QUARKUS_LANGCHAIN4J_OPENAI_API_KEY` for older setups.
 
 Demo and fake components are intentionally marked and include:
 

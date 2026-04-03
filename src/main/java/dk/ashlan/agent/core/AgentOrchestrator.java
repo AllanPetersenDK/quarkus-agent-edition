@@ -77,6 +77,7 @@ public class AgentOrchestrator implements AgentRunner {
             List<dk.ashlan.agent.llm.LlmMessage> messages = requestBuilder.build(context);
             LlmCompletion completion = llmClient.complete(messages, toolRegistry, context);
             if (!completion.toolCalls().isEmpty()) {
+                context.addAssistantToolCalls(completion.toolCalls());
                 for (LlmToolCall toolCall : completion.toolCalls()) {
                     JsonToolResult result = toolExecutor.execute(toolCall.toolName(), toolCall.arguments());
                     if (toolCall.callId() == null || toolCall.callId().isBlank()) {

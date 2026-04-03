@@ -1,26 +1,40 @@
 package dk.ashlan.agent.api;
 
-import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.http.ContentType;
+import dk.ashlan.agent.code.CodeAgentOrchestrator;
+import dk.ashlan.agent.code.CodeGenerationTool;
+import dk.ashlan.agent.code.CommandResult;
+import dk.ashlan.agent.code.FileReadTool;
+import dk.ashlan.agent.code.FileWriteTool;
+import dk.ashlan.agent.code.TestExecutionTool;
+import dk.ashlan.agent.code.WorkspaceService;
 import org.junit.jupiter.api.Test;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
 
-@QuarkusTest
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 class CodeAgentResourceTest {
     @Test
-    void codeAgentEndpointReturnsGeneratedWorkspaceOutput() {
-        given()
-                .contentType(ContentType.JSON)
-                .body("{\"message\":\"Generate a response file\"}")
-                .when()
-                .post("/code-agent")
-                .then()
-                .statusCode(200)
-                .body("testExitCode", equalTo(0))
-                .body("response", containsString("Workspace:"))
-                .body("testOutput", containsString("placeholder"));
+    void runReturnsGeneratedWorkspaceOutputAndTestStatus() throws Exception {
+        Path workspaceRoot = Files.createTempDirectory("code-agent-test");
+        WorkspaceService workspaceService = new WorkspaceService(workspaceRoot.toString());
+        CodeAgentOrchestrator orchestrator = new CodeAgentOrchestrator(
+                workspaceService,
+                new FileReadTool(workspaceService),
+                new FileWriteTool(workspaceService),
+                new CodeGenerationTool(),
+                new TestExecutionTool()
+        );
+        CodeAgentResource resource = new CodeAgentResource(orchestrator);
+
+        Map<String, Object> response = resource.run(Map.of("message", "Generate a response file"));
+        CommandResult testResult = orchestrator.runTests();
+
+        assertEquals(0, testResult.exitCode());
+        assertTrue(response.get("response").toString().contains("Workspace:"));
+        assertTrue(response.get("testOutput").toString().contains("placeholder"));
     }
 }

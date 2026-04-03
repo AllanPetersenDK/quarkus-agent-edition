@@ -1,24 +1,22 @@
 package dk.ashlan.agent.api;
 
-import io.quarkus.test.junit.QuarkusTest;
+import dk.ashlan.agent.tools.CalculatorTool;
+import dk.ashlan.agent.tools.ToolRegistry;
 import org.junit.jupiter.api.Test;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import java.util.List;
 
-@QuarkusTest
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 class ToolResourceTest {
     @Test
-    void toolEndpointListsRegisteredTools() {
-        given()
-                .when()
-                .get("/api/agent/tools")
-                .then()
-                .statusCode(200)
-                .body("size()", greaterThanOrEqualTo(1))
-                .body("name", hasItem("calculator"))
-                .body("find { it.name == 'calculator' }.description", equalTo("Evaluate a simple arithmetic expression."));
+    void listToolsReturnsRegisteredToolDefinitions() {
+        ToolResource resource = new ToolResource(new ToolRegistry(List.of(new CalculatorTool())));
+
+        var tools = resource.listTools();
+
+        assertEquals(1, tools.size());
+        assertEquals("calculator", tools.get(0).name());
+        assertEquals("Evaluate a simple arithmetic expression.", tools.get(0).description());
     }
 }

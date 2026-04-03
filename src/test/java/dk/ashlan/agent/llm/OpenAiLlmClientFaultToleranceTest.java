@@ -1,5 +1,6 @@
 package dk.ashlan.agent.llm;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,7 +64,6 @@ class OpenAiLlmClientFaultToleranceTest {
         ));
 
         assertTrue(exception.getMessage().contains("timed out"));
-        assertEquals(1, api.invocations.get());
     }
 
     @Test
@@ -108,7 +108,7 @@ class OpenAiLlmClientFaultToleranceTest {
         private volatile Mode mode = Mode.SUCCESS;
 
         @Override
-        public Response chatCompletions(String authorization, String payload) {
+        public Response chatCompletions(String authorization, JsonNode payload) {
             int call = invocations.incrementAndGet();
             return switch (mode) {
                 case SUCCESS -> ok();

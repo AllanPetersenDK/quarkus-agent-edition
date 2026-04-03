@@ -24,6 +24,9 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -108,10 +111,33 @@ public class OpenAiLlmClient implements BaseLlmClient {
         for (LlmMessage message : messages) {
             ObjectNode node = messageArray.addObject();
             node.put("role", normalizeRole(message.role()));
+            if ("assistant".equals(message.role()) && message.toolCalls() != null && !message.toolCalls().isEmpty()) {
+                ArrayNode toolCallsArray = node.putArray("tool_calls");
+                for (LlmToolCall toolCall : message.toolCalls()) {
+                    ObjectNode toolCallNode = toolCallsArray.addObject();
+                    if (toolCall.callId() != null && !toolCall.callId().isBlank()) {
+                        toolCallNode.put("id", toolCall.callId());
+                    }
+                    toolCallNode.put("type", "function");
+                    ObjectNode function = toolCallNode.putObject("function");
+                    function.put("name", toolCall.toolName());
+                    function.put("arguments", objectMapper.writeValueAsString(toolCall.arguments() == null ? Map.of() : toolCall.arguments()));
+                }
+                if (message.content() == null) {
+                    node.putNull("content");
+                } else {
+                    node.put("content", message.content());
+                }
+                continue;
+            }
             if ("tool".equals(message.role()) && message.toolCallId() != null && !message.toolCallId().isBlank()) {
                 node.put("tool_call_id", message.toolCallId());
             }
-            node.put("content", message.content() == null ? "" : message.content());
+            if (message.content() == null) {
+                node.putNull("content");
+            } else {
+                node.put("content", message.content());
+            }
         }
 
         if (toolRegistry != null && !toolRegistry.tools().isEmpty()) {
@@ -248,27 +274,34 @@ public class OpenAiLlmClient implements BaseLlmClient {
     @ApplicationScoped
     static final class DefaultOpenAiTransport implements OpenAiTransport {
         private final OpenAiApi api;
+        private final HttpClient httpClient;
+        private final URI baseUri;
 
         @Inject
         DefaultOpenAiTransport(Config config) {
             String baseUrl = config.getOptionalValue("openai.base-url", String.class).orElse("https://api.openai.com/v1");
             int timeoutSeconds = config.getOptionalValue("openai.timeout-seconds", Integer.class).orElse(30);
-            this.api = buildApi(baseUrl, timeoutSeconds);
+            this.api = null;
+            this.httpClient = buildHttpClient(timeoutSeconds);
+            this.baseUri = URI.create(normalizeBaseUrl(baseUrl));
         }
 
         DefaultOpenAiTransport(OpenAiApi api) {
             this.api = api;
+            this.httpClient = null;
+            this.baseUri = URI.create("https://api.openai.com/v1");
         }
 
         DefaultOpenAiTransport(String baseUrl, int timeoutSeconds) {
-            this.api = buildApi(baseUrl, timeoutSeconds);
+            this.api = null;
+            this.httpClient = buildHttpClient(timeoutSeconds);
+            this.baseUri = URI.create(normalizeBaseUrl(baseUrl));
         }
 
-        private OpenAiApi buildApi(String baseUrl, int timeoutSeconds) {
-            return RestClientBuilder.newBuilder()
-                    .baseUri(URI.create(normalizeBaseUrl(baseUrl)))
-                    .connectTimeout(Math.max(5, timeoutSeconds), java.util.concurrent.TimeUnit.SECONDS)
-                    .build(OpenAiApi.class);
+        private HttpClient buildHttpClient(int timeoutSeconds) {
+            return HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(Math.max(5, timeoutSeconds)))
+                    .build();
         }
 
         @Override
@@ -285,7 +318,7 @@ public class OpenAiLlmClient implements BaseLlmClient {
                     .done()
                     .build();
 
-            Future<OpenAiResponse> future = TIMEOUT_EXECUTOR.submit((Callable<OpenAiResponse>) () -> guard.call(() -> postOnce(apiKey, payload), OpenAiResponse.class));
+            Future<OpenAiResponse> future = TIMEOUT_EXECUTOR.submit((Callable<OpenAiResponse>) () -> guard.call(() -> postOnce(apiKey, payload, effectiveTimeout), OpenAiResponse.class));
             try {
                 return future.get(Math.max(1, effectiveTimeout.toMillis()), TimeUnit.MILLISECONDS);
             } catch (java.util.concurrent.TimeoutException exception) {
@@ -309,25 +342,57 @@ public class OpenAiLlmClient implements BaseLlmClient {
             }
         }
 
-        private OpenAiResponse postOnce(String apiKey, String payload) throws IOException {
-            jakarta.ws.rs.core.Response response = api.chatCompletions("Bearer " + apiKey, payload);
-            try {
-                int status = response.getStatus();
-                String body = response.readEntity(String.class);
-                if (status < 200 || status >= 300) {
-                    if (status == 429 || status >= 500) {
-                        throw new OpenAiTransientException(
+        private OpenAiResponse postOnce(String apiKey, String payload, Duration effectiveTimeout) throws IOException {
+            if (api != null) {
+                JsonNode requestBody = new ObjectMapper().readTree(payload);
+                jakarta.ws.rs.core.Response response = api.chatCompletions("Bearer " + apiKey, requestBody);
+                try {
+                    int status = response.getStatus();
+                    String body = response.readEntity(String.class);
+                    if (status < 200 || status >= 300) {
+                        if (status == 429 || status >= 500) {
+                            throw new OpenAiTransientException(
+                                    "OpenAI request failed with status " + status + ": " + body
+                            );
+                        }
+                        throw new OpenAiPermanentException(
                                 "OpenAI request failed with status " + status + ": " + body
                         );
                     }
-                    throw new OpenAiPermanentException(
+                    return new OpenAiResponse(status, body);
+                } finally {
+                    response.close();
+                }
+            }
+
+            HttpRequest request = HttpRequest.newBuilder(URI.create(baseUri.toString() + "/chat/completions"))
+                    .timeout(effectiveTimeout)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", MediaType.APPLICATION_JSON)
+                    .header("Accept", MediaType.APPLICATION_JSON)
+                    .POST(HttpRequest.BodyPublishers.ofString(payload))
+                    .build();
+            HttpResponse<String> response;
+            try {
+                response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new OpenAiTransientException("OpenAI request was interrupted", exception);
+            }
+
+            int status = response.statusCode();
+            String body = response.body();
+            if (status < 200 || status >= 300) {
+                if (status == 429 || status >= 500) {
+                    throw new OpenAiTransientException(
                             "OpenAI request failed with status " + status + ": " + body
                     );
                 }
-                return new OpenAiResponse(status, body);
-            } finally {
-                response.close();
+                throw new OpenAiPermanentException(
+                        "OpenAI request failed with status " + status + ": " + body
+                );
             }
+            return new OpenAiResponse(status, body);
         }
     }
 
@@ -338,7 +403,7 @@ public class OpenAiLlmClient implements BaseLlmClient {
     interface OpenAiApi {
         @POST
         @Path("/chat/completions")
-        jakarta.ws.rs.core.Response chatCompletions(@HeaderParam("Authorization") String authorization, String payload);
+        jakarta.ws.rs.core.Response chatCompletions(@HeaderParam("Authorization") String authorization, JsonNode payload);
     }
 
     static final class OpenAiTransientException extends RuntimeException {

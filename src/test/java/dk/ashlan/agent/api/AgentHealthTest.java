@@ -1,23 +1,34 @@
 package dk.ashlan.agent.api;
 
-import io.quarkus.test.junit.QuarkusTest;
+import dk.ashlan.agent.core.AgentOrchestrator;
+import dk.ashlan.agent.health.AgentReadinessHealthCheck;
+import dk.ashlan.agent.tools.CalculatorTool;
+import dk.ashlan.agent.tools.ToolRegistry;
+import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.junit.jupiter.api.Test;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import java.util.List;
 
-@QuarkusTest
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 class AgentHealthTest {
     @Test
-    void readinessReportsTheAgentRuntimeAsUp() {
-        given()
-                .when()
-                .get("/q/health/ready")
-                .then()
-                .statusCode(200)
-                .body("status", equalTo("UP"))
-                .body("checks.find { it.name == 'agent-runtime' }.status", equalTo("UP"))
-                .body("checks.find { it.name == 'agent-runtime' }.data.toolCount", greaterThanOrEqualTo(1));
+    void readinessReportsRegisteredToolsAsUp() {
+        AgentOrchestrator orchestrator = new AgentOrchestrator(null, null, null, null, 1, "") {
+        };
+        AgentReadinessHealthCheck check = new AgentReadinessHealthCheck(
+                orchestrator,
+                new ToolRegistry(List.of(new CalculatorTool()))
+        );
+
+        HealthCheckResponse response = check.call();
+
+        assertEquals(HealthCheckResponse.Status.UP, response.getStatus());
+        assertTrue(response.getData().isPresent());
+        Object toolCount = response.getData().get().get("toolCount");
+        assertInstanceOf(Long.class, toolCount);
+        assertEquals(1L, toolCount);
     }
 }

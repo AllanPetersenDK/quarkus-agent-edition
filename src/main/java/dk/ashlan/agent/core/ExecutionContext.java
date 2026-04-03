@@ -1,6 +1,7 @@
 package dk.ashlan.agent.core;
 
 import dk.ashlan.agent.llm.LlmMessage;
+import dk.ashlan.agent.llm.LlmToolCall;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,6 +53,10 @@ public class ExecutionContext {
 
     public void addAssistantMessage(String content) {
         messages.add(LlmMessage.assistant(content));
+    }
+
+    public void addAssistantToolCalls(List<LlmToolCall> toolCalls) {
+        messages.add(LlmMessage.assistant(toolCalls));
     }
 
     public void addToolMessage(String toolName, String content) {
