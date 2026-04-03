@@ -1,5 +1,6 @@
 package dk.ashlan.agent.memory;
 
+import dk.ashlan.agent.llm.LlmMessage;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -31,11 +32,14 @@ class SessionManagerPersistenceTest {
         createSchema(dataSource);
         JdbcSessionStateStore store = new JdbcSessionStateStore(dataSource);
 
-        MemoryService memoryService = new MemoryService(new SessionManager(store), new InMemoryTaskMemoryStore(), new MemoryExtractionService());
-        memoryService.remember("session-1", "intro", "My name is Ada");
+        SessionManager sessionManager = new SessionManager(store);
+        sessionManager.session("session-1").addUserMessage("Hello");
+        sessionManager.session("session-1").addAssistantMessage("Hi Ada");
 
         SessionManager restarted = new SessionManager(store);
-        assertTrue(restarted.session("session-1").messages().contains("My name is Ada"));
+        assertEquals(2, restarted.session("session-1").messages().size());
+        assertEquals("Hello", restarted.session("session-1").messages().get(0).content());
+        assertEquals("Hi Ada", restarted.session("session-1").messages().get(1).content());
     }
 
     @Test
@@ -78,13 +82,13 @@ class SessionManagerPersistenceTest {
         var session = sessionManager.session("concurrent");
         var executor = Executors.newFixedThreadPool(4);
         CountDownLatch latch = new CountDownLatch(8);
-        List<String> expected = new ArrayList<>();
+        List<LlmMessage> expected = new ArrayList<>();
 
         for (int i = 0; i < 8; i++) {
             String message = "message-" + i;
-            expected.add(message);
+            expected.add(LlmMessage.user(message));
             executor.submit(() -> {
-                session.addMessage(message);
+                session.addUserMessage(message);
                 latch.countDown();
             });
         }

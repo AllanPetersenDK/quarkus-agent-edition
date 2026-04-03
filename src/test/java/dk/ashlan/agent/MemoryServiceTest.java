@@ -10,14 +10,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MemoryServiceTest {
     @Test
-    void sessionContinuityStoresMessages() {
+    void rememberDoesNotMutateSessionState() {
         SessionManager sessionManager = new SessionManager();
         InMemoryTaskMemoryStore store = new InMemoryTaskMemoryStore();
         MemoryService memoryService = new MemoryService(sessionManager, store, new MemoryExtractionService());
 
         memoryService.remember("session-1", "intro", "My name is Ada");
 
-        assertTrue(sessionManager.session("session-1").messages().contains("My name is Ada"));
+        assertTrue(sessionManager.session("session-1").messages().isEmpty());
     }
 
     @Test

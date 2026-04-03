@@ -65,6 +65,7 @@ Not covered in Swagger:
 `POST /api/agent/run`
 
 Runtime API: this is the main REST-exposed manual agent loop.
+Same-session calls now replay prior role-aware conversation history, so a session can remember user-provided facts across turns without relying on tool memory.
 
 Request body:
 

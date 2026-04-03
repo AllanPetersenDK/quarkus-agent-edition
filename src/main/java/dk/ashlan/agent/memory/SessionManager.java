@@ -1,5 +1,6 @@
 package dk.ashlan.agent.memory;
 
+import dk.ashlan.agent.llm.LlmMessage;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -26,7 +27,7 @@ public class SessionManager {
     }
 
     private SessionState loadSessionState(String sessionId) {
-        List<String> messages = store.loadMessages(sessionId).orElse(List.of());
+        List<LlmMessage> messages = store.loadMessages(sessionId).orElse(List.of());
         return new SessionState(sessionId, messages, store::save);
     }
 }

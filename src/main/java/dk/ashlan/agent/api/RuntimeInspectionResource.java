@@ -9,6 +9,7 @@ import dk.ashlan.agent.memory.SessionTraceStore;
 import dk.ashlan.agent.memory.TaskMemory;
 import dk.ashlan.agent.api.dto.AgentStepResponse;
 import dk.ashlan.agent.api.dto.RuntimeSessionTraceResponse;
+import dk.ashlan.agent.llm.LlmMessage;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -117,7 +118,11 @@ public class RuntimeInspectionResource {
             @PathParam("sessionId") String sessionId
     ) {
         SessionState session = sessionManager.session(sessionId);
-        return new SessionInspectionResponse(session.sessionId(), session.messages(), session.size());
+        return new SessionInspectionResponse(
+                session.sessionId(),
+                session.messages().stream().map(RuntimeInspectionResource::formatSessionMessage).toList(),
+                session.size()
+        );
     }
 
     @GET
@@ -224,6 +229,28 @@ public class RuntimeInspectionResource {
     ) {
         static MemoryEntryResponse from(TaskMemory memory) {
             return new MemoryEntryResponse(memory.task(), memory.memory());
+        }
+    }
+
+    private static String formatSessionMessage(LlmMessage message) {
+        return switch (message.role()) {
+            case "user" -> "user: " + nullToEmpty(message.content());
+            case "assistant" -> message.toolCalls().isEmpty()
+                    ? "assistant: " + nullToEmpty(message.content())
+                    : "assistant tool calls: " + message.toolCalls().stream().map(LlmMessageToolCallView::from).map(LlmMessageToolCallView::toolName).toList();
+            case "tool" -> "tool[" + nullToEmpty(message.name()) + "]: " + nullToEmpty(message.content());
+            case "system" -> "system: " + nullToEmpty(message.content());
+            default -> message.role() + ": " + nullToEmpty(message.content());
+        };
+    }
+
+    private static String nullToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private record LlmMessageToolCallView(String toolName) {
+        static LlmMessageToolCallView from(dk.ashlan.agent.llm.LlmToolCall toolCall) {
+            return new LlmMessageToolCallView(toolCall.toolName());
         }
     }
 }

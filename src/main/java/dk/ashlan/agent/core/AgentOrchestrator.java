@@ -2,9 +2,12 @@ package dk.ashlan.agent.core;
 
 import dk.ashlan.agent.llm.LlmClient;
 import dk.ashlan.agent.llm.LlmCompletion;
+import dk.ashlan.agent.llm.LlmMessage;
 import dk.ashlan.agent.llm.LlmToolCall;
 import dk.ashlan.agent.llm.LlmClientSelector;
 import dk.ashlan.agent.memory.MemoryService;
+import dk.ashlan.agent.memory.SessionManager;
+import dk.ashlan.agent.memory.SessionState;
 import dk.ashlan.agent.memory.SessionTraceStore;
 import dk.ashlan.agent.tools.JsonToolResult;
 import dk.ashlan.agent.tools.ToolExecutor;
@@ -27,6 +30,7 @@ public class AgentOrchestrator implements AgentRunner {
     private final ToolRegistry toolRegistry;
     private final ToolExecutor toolExecutor;
     private final MemoryService memoryService;
+    private final SessionManager sessionManager;
     private final int maxIterations;
     private final String systemPrompt;
     @Inject
@@ -40,11 +44,12 @@ public class AgentOrchestrator implements AgentRunner {
             ToolRegistry toolRegistry,
             ToolExecutor toolExecutor,
             MemoryService memoryService,
+            SessionManager sessionManager,
             @ConfigProperty(name = "agent.max-iterations") int maxIterations,
             @ConfigProperty(name = "agent.system-prompt") String systemPrompt,
             Config config
     ) {
-        this(selectClient(llmClients, config), toolRegistry, toolExecutor, memoryService, maxIterations, systemPrompt);
+        this(selectClient(llmClients, config), toolRegistry, toolExecutor, memoryService, sessionManager, maxIterations, systemPrompt);
     }
 
     public AgentOrchestrator(
@@ -55,10 +60,23 @@ public class AgentOrchestrator implements AgentRunner {
             int maxIterations,
             String systemPrompt
     ) {
+        this(llmClient, toolRegistry, toolExecutor, memoryService, null, maxIterations, systemPrompt);
+    }
+
+    public AgentOrchestrator(
+            LlmClient llmClient,
+            ToolRegistry toolRegistry,
+            ToolExecutor toolExecutor,
+            MemoryService memoryService,
+            SessionManager sessionManager,
+            int maxIterations,
+            String systemPrompt
+    ) {
         this.llmClient = llmClient;
         this.toolRegistry = toolRegistry;
         this.toolExecutor = toolExecutor;
         this.memoryService = memoryService;
+        this.sessionManager = sessionManager;
         this.maxIterations = maxIterations;
         this.systemPrompt = systemPrompt;
     }
@@ -69,7 +87,10 @@ public class AgentOrchestrator implements AgentRunner {
 
     @WithSpan("agent.run")
     public AgentRunResult run(String message, String sessionId) {
-        ExecutionContext context = new ExecutionContext(message, sessionId);
+        SessionState session = session(sessionId);
+        List<LlmMessage> history = session.messages();
+        ExecutionContext context = new ExecutionContext(message, sessionId, history);
+        session.addUserMessage(message);
         LlmRequestBuilder requestBuilder = new LlmRequestBuilder(systemPrompt, memoryService);
         List<String> trace = new ArrayList<>();
         int iterations = 0;
@@ -77,7 +98,7 @@ public class AgentOrchestrator implements AgentRunner {
         long startedAt = System.nanoTime();
 
         while (iterations < maxIterations && !context.isFinalAnswer()) {
-            StepExecution stepExecution = executeStep(context, requestBuilder, stepNumber);
+            StepExecution stepExecution = executeStep(context, requestBuilder, session, stepNumber);
             trace.addAll(stepExecution.flatTrace());
             stepNumber++;
             if (context.isFinalAnswer()) {
@@ -95,12 +116,15 @@ public class AgentOrchestrator implements AgentRunner {
     }
 
     public AgentStepResult step(String message, String sessionId) {
-        ExecutionContext context = new ExecutionContext(message, sessionId);
+        SessionState session = session(sessionId);
+        List<LlmMessage> history = session.messages();
+        ExecutionContext context = new ExecutionContext(message, sessionId, history);
+        session.addUserMessage(message);
         LlmRequestBuilder requestBuilder = new LlmRequestBuilder(systemPrompt, memoryService);
-        return executeStep(context, requestBuilder, nextStepNumber(sessionId)).stepResult();
+        return executeStep(context, requestBuilder, session, nextStepNumber(sessionId)).stepResult();
     }
 
-    private StepExecution executeStep(ExecutionContext context, LlmRequestBuilder requestBuilder, int stepNumber) {
+    private StepExecution executeStep(ExecutionContext context, LlmRequestBuilder requestBuilder, SessionState session, int stepNumber) {
         List<String> trace = new ArrayList<>();
         List<AgentTraceEntry> traceEntries = new ArrayList<>();
         List<dk.ashlan.agent.llm.LlmMessage> messages = requestBuilder.build(context);
@@ -112,13 +136,16 @@ public class AgentOrchestrator implements AgentRunner {
         List<JsonToolResult> toolResults = new ArrayList<>();
         if (!toolCalls.isEmpty()) {
             context.addAssistantToolCalls(toolCalls);
+            session.addAssistantToolCalls(toolCalls);
             for (LlmToolCall toolCall : toolCalls) {
                 JsonToolResult result = toolExecutor.execute(toolCall.toolName(), toolCall.arguments());
                 toolResults.add(result);
                 if (toolCall.callId() == null || toolCall.callId().isBlank()) {
                     context.addToolMessage(toolCall.toolName(), result.output());
+                    session.addToolMessage(toolCall.toolName(), result.output());
                 } else {
                     context.addToolMessage(toolCall.toolName(), toolCall.callId(), result.output());
+                    session.addToolMessage(toolCall.toolName(), toolCall.callId(), result.output());
                 }
                 trace.add("tool:" + toolCall.toolName() + ":" + result.output());
                 traceEntries.add(new AgentTraceEntry("tool-call", toolCall.toolName()));
@@ -137,6 +164,7 @@ public class AgentOrchestrator implements AgentRunner {
             finalAnswer = completion.content();
             context.setFinalAnswer(completion.content());
             context.addAssistantMessage(completion.content());
+            session.addAssistantMessage(completion.content());
             trace.add("answer:" + completion.content());
             traceEntries.add(new AgentTraceEntry("assistant-message", completion.content()));
             isFinal = true;
@@ -180,6 +208,13 @@ public class AgentOrchestrator implements AgentRunner {
             return 1;
         }
         return sessionTraceStore.load(sessionId).map(List::size).orElse(0) + 1;
+    }
+
+    private SessionState session(String sessionId) {
+        if (sessionManager == null) {
+            return new SessionState(sessionId);
+        }
+        return sessionManager.session(sessionId);
     }
 
     private record StepExecution(AgentStepResult stepResult, List<String> flatTrace) {

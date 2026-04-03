@@ -1,19 +1,22 @@
 package dk.ashlan.agent.memory;
 
+import dk.ashlan.agent.llm.LlmMessage;
+import dk.ashlan.agent.llm.LlmToolCall;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
 public class SessionState {
     private final String sessionId;
-    private final List<String> messages = new ArrayList<>();
+    private final List<LlmMessage> messages = new ArrayList<>();
     private final Consumer<SessionState> onChange;
 
     public SessionState(String sessionId) {
         this(sessionId, List.of(), null);
     }
 
-    SessionState(String sessionId, List<String> initialMessages, Consumer<SessionState> onChange) {
+    SessionState(String sessionId, List<LlmMessage> initialMessages, Consumer<SessionState> onChange) {
         this.sessionId = sessionId;
         this.onChange = onChange;
         this.messages.addAll(initialMessages);
@@ -23,11 +26,31 @@ public class SessionState {
         return sessionId;
     }
 
-    public synchronized List<String> messages() {
+    public synchronized List<LlmMessage> messages() {
         return List.copyOf(messages);
     }
 
-    public void addMessage(String message) {
+    public void addUserMessage(String content) {
+        addMessage(LlmMessage.user(content));
+    }
+
+    public void addAssistantMessage(String content) {
+        addMessage(LlmMessage.assistant(content));
+    }
+
+    public void addAssistantToolCalls(List<LlmToolCall> toolCalls) {
+        addMessage(LlmMessage.assistant(toolCalls));
+    }
+
+    public void addToolMessage(String toolName, String content) {
+        addMessage(LlmMessage.tool(toolName, content));
+    }
+
+    public void addToolMessage(String toolName, String toolCallId, String content) {
+        addMessage(LlmMessage.tool(toolName, toolCallId, content));
+    }
+
+    public void addMessage(LlmMessage message) {
         Consumer<SessionState> callback;
         synchronized (this) {
             messages.add(message);
