@@ -73,7 +73,7 @@ public class CompanionChatCompletionsResource {
     public record CompanionChatCompletionRequest(
             @Schema(
                     description = "Requested model label. Defaults to the repo's configured OpenAI model when omitted.",
-                    example = "gpt-4.1-mini"
+                    examples = {"gpt-4.1-mini"}
             )
             String model,
             @NotEmpty
@@ -85,21 +85,21 @@ public class CompanionChatCompletionsResource {
             List<ChatMessage> messages,
             @Schema(
                     description = "Optional generation temperature. Accepted for parity with unified chat-completions requests, but this companion seam does not promise per-request provider tuning.",
-                    example = "0.0"
+                    examples = {"0.0"}
             )
             Double temperature,
             @Schema(
                     description = "Optional max token hint for parity with unified chat-completions requests.",
-                    example = "256"
+                    examples = {"256"}
             )
             Integer maxTokens
     ) {
         public record ChatMessage(
                 @NotBlank
-                @Schema(description = "Message role.", example = "user", required = true)
+                @Schema(description = "Message role.", examples = {"user"}, required = true)
                 String role,
                 @NotBlank
-                @Schema(description = "Message content.", example = "What is the capital of France?", required = true)
+                @Schema(description = "Message content.", examples = {"What is the capital of France?"}, required = true)
                 String content
         ) {
         }
@@ -133,7 +133,7 @@ public class CompanionChatCompletionsResource {
     public record CompanionAsyncBatchRequest(
             @Schema(
                     description = "Requested model label. Defaults to the repo's configured OpenAI model when omitted.",
-                    example = "gpt-4.1-mini"
+                    examples = {"gpt-4.1-mini"}
             )
             String model,
             @NotEmpty
@@ -144,12 +144,12 @@ public class CompanionChatCompletionsResource {
             List<@NotBlank String> prompts,
             @Schema(
                     description = "Optional system prompt shared by each direct request.",
-                    example = "You are a helpful assistant."
+                    examples = {"You are a helpful assistant."}
             )
             String systemPrompt,
             @Schema(
                     description = "Optional generation temperature. Accepted for parity with unified chat-completions requests, but this companion seam does not promise per-request provider tuning.",
-                    example = "0.0"
+                    examples = {"0.0"}
             )
             Double temperature
     ) {

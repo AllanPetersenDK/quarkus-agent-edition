@@ -14,11 +14,11 @@ import dk.ashlan.agent.tools.OpenAiWebSearchService;
 import java.util.List;
 import java.util.Map;
 
-final class Chapter03Support {
+public final class Chapter03Support {
     private Chapter03Support() {
     }
 
-    static ToolRegistry registry() {
+    public static ToolRegistry registry() {
         return new ToolRegistry(List.of(
                 new CalculatorTool(),
                 new ClockTool(),
@@ -27,26 +27,26 @@ final class Chapter03Support {
         ));
     }
 
-    static WebSearchTool webSearchTool() {
+    public static WebSearchTool webSearchTool() {
         return new WebSearchTool(query -> new OpenAiWebSearchService.WebSearchResult(
                 "Chapter 03 web-search demo result for: " + query,
                 List.of(new OpenAiWebSearchService.WebSearchSource("Chapter 03 demo source", "https://example.com/chapter03/web-search"))
         ));
     }
 
-    static ToolExecutor executor() {
+    public static ToolExecutor executor() {
         return new ToolExecutor(registry());
     }
 
-    static Tool decoratedCalculator() {
+    public static Tool decoratedCalculator() {
         return new ToolDecorator(new CalculatorTool(), "[decorated] ");
     }
 
-    static FunctionToolAdapter echoTool() {
+    public static FunctionToolAdapter echoTool() {
         return new FunctionToolAdapter("echo-tool", "Echo input arguments.", arguments -> String.valueOf(arguments));
     }
 
-    static String calculatorOutput() {
+    public static String calculatorOutput() {
         return executor().execute("calculator", Map.of("expression", "25 * 4")).output();
     }
 }

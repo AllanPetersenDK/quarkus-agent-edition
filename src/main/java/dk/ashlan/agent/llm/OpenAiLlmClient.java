@@ -19,7 +19,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import io.smallrye.faulttolerance.api.Guard;
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 import java.io.IOException;
