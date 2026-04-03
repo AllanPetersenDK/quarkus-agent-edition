@@ -39,7 +39,7 @@ Covered in Swagger:
 - `POST /api/companion/langchain4j/run` - LangChain4j companion run
 - `POST /api/companion/langchain4j/agentic-demo` - LangChain4j agentic companion demo
 - `POST /api/companion/llm/completions` - chapter-02 companion direct chat simulation
-- `POST /api/companion/llm/async-batch` - chapter-02 companion async batch demo
+- `POST /api/companion/llm/async-batch` - chapter-02 companion async batch demo with bounded concurrency and per-prompt failure isolation
 - `POST /code-agent` - internal chapter demo for the deterministic code workflow
 - `POST /multi-agent` - internal chapter demo for the coordinator/reviewer flow
 - `GET /workflow-demo` - internal deterministic workflow demo
@@ -143,6 +143,16 @@ Framework-backed companion comparison seam that answers a single prompt.
 `POST /api/companion/langchain4j/agentic-demo`
 
 Framework-backed agentic comparison seam that runs the chapter 07 planning workflow.
+
+### Chapter-02 Companion LLM
+
+`POST /api/companion/llm/completions`
+
+Book chapter: 2 companion/debug seam for direct chat-style requests through Swagger UI.
+
+`POST /api/companion/llm/async-batch`
+
+Book chapter: 2 companion/debug async batch seam for server-side concurrent direct LLM calls. The endpoint uses bounded concurrency, keeps results in input order, and returns per-prompt errors instead of failing the whole batch.
 
 ### Internal Chapter Demos
 

@@ -54,16 +54,16 @@ public class CompanionChatCompletionsResource {
     @Path("/async-batch")
     @Operation(
             summary = "Run a concurrent async batch of direct prompts",
-            description = "Book chapter: 2. Companion async batch demo that mirrors the chapter-02 concurrent LLM-call example by sending multiple direct prompts through server-side CompletableFuture fan-out. This is a companion/debug seam, not the main manual agent runtime API."
+            description = "Book chapter: 2. Companion/debug async batch seam that mirrors the chapter-02 concurrent LLM-call example by sending multiple direct prompts through bounded server-side concurrency. Each prompt is handled as one direct LLM call and per-prompt failures are isolated instead of failing the whole batch. This is a companion/debug seam, not the main manual agent runtime API."
     )
     @RequestBody(
-            description = "Chapter-02 async batch companion payload for concurrent direct prompt handling.",
+            description = "Chapter-02 async batch companion payload for concurrent direct prompt handling with bounded concurrency and isolated failures.",
             required = true,
             content = @Content(schema = @Schema(implementation = CompanionAsyncBatchRequest.class))
     )
     @APIResponse(
             responseCode = "200",
-            description = "Ordered batch results collected from the concurrent companion calls.",
+            description = "Ordered batch results collected from the concurrent companion calls. Each item may include an error when a prompt fails.",
             content = @Content(schema = @Schema(implementation = CompanionAsyncBatchResponse.class))
     )
     public CompanionAsyncBatchResponse asyncBatch(@Valid CompanionAsyncBatchRequest request) {
@@ -166,9 +166,18 @@ public class CompanionChatCompletionsResource {
         public record BatchResult(
                 @Schema(description = "Prompt submitted for this batch item.")
                 String prompt,
-                @Schema(description = "Assistant answer returned for the prompt.")
-                String answer
+                @Schema(description = "Assistant answer returned for the prompt, or null when the prompt fails.", nullable = true)
+                String answer,
+                @Schema(description = "Error description returned for the prompt, or null when the prompt succeeds.", nullable = true)
+                String error
         ) {
+            static BatchResult success(String prompt, String answer) {
+                return new BatchResult(prompt, answer, null);
+            }
+
+            static BatchResult failure(String prompt, String error) {
+                return new BatchResult(prompt, null, error);
+            }
         }
     }
 }
