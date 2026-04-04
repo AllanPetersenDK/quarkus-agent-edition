@@ -23,6 +23,10 @@ This chapter maps the Python tool system into a generic Quarkus tool framework.
 - `dk.ashlan.agent.tools.WebSearchTool`
 - `dk.ashlan.agent.tools.WikipediaTool`
 - `dk.ashlan.agent.tools.FunctionToolAdapter`
+- `dk.ashlan.agent.tools.filesystem.UnzipFileTool`
+- `dk.ashlan.agent.tools.filesystem.ListFilesTool`
+- `dk.ashlan.agent.tools.filesystem.ReadFileTool`
+- `dk.ashlan.agent.tools.filesystem.ReadMediaFileTool`
 - `dk.ashlan.agent.tools.ToolDecorator`
 - `dk.ashlan.agent.tools.SchemaUtils`
 - `dk.ashlan.agent.chapters.chapter03.*`
@@ -36,6 +40,8 @@ This chapter maps the Python tool system into a generic Quarkus tool framework.
 - Web search now uses a narrow OpenAI Responses API integration, while Wikipedia remains a lightweight demo placeholder.
 - The internal `ToolRegistry`/`ToolExecutor` path remains the primary tool model.
 - `CompanionMcpTools` exposes only a tiny MCP-facing slice of the existing tool set so chapter 3 can be compared with a server-side protocol seam.
+- The filesystem tools are Chapter 5-style exploration helpers, but they still plug into the same generic registry/executor path and can be used by the manual agent loop without redesign.
+- Filesystem access is guarded by `agent.filesystem-root` and defaults to the repository workspace root (`.`), so zip extraction and file reads stay inside an explicit base path.
 
 ## Demo vs Production
 

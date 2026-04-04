@@ -191,6 +191,7 @@ Demo and fake components are intentionally marked and include:
 - `InMemoryTaskMemoryStore`
 - `InMemorySessionStateStore` as the explicit fallback path
 - `WebSearchTool` and `WikipediaTool` as lightweight local placeholders
+- `unzip_file`, `list_files`, `read_file`, and `read_media_file` as chapter-5-style filesystem exploration tools under the same `ToolRegistry`/`ToolExecutor` path
 - `CompanionMcpTools` as the MCP-facing comparison seam
 - `CodeGenerationTool`
 - `TestExecutionTool`
