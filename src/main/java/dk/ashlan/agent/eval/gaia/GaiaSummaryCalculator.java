@@ -2,6 +2,10 @@ package dk.ashlan.agent.eval.gaia;
 
 import java.util.List;
 
+/**
+ * Legacy starter-harness summary calculator for the older GAIA evaluation path.
+ */
+@Deprecated(forRemoval = false)
 final class GaiaSummaryCalculator {
     GaiaValidationSummary summarize(List<GaiaValidationCaseResult> results) {
         int total = results.size();

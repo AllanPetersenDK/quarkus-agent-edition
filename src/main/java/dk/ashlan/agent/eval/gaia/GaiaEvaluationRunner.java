@@ -11,6 +11,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Legacy starter harness for chapter-10 GAIA validation.
+ * <p>
+ * The canonical GAIA validation/dev seam is {@link dk.ashlan.agent.api.GaiaEvaluationResource}
+ * and {@link GaiaValidationRunner}. This class is retained for backward-compatible chapter
+ * demos and comparison tests.
+ */
+@Deprecated(forRemoval = false)
 @ApplicationScoped
 public class GaiaEvaluationRunner {
     private final AgentOrchestrator agentOrchestrator;

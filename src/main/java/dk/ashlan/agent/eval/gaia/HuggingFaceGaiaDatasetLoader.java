@@ -19,6 +19,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Legacy starter-harness dataset loader for the older GAIA evaluation path.
+ * The canonical GAIA validation/dev loader is {@link GaiaParquetLoader} and {@link GaiaDatasetService}.
+ */
+@Deprecated(forRemoval = false)
 @ApplicationScoped
 public class HuggingFaceGaiaDatasetLoader implements GaiaDatasetLoader {
     private final ObjectMapper objectMapper;

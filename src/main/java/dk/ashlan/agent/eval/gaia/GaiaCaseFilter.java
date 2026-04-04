@@ -2,6 +2,11 @@ package dk.ashlan.agent.eval.gaia;
 
 import java.util.List;
 
+/**
+ * Legacy starter-harness filter for the older GAIA chapter-10 evaluation path.
+ * The canonical validation flow now lives in {@link GaiaValidationRunner}.
+ */
+@Deprecated(forRemoval = false)
 final class GaiaCaseFilter {
     private GaiaCaseFilter() {
     }
