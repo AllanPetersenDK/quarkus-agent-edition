@@ -239,37 +239,37 @@ public class RagResource {
     }
 
     public record RagQueryResponse(
-            @Schema(description = "Search text used to query the knowledge base.")
+            @Schema(description = "Search text used to query the knowledge base.", example = "Which text mentions PostgreSQL?")
             String query,
-            @Schema(description = "Simple answer assembled from the matching RAG chunks.")
+            @Schema(description = "Simple answer assembled from the matching RAG chunks.", example = "Source docs/postgresql.txt mentions PostgreSQL: PostgreSQL is an open-source relational database.")
             String answer,
-            @Schema(description = "The highest-ranked chunk returned by retrieval. Useful for debugging the winning source.")
+            @Schema(description = "The highest-ranked chunk returned by retrieval. Useful for debugging the winning source.", example = "{\"sourceId\":\"docs/postgresql.txt\",\"chunkIndex\":0,\"text\":\"PostgreSQL is an open-source relational database.\",\"similarity\":0.92}")
             RagChunkResponse bestChunk,
-            @Schema(description = "Compact citation summaries for the retrieved chunks.")
+            @Schema(description = "Compact citation summaries for the retrieved chunks.", example = "[{\"sourceId\":\"docs/postgresql.txt\",\"sourcePath\":\"docs/postgresql.txt\",\"chunkIndex\":0,\"chunkId\":\"docs/postgresql.txt:0:abcd1234\",\"fileType\":\"txt\",\"contentType\":\"text/plain\",\"documentStatus\":\"TEXT_EXTRACTED\",\"sectionHint\":\"PostgreSQL is an open-source relational database.\",\"similarity\":0.92}]")
             List<RagCitationResponse> citations,
-            @Schema(description = "Matched chunk summaries ordered by relevance.")
+            @Schema(description = "Matched chunk summaries ordered by relevance.", example = "[{\"sourceId\":\"docs/postgresql.txt\",\"chunkIndex\":0,\"text\":\"PostgreSQL is an open-source relational database.\",\"metadata\":{\"sourceId\":\"docs/postgresql.txt\",\"sourcePath\":\"docs/postgresql.txt\",\"fileType\":\"txt\",\"contentType\":\"text/plain\",\"documentStatus\":\"TEXT_EXTRACTED\",\"chunkId\":\"docs/postgresql.txt:0:abcd1234\"},\"similarity\":0.92}]")
             List<RagChunkResponse> chunks
     ) {
     }
 
     public record RagCitationResponse(
-            @Schema(description = "Source document identifier.")
+            @Schema(description = "Source document identifier.", example = "docs/postgresql.txt")
             String sourceId,
-            @Schema(description = "Workspace-relative source path when available.")
+            @Schema(description = "Workspace-relative source path when available.", example = "docs/postgresql.txt")
             String sourcePath,
-            @Schema(description = "Zero-based chunk index within the source document.")
+            @Schema(description = "Zero-based chunk index within the source document.", example = "0")
             int chunkIndex,
-            @Schema(description = "Stable chunk identifier.")
+            @Schema(description = "Stable chunk identifier.", example = "docs/postgresql.txt:0:abcd1234")
             String chunkId,
-            @Schema(description = "Detected file type.")
+            @Schema(description = "Detected file type.", example = "txt")
             String fileType,
-            @Schema(description = "Detected content type.")
+            @Schema(description = "Detected content type.", example = "text/plain")
             String contentType,
-            @Schema(description = "Document-read status for the source.")
+            @Schema(description = "Document-read status for the source.", example = "TEXT_EXTRACTED")
             String documentStatus,
-            @Schema(description = "Short hint about the chunk's opening section.")
+            @Schema(description = "Short hint about the chunk's opening section.", example = "PostgreSQL is an open-source relational database.")
             String sectionHint,
-            @Schema(description = "Similarity score for query responses.")
+            @Schema(description = "Similarity score for query responses.", example = "0.92")
             Double similarity
     ) {
         static RagCitationResponse fromQuery(RetrievalResult result) {
@@ -290,15 +290,15 @@ public class RagResource {
     }
 
     public record RagChunkResponse(
-            @Schema(description = "Source document identifier.")
+            @Schema(description = "Source document identifier.", example = "docs/postgresql.txt")
             String sourceId,
-            @Schema(description = "Zero-based chunk index within the source document.")
+            @Schema(description = "Zero-based chunk index within the source document.", example = "0")
             int chunkIndex,
-            @Schema(description = "Chunk text returned by the RAG flow.")
+            @Schema(description = "Chunk text returned by the RAG flow.", example = "PostgreSQL is an open-source relational database.")
             String text,
             @Schema(description = "Chunk metadata returned by ingest/query flows.")
             Map<String, String> metadata,
-            @Schema(description = "Similarity score for query responses. Null for ingest responses.")
+            @Schema(description = "Similarity score for query responses. Null for ingest responses.", example = "0.92")
             Double similarity
     ) {
         static RagChunkResponse fromIngest(DocumentChunk chunk) {

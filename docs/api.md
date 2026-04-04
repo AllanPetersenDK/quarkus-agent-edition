@@ -260,6 +260,50 @@ Swagger-visible companion seam for querying the stored knowledge base.
 The chapter-5 query flow now uses a small hybrid reranker and builds `answer` from the best matching chunk instead of concatenating all retrieved chunks.
 Query responses also include `bestChunk` and compact `citations` so clients can see the winning source and the ranked evidence behind the answer without parsing the full chunk list.
 
+Example response:
+
+```json
+{
+  "query": "Which text mentions PostgreSQL?",
+  "answer": "Source docs/postgresql.txt mentions PostgreSQL: PostgreSQL is an open-source relational database.",
+  "bestChunk": {
+    "sourceId": "docs/postgresql.txt",
+    "chunkIndex": 0,
+    "text": "PostgreSQL is an open-source relational database.",
+    "similarity": 0.92
+  },
+  "citations": [
+    {
+      "sourceId": "docs/postgresql.txt",
+      "sourcePath": "docs/postgresql.txt",
+      "chunkIndex": 0,
+      "chunkId": "docs/postgresql.txt:0:abcd1234",
+      "fileType": "txt",
+      "contentType": "text/plain",
+      "documentStatus": "TEXT_EXTRACTED",
+      "sectionHint": "PostgreSQL is an open-source relational database.",
+      "similarity": 0.92
+    }
+  ],
+  "chunks": [
+    {
+      "sourceId": "docs/postgresql.txt",
+      "chunkIndex": 0,
+      "text": "PostgreSQL is an open-source relational database.",
+      "metadata": {
+        "sourceId": "docs/postgresql.txt",
+        "sourcePath": "docs/postgresql.txt",
+        "fileType": "txt",
+        "contentType": "text/plain",
+        "documentStatus": "TEXT_EXTRACTED",
+        "chunkId": "docs/postgresql.txt:0:abcd1234"
+      },
+      "similarity": 0.92
+    }
+  ]
+}
+```
+
 ### Evaluation
 
 `POST /admin/evaluations`
