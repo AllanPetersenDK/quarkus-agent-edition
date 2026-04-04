@@ -36,6 +36,7 @@ Covered in Swagger:
 - `GET /api/runtime/sessions/{sessionId}/memory` - memory inspection, more naturally chapter 6-oriented than chapter 4-oriented
 - `GET /api/runtime/sessions/{sessionId}/trace` - chapter-4 runtime trace inspection seam
 - `POST /api/rag/ingest` - chapter 5-oriented document ingest into the RAG stack
+- `POST /api/rag/ingest/path` - chapter 5-oriented workspace path ingest through the shared document-read layer
 - `GET /api/rag/query` - chapter 5-oriented RAG query and answer
 - `POST /admin/evaluations` - evaluation run
 - `POST /admin/evaluations/gaia/run` - GAIA validation/dev run with level filtering and attachment-aware context
@@ -217,6 +218,21 @@ Read-only chapter-4 trace inspection seam that returns the structured step histo
 `POST /api/rag/ingest`
 
 Swagger-visible companion seam for document ingest into the repo's RAG stack.
+
+`POST /api/rag/ingest/path`
+
+Swagger-visible chapter-5 companion seam for ingesting a workspace document by path. The endpoint resolves the path against the canonical workspace root, runs it through the shared document-read layer, and ingests the extracted text into RAG. Directory ingest is not supported in this first version; the response makes that explicit.
+
+Example request body:
+
+```json
+{
+  "path": "docs/chapter5/sample.pdf",
+  "sourceId": "sample-pdf"
+}
+```
+
+The shared document-read layer now covers text-like files such as `txt`, `md`, `csv`, `tsv`, `json`, `html`, `xml`, `properties`, `log`, `ini`, `rst`, `toml`, and common source-like text files, plus PDFs and supported audio through the same normalization seam used by GAIA and the filesystem tools.
 
 `GET /api/rag/query`
 

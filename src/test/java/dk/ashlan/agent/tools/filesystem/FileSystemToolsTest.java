@@ -85,18 +85,32 @@ class FileSystemToolsTest {
         Files.writeString(tempDir.resolve("notes.txt"), "Hello text");
         Files.writeString(tempDir.resolve("notes.md"), "# Hello markdown");
         Files.writeString(tempDir.resolve("data.csv"), "name,value\nalpha,1");
+        Files.writeString(tempDir.resolve("data.tsv"), "name\tvalue\nalpha\t1");
         Files.writeString(tempDir.resolve("data.json"), "{\"name\":\"alpha\"}");
         Files.writeString(tempDir.resolve("page.html"), "<html><body>Hello <strong>HTML</strong></body></html>");
         Files.writeString(tempDir.resolve("doc.xml"), "<root><title>Hello XML</title></root>");
+        Files.writeString(tempDir.resolve("config.properties"), "name=alpha\nflag=true");
+        Files.writeString(tempDir.resolve("service.log"), "INFO Starting service");
+        Files.writeString(tempDir.resolve("settings.ini"), "[core]\nname=alpha");
+        Files.writeString(tempDir.resolve("notes.rst"), "Heading\n=======\nContent line.");
+        Files.writeString(tempDir.resolve("manifest.toml"), "title = \"Demo\"\ncount = 2");
+        Files.writeString(tempDir.resolve("Program.java"), "class Program {}");
 
         FilesystemToolService service = service(path -> "unused");
 
         assertTrue(new ReadFileTool(service).execute(Map.of("path", "notes.txt")).output().contains("Hello text"));
         assertTrue(new ReadFileTool(service).execute(Map.of("path", "notes.md")).output().contains("Hello markdown"));
         assertTrue(new ReadFileTool(service).execute(Map.of("path", "data.csv")).output().contains("alpha,1"));
+        assertTrue(new ReadFileTool(service).execute(Map.of("path", "data.tsv")).output().contains("alpha 1"));
         assertTrue(new ReadFileTool(service).execute(Map.of("path", "data.json")).output().contains("\"name\":\"alpha\""));
         assertTrue(new ReadFileTool(service).execute(Map.of("path", "page.html")).output().contains("Hello HTML"));
         assertTrue(new ReadFileTool(service).execute(Map.of("path", "doc.xml")).output().contains("Hello XML"));
+        assertTrue(new ReadFileTool(service).execute(Map.of("path", "config.properties")).output().contains("name=alpha"));
+        assertTrue(new ReadFileTool(service).execute(Map.of("path", "service.log")).output().contains("Starting service"));
+        assertTrue(new ReadFileTool(service).execute(Map.of("path", "settings.ini")).output().contains("name=alpha"));
+        assertTrue(new ReadFileTool(service).execute(Map.of("path", "notes.rst")).output().contains("Heading"));
+        assertTrue(new ReadFileTool(service).execute(Map.of("path", "manifest.toml")).output().contains("title = \"Demo\""));
+        assertTrue(new ReadFileTool(service).execute(Map.of("path", "Program.java")).output().contains("class Program {}"));
     }
 
     @Test

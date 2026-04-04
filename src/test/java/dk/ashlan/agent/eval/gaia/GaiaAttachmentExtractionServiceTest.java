@@ -75,9 +75,16 @@ class GaiaAttachmentExtractionServiceTest {
                 Arguments.of("sample.txt", "Plain text attachment.", "Plain text attachment."),
                 Arguments.of("sample.md", "# Heading\nMarkdown attachment.", "Markdown attachment."),
                 Arguments.of("sample.csv", "name,value\nfoo,bar", "foo,bar"),
+                Arguments.of("sample.tsv", "name\tvalue\nfoo\tbar", "foo bar"),
                 Arguments.of("sample.json", "{\"hello\":\"world\"}", "\"hello\":\"world\""),
-                Arguments.of("sample.html", "<html><body><h1>Title</h1><p>HTML attachment.</p></body></html>", "Title HTML attachment."),
-                Arguments.of("sample.xml", "<root><item>XML attachment.</item></root>", "XML attachment.")
+                Arguments.of("sample.html", "<html><body><h1>Title</h1><p>HTML attachment.</p></body></html>", "HTML attachment."),
+                Arguments.of("sample.xml", "<root><item>XML attachment.</item></root>", "XML attachment."),
+                Arguments.of("sample.properties", "name=alpha\nflag=true", "name=alpha"),
+                Arguments.of("sample.log", "INFO Starting service\nWARN Still running", "Starting service"),
+                Arguments.of("sample.ini", "[core]\nname=alpha", "name=alpha"),
+                Arguments.of("sample.rst", "Heading\n=======\nContent line.", "Heading"),
+                Arguments.of("sample.toml", "title = \"Demo\"\ncount = 2", "title = \"Demo\""),
+                Arguments.of("sample.java", "class Demo {}", "class Demo {}")
         );
     }
 

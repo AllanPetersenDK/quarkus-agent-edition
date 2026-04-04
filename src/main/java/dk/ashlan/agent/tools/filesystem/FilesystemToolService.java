@@ -1,10 +1,11 @@
 package dk.ashlan.agent.tools.filesystem;
 
-import dk.ashlan.agent.eval.gaia.GaiaAttachmentExtractionService;
-import dk.ashlan.agent.eval.gaia.GaiaAttachmentStatus;
-import dk.ashlan.agent.eval.gaia.GaiaAudioTranscriptionService;
-import dk.ashlan.agent.eval.gaia.GaiaExtractedAttachment;
 import dk.ashlan.agent.code.WorkspaceService;
+import dk.ashlan.agent.document.DocumentReadResult;
+import dk.ashlan.agent.document.DocumentReadService;
+import dk.ashlan.agent.document.DocumentTypeSupport;
+import dk.ashlan.agent.eval.gaia.GaiaAttachmentExtractionService;
+import dk.ashlan.agent.eval.gaia.GaiaAudioTranscriptionService;
 import dk.ashlan.agent.tools.JsonToolResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -27,13 +28,10 @@ import java.util.zip.ZipInputStream;
 @ApplicationScoped
 public class FilesystemToolService {
     private static final int DEFAULT_MAX_LIST_ENTRIES = 50;
-    private static final int DEFAULT_MAX_OUTPUT_CHARS = 6000;
-    private static final int DEFAULT_MAX_AUDIO_CHARS = 4000;
     private static final int DEFAULT_MAX_FILE_NAMES = 12;
 
     private final Path workspaceRoot;
-    private final GaiaAttachmentExtractionService attachmentExtractionService;
-    private final GaiaAudioTranscriptionService audioTranscriptionService;
+    private final DocumentReadService documentReadService;
 
     @Inject
     public FilesystemToolService(
@@ -41,7 +39,12 @@ public class FilesystemToolService {
             GaiaAttachmentExtractionService attachmentExtractionService,
             GaiaAudioTranscriptionService audioTranscriptionService
     ) {
-        this(workspaceService.root(), attachmentExtractionService, audioTranscriptionService);
+        this.workspaceRoot = initializeRoot(Objects.requireNonNull(workspaceService, "workspaceService").root());
+        this.documentReadService = new DocumentReadService(
+                workspaceService,
+                Objects.requireNonNull(attachmentExtractionService, "attachmentExtractionService"),
+                Objects.requireNonNull(audioTranscriptionService, "audioTranscriptionService")
+        );
     }
 
     public FilesystemToolService(
@@ -50,8 +53,11 @@ public class FilesystemToolService {
             GaiaAudioTranscriptionService audioTranscriptionService
     ) {
         this.workspaceRoot = initializeRoot(Objects.requireNonNull(workspaceRoot, "workspaceRoot"));
-        this.attachmentExtractionService = Objects.requireNonNull(attachmentExtractionService, "attachmentExtractionService");
-        this.audioTranscriptionService = Objects.requireNonNull(audioTranscriptionService, "audioTranscriptionService");
+        this.documentReadService = new DocumentReadService(
+                new WorkspaceService(this.workspaceRoot.toString()),
+                Objects.requireNonNull(attachmentExtractionService, "attachmentExtractionService"),
+                Objects.requireNonNull(audioTranscriptionService, "audioTranscriptionService")
+        );
     }
 
     public Path workspaceRoot() {
@@ -152,7 +158,16 @@ public class FilesystemToolService {
     }
 
     public JsonToolResult readFile(String path) {
-        return readTextLike("read_file", path, true);
+        try {
+            Path resolved = resolveRequired(path);
+            DocumentReadResult readResult = documentReadService.readTextFile(resolved, path);
+            return toJsonToolResult("read_file", path, readResult, true);
+        } catch (RuntimeException exception) {
+            return failure("read_file", "file read failed: " + exception.getMessage(), Map.of(
+                    "status", "error",
+                    "path", path == null ? "" : path
+            ));
+        }
     }
 
     public JsonToolResult readDocumentFile(String path) {
@@ -168,7 +183,7 @@ public class FilesystemToolService {
             Path resolved = resolveRequired(path);
             boolean exists = Files.exists(resolved);
             String kind = !exists ? "missing" : Files.isDirectory(resolved) ? "folder" : "file";
-            String extension = exists && Files.isRegularFile(resolved) ? extension(resolved) : "";
+            String extension = exists && Files.isRegularFile(resolved) ? DocumentTypeSupport.extension(resolved) : "";
             Long size = exists && Files.isRegularFile(resolved) ? sizeOf(resolved) : null;
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("status", "ok");
@@ -188,106 +203,15 @@ public class FilesystemToolService {
         }
     }
 
-    private JsonToolResult readTextLike(String toolName, String path, boolean allowPdf) {
-        try {
-            Path resolved = resolveRequired(path);
-            if (!Files.exists(resolved)) {
-                return failure(toolName, "file does not exist: " + resolved, Map.of(
-                        "status", "error",
-                        "path", path,
-                        "resolvedPath", resolved.toString()
-                ));
-            }
-            String extension = extension(resolved);
-            if (!isTextLike(extension) && !(allowPdf && "pdf".equals(extension))) {
-                return failure(toolName, "unsupported text type: " + extension, Map.of(
-                        "status", "unsupported",
-                        "path", path,
-                        "resolvedPath", resolved.toString(),
-                        "fileType", extension
-                ));
-            }
-            GaiaExtractedAttachment extracted = attachmentExtractionService.extract(resolved);
-            return extractedToResult(toolName, resolved, extracted, path);
-        } catch (RuntimeException exception) {
-            return failure(toolName, "file read failed: " + exception.getMessage(), Map.of(
-                    "status", "error",
-                    "path", path == null ? "" : path
-            ));
-        }
-    }
-
-    private JsonToolResult extractedToResult(String toolName, Path resolved, GaiaExtractedAttachment extracted, String originalPath) {
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("status", extracted.status().name());
-        data.put("path", originalPath);
-        data.put("resolvedPath", resolved.toString());
-        data.put("contentType", extracted.contentType());
-        data.put("fileType", extracted.fileType());
-        data.put("note", extracted.extractionNote());
-        data.put("traceEvents", extracted.traceEvents());
-        data.put("text", extracted.extractedText());
-        String text = extracted.extractedText() == null ? "" : extracted.extractedText();
-        String output = "status=" + extracted.status().name().toLowerCase(Locale.ROOT)
-                + "\nresolvedPath=" + resolved
-                + "\ncontentType=" + extracted.contentType()
-                + "\ntext:\n" + text;
-        return new JsonToolResult(toolName, extracted.status() == GaiaAttachmentStatus.TEXT_EXTRACTED, output, data);
-    }
-
     private JsonToolResult readDocumentFile(String toolName, String path) {
         try {
             Path resolved = resolveRequired(path);
-            if (!Files.exists(resolved)) {
-                return failure(toolName, "file does not exist: " + resolved, Map.of(
-                        "status", "error",
-                        "path", path,
-                        "resolvedPath", resolved.toString()
-                ));
-            }
-            String extension = extension(resolved);
-            if (isAudioLike(extension)) {
-                return transcribeAudio(toolName, resolved, path);
-            }
-            if (isTextLike(extension) || "pdf".equals(extension)) {
-                GaiaExtractedAttachment extracted = attachmentExtractionService.extract(resolved);
-                return extractedToResult(toolName, resolved, extracted, path);
-            }
-            return failure(toolName, "unsupported media type for extraction: " + extension, Map.of(
-                    "status", "unsupported",
-                    "path", path,
-                    "resolvedPath", resolved.toString(),
-                    "fileType", extension
-            ));
+            DocumentReadResult readResult = documentReadService.readDocumentFile(resolved, path);
+            return toJsonToolResult(toolName, path, readResult, false);
         } catch (RuntimeException exception) {
             return failure(toolName, "document read failed: " + exception.getMessage(), Map.of(
                     "status", "error",
                     "path", path == null ? "" : path
-            ));
-        }
-    }
-
-    private JsonToolResult transcribeAudio(String toolName, Path resolved, String originalPath) {
-        try {
-            String transcript = audioTranscriptionService.transcribe(resolved);
-            String normalized = transcript == null ? "" : transcript.replaceAll("\\s+", " ").trim();
-            if (normalized.length() > DEFAULT_MAX_AUDIO_CHARS) {
-                normalized = normalized.substring(0, DEFAULT_MAX_AUDIO_CHARS);
-            }
-            Map<String, Object> data = new LinkedHashMap<>();
-            data.put("status", "AUDIO_TRANSCRIBED");
-            data.put("path", originalPath);
-            data.put("resolvedPath", resolved.toString());
-            data.put("text", normalized);
-            data.put("traceEvents", List.of("attachment:audio-transcribed"));
-            String output = "status=audio_transcribed\nresolvedPath=" + resolved + "\ntranscript:\n" + normalized;
-            return new JsonToolResult(toolName, true, output, data);
-        } catch (RuntimeException exception) {
-            return failure(toolName, "audio transcription failed: " + exception.getMessage(), Map.of(
-                    "status", "AUDIO_TRANSCRIPTION_FAILED",
-                    "path", originalPath,
-                    "resolvedPath", resolved.toString(),
-                    "traceEvents", List.of("attachment:audio-transcription-failed")
             ));
         }
     }
@@ -370,35 +294,6 @@ public class FilesystemToolService {
         return resolved;
     }
 
-    private boolean isTextLike(String extension) {
-        return switch (extension.toLowerCase(Locale.ROOT)) {
-            case "txt", "md", "csv", "json", "jsonl", "ndjson", "html", "htm", "xml", "yaml", "yml" -> true;
-            default -> false;
-        };
-    }
-
-    private boolean isAudioLike(String extension) {
-        return switch (extension.toLowerCase(Locale.ROOT)) {
-            case "mp3", "wav", "m4a", "mp4", "mpeg", "mpga", "ogg", "webm", "flac" -> true;
-            default -> false;
-        };
-    }
-
-    private String extension(Path path) {
-        if (path == null || path.getFileName() == null) {
-            return "";
-        }
-        return extension(path.getFileName().toString());
-    }
-
-    private String extension(String value) {
-        int index = value.lastIndexOf('.');
-        if (index < 0 || index == value.length() - 1) {
-            return "";
-        }
-        return value.substring(index + 1).toLowerCase(Locale.ROOT);
-    }
-
     private String stripExtension(String value) {
         int index = value.lastIndexOf('.');
         if (index < 0) {
@@ -450,6 +345,34 @@ public class FilesystemToolService {
             builder.append("- ... truncated\n");
         }
         return builder.toString();
+    }
+
+    private JsonToolResult toJsonToolResult(String toolName, String originalPath, DocumentReadResult readResult, boolean requireTextExtraction) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("status", readResult.status());
+        data.put("path", originalPath == null ? "" : originalPath);
+        data.put("resolvedPath", readResult.resolvedPath() == null ? "" : readResult.resolvedPath().toString());
+        data.put("contentType", readResult.contentType());
+        data.put("fileType", readResult.fileType());
+        data.put("note", readResult.extractionNote());
+        data.put("traceEvents", readResult.traceEvents());
+        data.put("text", readResult.extractedText());
+        data.put("wasTruncated", readResult.wasTruncated());
+        data.put("originalLength", readResult.originalLength());
+        data.put("extractedLength", readResult.extractedLength());
+        String text = readResult.extractedText() == null ? "" : readResult.extractedText();
+        String output = "status=" + readResult.status().toLowerCase(Locale.ROOT)
+                + "\nresolvedPath=" + readResult.resolvedPath()
+                + "\ncontentType=" + readResult.contentType()
+                + "\ntext:\n" + text;
+        boolean success = readResult.success();
+        if (requireTextExtraction) {
+            success = success && "TEXT_EXTRACTED".equals(readResult.status());
+        }
+        if (!success && "TEXT_EXTRACTED".equals(readResult.status())) {
+            success = true;
+        }
+        return new JsonToolResult(toolName, success, output, data);
     }
 
     private JsonToolResult failure(String toolName, String message, Map<String, Object> data) {

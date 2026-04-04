@@ -8,8 +8,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
+
+import static dk.ashlan.agent.document.DocumentTypeSupport.extension;
 
 @ApplicationScoped
 public class GaiaAttachmentExtractionService {
@@ -27,7 +29,7 @@ public class GaiaAttachmentExtractionService {
         String fileType = extension(path);
         try {
             return switch (fileType) {
-                case "txt", "md", "csv", "json", "jsonl", "ndjson", "yaml", "yml" ->
+                case "txt", "md", "csv", "tsv", "json", "jsonl", "ndjson", "yaml", "yml", "properties", "log", "ini", "rst", "toml", "java", "py", "js", "ts", "sql" ->
                         extractPlainText(path, fileName, fileType, "text/plain");
                 case "html", "htm" -> extractMarkupText(path, fileName, fileType, "text/html");
                 case "xml" -> extractMarkupText(path, fileName, fileType, "application/xml");
@@ -38,7 +40,10 @@ public class GaiaAttachmentExtractionService {
                         fileType,
                         "",
                         "attachment type not supported for text extraction: " + fileType,
-                        List.of("attachment:unsupported-type")
+                        List.of("attachment:unsupported-type"),
+                        false,
+                        0,
+                        0
                 );
             };
         } catch (Exception exception) {
@@ -54,12 +59,15 @@ public class GaiaAttachmentExtractionService {
     private GaiaExtractedAttachment extractMarkupText(Path path, String fileName, String fileType, String contentType) throws IOException {
         String raw = Files.readString(path, StandardCharsets.UTF_8);
         String stripped = raw
-                .replaceAll("(?is)<script[^>]*>.*?</script>", " ")
-                .replaceAll("(?is)<style[^>]*>.*?</style>", " ")
+                .replaceAll("(?is)<script[^>]*>.*?</script>", "\n")
+                .replaceAll("(?is)<style[^>]*>.*?</style>", "\n")
+                .replaceAll("(?is)<br\\s*/?>", "\n")
+                .replaceAll("(?is)</(p|div|li|tr|h[1-6]|section|article|header|footer)>", "\n")
                 .replaceAll("(?s)<[^>]+>", " ")
                 .replaceAll("&nbsp;", " ")
-                .replaceAll("\\s+", " ")
-                .trim();
+                .replaceAll("&lt;", "<")
+                .replaceAll("&gt;", ">")
+                .replaceAll("&amp;", "&");
         return buildTextResult(fileName, fileType, contentType, stripped, true);
     }
 
@@ -73,18 +81,23 @@ public class GaiaAttachmentExtractionService {
     }
 
     private GaiaExtractedAttachment buildTextResult(String fileName, String fileType, String contentType, String text, boolean strippedMarkup) {
-        String normalized = normalizeWhitespace(text);
+        String normalized = normalizeText(text);
         if (normalized.isBlank()) {
             return failure(fileName, fileType, "attachment text extraction produced no text", "attachment:text-extraction-failed");
         }
-        List<String> events = new java.util.ArrayList<>();
+        List<String> events = new ArrayList<>();
         events.add("attachment:text-extracted");
         if (strippedMarkup) {
             events.add("attachment:text-normalized");
         }
+        int originalLength = text == null ? 0 : text.length();
+        int extractedLength = normalized.length();
+        boolean wasTruncated = false;
         String note = "GAIA attachment text extracted from " + defaultText(fileName, fileType) + ".";
-        if (normalized.length() > MAX_EXTRACTED_CHARS) {
+        if (extractedLength > MAX_EXTRACTED_CHARS) {
             normalized = normalized.substring(0, MAX_EXTRACTED_CHARS);
+            extractedLength = normalized.length();
+            wasTruncated = true;
             note = note + " Extracted text was truncated to " + MAX_EXTRACTED_CHARS + " characters.";
             events.add("attachment:text-truncated");
         }
@@ -94,7 +107,10 @@ public class GaiaAttachmentExtractionService {
                 fileType,
                 normalized,
                 note,
-                List.copyOf(events)
+                List.copyOf(events),
+                wasTruncated,
+                originalLength,
+                extractedLength
         );
     }
 
@@ -105,21 +121,30 @@ public class GaiaAttachmentExtractionService {
                 fileType,
                 "",
                 note,
-                List.of(event)
+                List.of(event),
+                false,
+                0,
+                0
         );
     }
 
-    private String normalizeWhitespace(String input) {
-        return input == null ? "" : input.replaceAll("\\s+", " ").trim();
+    private String normalizeText(String input) {
+        if (input == null) {
+            return "";
+        }
+        String canonical = input.replace("\r\n", "\n").replace('\r', '\n');
+        List<String> lines = canonical.lines()
+                .map(line -> line.replaceAll("\\s+", " ").trim())
+                .filter(line -> !line.isBlank())
+                .toList();
+        if (lines.isEmpty()) {
+            return "";
+        }
+        return String.join("\n", lines);
     }
 
     private String extension(Path path) {
-        String name = path == null ? "" : path.getFileName().toString();
-        int index = name.lastIndexOf('.');
-        if (index < 0 || index == name.length() - 1) {
-            return "";
-        }
-        return name.substring(index + 1).toLowerCase(Locale.ROOT);
+        return dk.ashlan.agent.document.DocumentTypeSupport.extension(path == null ? null : path.getFileName().toString());
     }
 
     private String defaultText(String first, String second) {

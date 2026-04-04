@@ -8,7 +8,10 @@ public record GaiaExtractedAttachment(
         String fileType,
         String extractedText,
         String extractionNote,
-        List<String> traceEvents
+        List<String> traceEvents,
+        boolean wasTruncated,
+        int originalLength,
+        int extractedLength
 ) {
     public boolean hasText() {
         return status == GaiaAttachmentStatus.TEXT_EXTRACTED;

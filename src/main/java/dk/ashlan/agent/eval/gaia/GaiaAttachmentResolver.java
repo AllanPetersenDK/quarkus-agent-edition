@@ -10,6 +10,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import static dk.ashlan.agent.document.DocumentTypeSupport.isAudioLike;
+import static dk.ashlan.agent.document.DocumentTypeSupport.isTextLike;
+
 @ApplicationScoped
 public class GaiaAttachmentResolver {
     private final GaiaAudioTranscriptionService audioTranscriptionService;
@@ -39,7 +42,7 @@ public class GaiaAttachmentResolver {
             if (!Files.exists(resolved)) {
                 return new GaiaAttachment(fileName, filePath, resolved.toString(), GaiaAttachmentStatus.MISSING, "attachment file is missing: " + resolved, List.of("attachment:missing"));
             }
-            String extension = extension(resolved.getFileName().toString());
+            String extension = dk.ashlan.agent.document.DocumentTypeSupport.extension(resolved);
             if (isTextLike(extension) || "pdf".equalsIgnoreCase(extension)) {
                 GaiaExtractedAttachment extracted = attachmentExtractionService.extract(resolved);
                 return buildExtractedAttachment(fileName, filePath, resolved, extracted);
@@ -77,7 +80,7 @@ public class GaiaAttachmentResolver {
         }
 
         String resolved = resolveRemote(baseSource, cleanedPath);
-        String extension = extension(cleanedPath);
+        String extension = dk.ashlan.agent.document.DocumentTypeSupport.extension(cleanedPath);
         if (isTextLike(extension)) {
             return new GaiaAttachment(
                     fileName,
@@ -158,13 +161,6 @@ public class GaiaAttachmentResolver {
         }
     }
 
-    private boolean isTextLike(String extension) {
-        return switch (extension.toLowerCase()) {
-            case "txt", "md", "csv", "json", "jsonl", "ndjson", "yaml", "yml" -> true;
-            default -> false;
-        };
-    }
-
     private GaiaAttachment buildExtractedAttachment(String fileName, String filePath, Path resolved, GaiaExtractedAttachment extracted) {
         List<String> traceEvents = new java.util.ArrayList<>();
         traceEvents.add("attachment:present:" + safeName(fileName, resolved));
@@ -181,21 +177,6 @@ public class GaiaAttachmentResolver {
                 note,
                 List.copyOf(traceEvents)
         );
-    }
-
-    private boolean isAudioLike(String extension) {
-        return switch (extension.toLowerCase()) {
-            case "mp3", "wav", "m4a", "mp4", "mpeg", "mpga", "ogg", "webm", "flac" -> true;
-            default -> false;
-        };
-    }
-
-    private String extension(String value) {
-        int index = value.lastIndexOf('.');
-        if (index < 0 || index == value.length() - 1) {
-            return "";
-        }
-        return value.substring(index + 1);
     }
 
     private String safeName(String fileName, Path fallback) {

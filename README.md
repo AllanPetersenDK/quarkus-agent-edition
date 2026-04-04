@@ -108,6 +108,7 @@ mvn test
 - `GET /api/runtime/sessions/{sessionId}`
 - `GET /api/runtime/sessions/{sessionId}/memory`
 - `POST /api/rag/ingest`
+- `POST /api/rag/ingest/path`
 - `GET /api/rag/query`
 - `POST /admin/evaluations`
 - `POST /admin/evaluations/gaia/run`
@@ -120,6 +121,7 @@ mvn test
 - `POST /api/companion/llm/async-batch`
 
 For local GAIA validation, `./scripts/run-dev.sh` will auto-download the workspace snapshot into `target/gaia-data` on first start when `GAIA_DATASET_URL` is not set.
+Chapter-5 path ingest now works the same way through the shared workspace/document read layer, so you can point the RAG companion seam at a workspace file path instead of copying text into a raw ingest request.
 - `POST /code-agent`
 - `POST /multi-agent`
 - `GET /workflow-demo`

@@ -3,6 +3,7 @@ package dk.ashlan.agent.api;
 import dk.ashlan.agent.rag.DocumentChunk;
 import dk.ashlan.agent.rag.RagService;
 import dk.ashlan.agent.rag.RetrievalResult;
+import dk.ashlan.agent.rag.RagService.RagPathIngestResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.ws.rs.BadRequestException;
@@ -58,6 +59,28 @@ public class RagResource {
         return new RagIngestResponse(request.sourceId(), chunks.size(), chunks);
     }
 
+    @POST
+    @Path("/ingest/path")
+    @Operation(
+            summary = "Ingest a workspace document by path",
+            description = "Book chapter: 5. Path-based companion seam that resolves a workspace file through the shared document-read layer before ingesting extracted text into RAG."
+    )
+    @RequestBody(
+            description = "Workspace path and optional source id for the document to ingest.",
+            required = true,
+            content = @Content(schema = @Schema(implementation = RagIngestPathRequest.class))
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Ingest result, extraction metadata, and chunk summaries.",
+            content = @Content(schema = @Schema(implementation = RagIngestPathResponse.class))
+    )
+    @APIResponse(responseCode = "400", description = "Missing or blank path.")
+    public RagIngestPathResponse ingestPath(@Valid RagIngestPathRequest request) {
+        RagPathIngestResult result = ragService.ingestPath(request.path(), request.sourceId());
+        return RagIngestPathResponse.from(result);
+    }
+
     @GET
     @Path("/query")
     @Operation(
@@ -106,6 +129,71 @@ public class RagResource {
             @Schema(description = "Chunk summaries written to the RAG stack.")
             List<RagChunkResponse> chunks
     ) {
+    }
+
+    public record RagIngestPathRequest(
+            @NotBlank
+            @Schema(description = "Workspace-relative path to a single document file.", required = true, examples = {"docs/chapter5/sample.pdf"})
+            String path,
+            @Schema(description = "Optional source identifier to use for the ingested document.", examples = {"sample-pdf"})
+            String sourceId
+    ) {
+    }
+
+    public record RagIngestPathResponse(
+            @Schema(description = "Source identifier used during ingest.")
+            String sourceId,
+            @Schema(description = "Original path submitted for ingest.")
+            String path,
+            @Schema(description = "Resolved workspace path for the document.")
+            String resolvedPath,
+            @Schema(description = "Ingest or read status for the supplied document.")
+            String status,
+            @Schema(description = "Underlying document-read status.")
+            String documentStatus,
+            @Schema(description = "Detected file type.")
+            String fileType,
+            @Schema(description = "Detected content type.")
+            String contentType,
+            @Schema(description = "Whether extracted text was truncated.")
+            boolean wasTruncated,
+            @Schema(description = "Original content length before normalization/truncation.")
+            int originalLength,
+            @Schema(description = "Length of the extracted, normalized text.")
+            int extractedLength,
+            @Schema(description = "Short extraction note.")
+            String extractionNote,
+            @Schema(description = "Trace events from document read and ingest.")
+            List<String> traceEvents,
+            @Schema(description = "Number of document chunks created by the ingest.")
+            int chunkCount,
+            @Schema(description = "Chunk summaries written to the RAG stack.")
+            List<RagChunkResponse> chunks,
+            @Schema(description = "Error message when ingest or extraction failed.")
+            String error
+    ) {
+        static RagIngestPathResponse from(RagPathIngestResult result) {
+            List<RagChunkResponse> chunks = result.chunks().stream()
+                    .map(RagChunkResponse::fromIngest)
+                    .toList();
+            return new RagIngestPathResponse(
+                    result.sourceId(),
+                    result.path(),
+                    result.resolvedPath(),
+                    result.status(),
+                    result.documentStatus(),
+                    result.fileType(),
+                    result.contentType(),
+                    result.wasTruncated(),
+                    result.originalLength(),
+                    result.extractedLength(),
+                    result.extractionNote(),
+                    result.traceEvents(),
+                    result.chunkCount(),
+                    chunks,
+                    result.error()
+            );
+        }
     }
 
     public record RagQueryResponse(
