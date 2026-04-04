@@ -217,6 +217,7 @@ Swagger-visible companion seam for document ingest into the repo's RAG stack.
 `GET /api/rag/query`
 
 Swagger-visible companion seam for querying the stored knowledge base.
+The chapter-5 query flow now uses a small hybrid reranker and builds `answer` from the best matching chunk instead of concatenating all retrieved chunks.
 
 ### Evaluation
 

@@ -1,18 +1,25 @@
 package dk.ashlan.agent.rag;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class RagService {
     private final DocumentIngestionService ingestionService;
     private final Retriever retriever;
+    private final RagAnswerBuilder answerBuilder;
 
-    public RagService(DocumentIngestionService ingestionService, Retriever retriever) {
+    @Inject
+    public RagService(DocumentIngestionService ingestionService, Retriever retriever, RagAnswerBuilder answerBuilder) {
         this.ingestionService = ingestionService;
         this.retriever = retriever;
+        this.answerBuilder = answerBuilder;
+    }
+
+    public RagService(DocumentIngestionService ingestionService, Retriever retriever) {
+        this(ingestionService, retriever, new RagAnswerBuilder());
     }
 
     public List<DocumentChunk> ingest(String sourceId, String text) {
@@ -24,12 +31,10 @@ public class RagService {
     }
 
     public String answer(String query, int topK) {
-        List<RetrievalResult> results = retrieve(query, topK);
-        if (results.isEmpty()) {
-            return "No relevant knowledge found.";
-        }
-        return results.stream()
-                .map(result -> result.chunk().text())
-                .collect(Collectors.joining("\n\n"));
+        return answer(query, retrieve(query, topK));
+    }
+
+    public String answer(String query, List<RetrievalResult> results) {
+        return answerBuilder.build(query, results);
     }
 }

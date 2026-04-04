@@ -23,7 +23,6 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Path("/api/rag")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -85,11 +84,7 @@ public class RagResource {
         List<RagChunkResponse> chunks = results.stream()
                 .map(RagChunkResponse::fromQuery)
                 .toList();
-        String answer = results.isEmpty()
-                ? "No relevant knowledge found."
-                : results.stream()
-                .map(result -> result.chunk().text())
-                .collect(Collectors.joining("\n\n"));
+        String answer = ragService.answer(effectiveQuery, results);
         return new RagQueryResponse(effectiveQuery, answer, chunks);
     }
 

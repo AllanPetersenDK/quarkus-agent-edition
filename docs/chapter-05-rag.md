@@ -25,6 +25,8 @@ The RAG module keeps the chapter mechanics visible without external infrastructu
 
 - Top-K retrieval is supported.
 - Cosine similarity is used for ranking.
+- Chapter-5 query flow adds a small lexical/entity reranking layer on top of embeddings so entity-matching queries are more stable.
+- Answers are built from the best matching chunk instead of concatenating all retrieved chunks.
 - Fake embeddings are deterministic so tests can validate retrieval.
 - The H2-backed vector store persists chunk text, metadata, and embeddings, then ranks rows in Java on retrieval.
 - Blank or corrupt persisted metadata or embeddings fail explicitly.
