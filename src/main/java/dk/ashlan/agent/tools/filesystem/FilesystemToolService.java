@@ -3,7 +3,6 @@ package dk.ashlan.agent.tools.filesystem;
 import dk.ashlan.agent.code.WorkspaceService;
 import dk.ashlan.agent.document.DocumentReadResult;
 import dk.ashlan.agent.document.DocumentReadService;
-import dk.ashlan.agent.document.DocumentTypeSupport;
 import dk.ashlan.agent.eval.gaia.GaiaAttachmentExtractionService;
 import dk.ashlan.agent.eval.gaia.GaiaAudioTranscriptionService;
 import dk.ashlan.agent.tools.JsonToolResult;
@@ -36,15 +35,10 @@ public class FilesystemToolService {
     @Inject
     public FilesystemToolService(
             WorkspaceService workspaceService,
-            GaiaAttachmentExtractionService attachmentExtractionService,
-            GaiaAudioTranscriptionService audioTranscriptionService
+            DocumentReadService documentReadService
     ) {
         this.workspaceRoot = initializeRoot(Objects.requireNonNull(workspaceService, "workspaceService").root());
-        this.documentReadService = new DocumentReadService(
-                workspaceService,
-                Objects.requireNonNull(attachmentExtractionService, "attachmentExtractionService"),
-                Objects.requireNonNull(audioTranscriptionService, "audioTranscriptionService")
-        );
+        this.documentReadService = Objects.requireNonNull(documentReadService, "documentReadService");
     }
 
     public FilesystemToolService(
@@ -183,7 +177,7 @@ public class FilesystemToolService {
             Path resolved = resolveRequired(path);
             boolean exists = Files.exists(resolved);
             String kind = !exists ? "missing" : Files.isDirectory(resolved) ? "folder" : "file";
-            String extension = exists && Files.isRegularFile(resolved) ? DocumentTypeSupport.extension(resolved) : "";
+            String extension = exists && Files.isRegularFile(resolved) ? dk.ashlan.agent.document.DocumentTypeSupport.extension(resolved) : "";
             Long size = exists && Files.isRegularFile(resolved) ? sizeOf(resolved) : null;
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("status", "ok");

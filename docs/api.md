@@ -222,6 +222,7 @@ Swagger-visible companion seam for document ingest into the repo's RAG stack.
 `POST /api/rag/ingest/path`
 
 Swagger-visible chapter-5 companion seam for ingesting a workspace document by path. The endpoint resolves the path against the canonical workspace root, runs it through the shared document-read layer, and ingests the extracted text into RAG. Directory ingest is not supported in this first version; the response makes that explicit.
+Structured failures are returned in the response body, including statuses such as `INVALID_PATH`, `SECURITY_VIOLATION`, `DIRECTORY_UNSUPPORTED`, `UNSUPPORTED_TYPE`, and `RESOLUTION_FAILED`, so clients can distinguish user input errors from successful ingest.
 
 Example request body:
 

@@ -49,7 +49,7 @@ class RagIngestPathTest {
         assertEquals(0, directory.chunkCount());
         assertTrue(directory.error().contains("directory ingest/read is not supported yet"));
 
-        assertEquals("ERROR", traversal.status());
+        assertEquals("SECURITY_VIOLATION", traversal.status());
         assertEquals(0, traversal.chunkCount());
         assertTrue(traversal.error().contains("Path traversal is not allowed") || traversal.error().contains("resolved path escapes workspace root"));
     }

@@ -40,9 +40,9 @@ public class DocumentReadService {
 
     public DocumentReadResult readTextFile(String rawPath) {
         if (rawPath == null || rawPath.isBlank()) {
-            return new DocumentReadResult("MISSING", null, "", "application/octet-stream", "", "path is required", List.of("document:missing"), false, false, 0, 0);
+            return new DocumentReadResult("INVALID_PATH", null, "", "application/octet-stream", "", "path is required", List.of("document:invalid-path"), false, false, 0, 0);
         }
-        return readTextFile(workspaceService.resolve(rawPath), rawPath);
+        return readFromRawPath(rawPath, true);
     }
 
     public DocumentReadResult readDocumentFile(Path resolvedPath, String originalPath) {
@@ -51,9 +51,20 @@ public class DocumentReadService {
 
     public DocumentReadResult readDocumentFile(String rawPath) {
         if (rawPath == null || rawPath.isBlank()) {
-            return new DocumentReadResult("MISSING", null, "", "application/octet-stream", "", "path is required", List.of("document:missing"), false, false, 0, 0);
+            return new DocumentReadResult("INVALID_PATH", null, "", "application/octet-stream", "", "path is required", List.of("document:invalid-path"), false, false, 0, 0);
         }
-        return readDocumentFile(workspaceService.resolve(rawPath), rawPath);
+        return readFromRawPath(rawPath, false);
+    }
+
+    private DocumentReadResult readFromRawPath(String rawPath, boolean textOnly) {
+        try {
+            return readDocumentInternal(workspaceService.resolve(rawPath), rawPath, textOnly);
+        } catch (IllegalArgumentException exception) {
+            String status = classifyPathError(exception.getMessage());
+            return failure(status, null, rawPath, exception.getMessage(), List.of("document:path-rejected"));
+        } catch (IllegalStateException exception) {
+            return failure("RESOLUTION_FAILED", null, rawPath, exception.getMessage(), List.of("document:read-failed"));
+        }
     }
 
     private DocumentReadResult readDocumentInternal(Path resolvedPath, String originalPath, boolean textOnly) {
@@ -159,6 +170,17 @@ public class DocumentReadService {
                 0,
                 0
         );
+    }
+
+    private String classifyPathError(String message) {
+        String value = message == null ? "" : message.toLowerCase();
+        if (value.contains("path traversal") || value.contains("symlink access")) {
+            return "SECURITY_VIOLATION";
+        }
+        if (value.contains("invalid path")) {
+            return "INVALID_PATH";
+        }
+        return "RESOLUTION_FAILED";
     }
 
     private Path validateResolvedPath(Path resolvedPath, String originalPath) {
