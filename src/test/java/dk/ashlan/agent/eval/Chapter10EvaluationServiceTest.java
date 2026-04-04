@@ -22,6 +22,8 @@ import dk.ashlan.agent.multiagent.CoordinatorAgent;
 import dk.ashlan.agent.multiagent.ResearchAgent;
 import dk.ashlan.agent.multiagent.ReviewerAgent;
 import dk.ashlan.agent.product.service.ProductAssistantService;
+import dk.ashlan.agent.product.store.JdbcProductConversationStore;
+import dk.ashlan.agent.product.store.ProductConversationStore;
 import dk.ashlan.agent.planning.PlannerService;
 import dk.ashlan.agent.planning.ReflectionService;
 import dk.ashlan.agent.rag.Chunker;
@@ -33,6 +35,7 @@ import dk.ashlan.agent.rag.Retriever;
 import dk.ashlan.agent.eval.gaia.GaiaAttachmentExtractionService;
 import dk.ashlan.agent.eval.gaia.GaiaAudioTranscriptionService;
 import dk.ashlan.agent.document.DocumentReadService;
+import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -144,13 +147,19 @@ class Chapter10EvaluationServiceTest {
 
         SessionManager sessionManager = new SessionManager();
         MemoryService memoryService = new MemoryService(sessionManager, new InMemoryTaskMemoryStore(), new MemoryExtractionService());
+        JdbcDataSource dataSource = new JdbcDataSource();
+        dataSource.setURL("jdbc:h2:file:" + tempDir.resolve("product-state").toAbsolutePath() + ";AUTO_SERVER=FALSE;DB_CLOSE_ON_EXIT=FALSE");
+        dataSource.setUser("sa");
+        dataSource.setPassword("sa");
+        ProductConversationStore productConversationStore = new JdbcProductConversationStore(dataSource);
         ProductAssistantService productAssistantService = new ProductAssistantService(
                 ragService,
                 memoryService,
                 sessionManager,
                 new PlannerService(),
                 new ReflectionService(),
-                recorder
+                recorder,
+                productConversationStore
         );
         CodeAgentOrchestrator codeAgentOrchestrator = new CodeAgentOrchestrator(
                 new CodeWorkspaceRegistry(tempDir.resolve("chapter8-workspaces").toString()),

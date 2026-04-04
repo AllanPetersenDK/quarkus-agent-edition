@@ -25,6 +25,7 @@ It delegates to the mature runtime capabilities already in the repo:
 - observability-friendly metadata for inspection
 
 Product runs are also written into the shared chapter-10 run history so the product lane can be replayed and explained after execution through the same inspection seam as the other runtime lanes.
+Phase 2 adds a small JDBC-backed conversation store with a PostgreSQL-compatible schema and a read-only operator seam for inspecting persistent product conversations. The local runtime still uses H2, but the storage contract is now shaped so PostgreSQL can become the natural phase-3 destination.
 
 ## Design Rules
 
@@ -32,3 +33,4 @@ Product runs are also written into the shared chapter-10 run history so the prod
 - Product APIs do not use chapter names in their public contract.
 - Chapter demo endpoints stay available for book-aligned exploration, but the product lane is the recommended path for building forward.
 - Product code delegates to existing runtime capabilities instead of duplicating them.
+- Auth, roles, OIDC, and tenancy are intentionally phase-3 work, so the product contract stays focused on persistence, inspection, and operator readiness first.

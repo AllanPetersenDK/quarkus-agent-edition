@@ -3,7 +3,6 @@ package dk.ashlan.agent.product.api;
 import dk.ashlan.agent.product.model.ProductAssistantQueryRequest;
 import dk.ashlan.agent.product.model.ProductAssistantQueryResponse;
 import dk.ashlan.agent.product.service.ProductAssistantService;
-import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -43,7 +42,17 @@ public class ProductAssistantResource {
             description = "Product assistant response with answer, sources, memory hints, planning, and reflection metadata.",
             content = @Content(schema = @Schema(implementation = ProductAssistantQueryResponse.class))
     )
-    public ProductAssistantQueryResponse query(@Valid ProductAssistantQueryRequest request) {
+    @APIResponse(
+            responseCode = "400",
+            description = "Validation or request constraint error for the product assistant query.",
+            content = @Content(schema = @Schema(implementation = ProductApiErrorResponse.class))
+    )
+    @APIResponse(
+            responseCode = "503",
+            description = "Product pipeline or persistence failure.",
+            content = @Content(schema = @Schema(implementation = ProductApiErrorResponse.class))
+    )
+    public ProductAssistantQueryResponse query(ProductAssistantQueryRequest request) {
         return assistantService.query(request);
     }
 }

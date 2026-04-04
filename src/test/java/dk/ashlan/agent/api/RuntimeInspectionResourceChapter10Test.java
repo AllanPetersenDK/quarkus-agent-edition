@@ -68,14 +68,18 @@ class RuntimeInspectionResourceChapter10Test {
                 new ProductAssistantQueryResponse(
                         "product-run-1",
                         "product-conversation",
+                        false,
                         2,
+                        1,
                         "Which text mentions PostgreSQL?",
                         "PostgreSQL is an open-source relational database.",
                         List.of(new ProductSourceResponse("docs/postgresql", "docs/postgresql.txt", 0, "chunk-1", "PostgreSQL is an open-source relational database.", 0.91)),
                         List.of("memory:hints:1", "rag:retrieved:1"),
                         new ProductPlanResponse("Task plan", "Check sources", 2),
                         new ProductReflectionResponse(true, "Looks good."),
-                        List.of("product-query-start", "rag:retrieved:1", "reflection:accepted")
+                        List.of("product-query-start", "rag:retrieved:1", "reflection:accepted"),
+                        "COMPLETED",
+                        null
                 ),
                 started.plusMillis(10),
                 started.plusMillis(15)

@@ -9,8 +9,12 @@ public record ProductAssistantQueryResponse(
         String runId,
         @Schema(description = "Conversation identifier used to scope session and memory continuity.")
         String conversationId,
+        @Schema(description = "True when the query created a new persistent conversation record.")
+        boolean conversationCreated,
         @Schema(description = "Number of messages currently stored for the conversation.")
         int conversationMessageCount,
+        @Schema(description = "Number of stored product turns for the conversation after this query.")
+        int conversationTurnCount,
         @Schema(description = "Original user query.")
         String query,
         @Schema(description = "Answer assembled from the product assistant pipeline.")
@@ -24,6 +28,10 @@ public record ProductAssistantQueryResponse(
         @Schema(description = "Reflection result showing whether the answer passed the lightweight quality check.")
         ProductReflectionResponse reflection,
         @Schema(description = "Small product-lane signals that make the run easy to inspect without exposing chapter internals.")
-        List<String> signals
+        List<String> signals,
+        @Schema(description = "Conversation status such as COMPLETED or REJECTED.")
+        String status,
+        @Schema(description = "Failure reason when the product pipeline rejected the answer, if any.")
+        String failureReason
 ) {
 }

@@ -1,0 +1,70 @@
+package dk.ashlan.agent.product.model;
+
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+
+import java.time.Instant;
+import java.util.List;
+
+@Schema(description = "Persistent product conversation state used for operator inspection and future identity binding.")
+public record ProductConversationState(
+        @Schema(description = "Stable conversation identifier.")
+        String conversationId,
+        @Schema(description = "Conversation creation timestamp.")
+        Instant createdAt,
+        @Schema(description = "Conversation last-update timestamp.")
+        Instant updatedAt,
+        @Schema(description = "Stored product turns for the conversation.")
+        List<ProductConversationTurn> turns
+) {
+    public ProductConversationState {
+        turns = turns == null ? List.of() : List.copyOf(turns);
+    }
+
+    public int turnCount() {
+        return turns.size();
+    }
+
+    public ProductConversationTurn lastTurn() {
+        return turns.isEmpty() ? null : turns.get(turns.size() - 1);
+    }
+
+    public String lastRunId() {
+        return lastTurn() == null ? null : lastTurn().runId();
+    }
+
+    public String lastStatus() {
+        return lastTurn() == null ? null : lastTurn().status();
+    }
+
+    public String lastQuery() {
+        return lastTurn() == null ? null : lastTurn().query();
+    }
+
+    public String lastAnswer() {
+        return lastTurn() == null ? null : lastTurn().answer();
+    }
+
+    public String lastFailureReason() {
+        return lastTurn() == null ? null : lastTurn().failureReason();
+    }
+
+    public List<String> lastQualitySignals() {
+        return lastTurn() == null ? List.of() : lastTurn().qualitySignals();
+    }
+
+    public Integer lastSourceCount() {
+        return lastTurn() == null ? null : lastTurn().sourceCount();
+    }
+
+    public Integer lastCitationCount() {
+        return lastTurn() == null ? null : lastTurn().citationCount();
+    }
+
+    public Integer lastRetrievalCount() {
+        return lastTurn() == null ? null : lastTurn().retrievalCount();
+    }
+
+    public Integer lastPlanStepCount() {
+        return lastTurn() == null ? null : lastTurn().planStepCount();
+    }
+}

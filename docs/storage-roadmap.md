@@ -25,6 +25,8 @@ Suggested order:
 2. Migrate session state to PostgreSQL if you need multi-process or team-shared state.
 3. Move RAG to a real vector store or PostgreSQL with `pgvector` if semantic retrieval becomes more than a chapter demo.
 
+The product lane is already on a PostgreSQL-compatible JDBC schema for conversation persistence, so phase 3 can focus on switching the runtime to a real Postgres deployment and adding auth/identity around it rather than redesigning the product model.
+
 ## What H2 Should Not Become
 
 - A pretend production vector database.

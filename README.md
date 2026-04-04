@@ -150,14 +150,18 @@ Chapter 6 now also exposes a small pause/resume seam for confirmation-gated tool
 - `GET /api/runtime/runs`
 - `GET /api/runtime/runs/{runId}`
 - `POST /admin/evaluations/runs`
+- `GET /api/v1/assistants/admin/conversations`
+- `GET /api/v1/assistants/admin/conversations/{conversationId}`
 - `GET /workflow-demo`
 - MCP server: `http://localhost:8080/mcp`
 
 The recommended product lane is `POST /api/v1/assistants/query`: a small document/knowledge assistant built on the mature RAG, memory, planning, reflection, and observability capabilities. Chapter demo endpoints remain available for the book companion story, but they are not the primary product surface.
 Chapter 10 now adds a shared runtime run-history seam at `GET /api/runtime/runs` and `GET /api/runtime/runs/{runId}`, plus a case-based evaluation seam at `POST /admin/evaluations/runs`, so manual, product, code, multi-agent, evaluation, and GAIA runs can be replayed after execution without relying on the original live response body.
 The chapter-10 history layer is intentionally small and human-readable: run id, lane, input summary, timing, outcome, trace summary, quality signals, and failure or approval details are enough to replay the important parts of a run without creating a heavyweight monitoring backend.
+Phase 2 of the product lane adds JDBC-backed persistent conversation state with a PostgreSQL-compatible schema, a small operator inspection lane, and structured failure responses. Local smoke still uses the embedded H2 runtime database, but the product storage contract is now closer to a real internal platform than a demo overlay. Auth, roles, OIDC, and tenancy are intentionally deferred to phase 3.
 
 See [`docs/api.md`](docs/api.md) for the Swagger coverage boundary and the exact split between REST-exposed outer seams and internal chapter mechanics.
+See [`docs/product-phase-2.md`](docs/product-phase-2.md) for the current product driftability and operator-readiness note.
 See [`docs/fault-tolerance.md`](docs/fault-tolerance.md) for the current resilience policy on provider calls.
 See [`docs/persistence.md`](docs/persistence.md) for the first H2-backed persistence layer.
 See [`docs/security.md`](docs/security.md) for the current security stance on the public and admin seams.

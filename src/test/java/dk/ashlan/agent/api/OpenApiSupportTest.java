@@ -22,6 +22,8 @@ class OpenApiSupportTest {
         assertTrue(CodeAgentResource.class.isAnnotationPresent(jakarta.ws.rs.Path.class));
         assertTrue(MultiAgentResource.class.isAnnotationPresent(jakarta.ws.rs.Path.class));
         assertTrue(WorkflowResource.class.isAnnotationPresent(jakarta.ws.rs.Path.class));
+        assertTrue(dk.ashlan.agent.product.api.ProductAssistantResource.class.isAnnotationPresent(jakarta.ws.rs.Path.class));
+        assertTrue(dk.ashlan.agent.product.api.ProductOperatorResource.class.isAnnotationPresent(jakarta.ws.rs.Path.class));
         String properties = Files.readString(Path.of("src/main/resources/application.properties"));
         assertTrue(properties.contains("quarkus.smallrye-openapi.path=/openapi"));
         assertTrue(properties.contains("quarkus.smallrye-openapi.info-title=Quarkus Agent Edition API"));
@@ -67,7 +69,10 @@ class OpenApiSupportTest {
         assertOperationContains(RuntimeInspectionResource.class, "resume", "Book chapter: 6");
         assertOperationContains(RuntimeInspectionResource.class, "runs", "Book chapter: 10");
         assertOperationContains(RuntimeInspectionResource.class, "run", "Book chapter: 10");
+        assertOperationContains(RuntimeInspectionResource.class, "runs", "Book chapter: 10");
         assertOperationContains(dk.ashlan.agent.product.api.ProductAssistantResource.class, "query", "Product lane v1");
+        assertOperationContains(dk.ashlan.agent.product.api.ProductOperatorResource.class, "listConversations", "Phase-2 product operator seam");
+        assertOperationContains(dk.ashlan.agent.product.api.ProductOperatorResource.class, "conversation", "Phase-2 product operator seam");
         assertOperationContains(RagResource.class, "ingest", "Book chapter: 5");
         assertOperationContains(RagResource.class, "ingestPath", "Book chapter: 5");
         assertOperationContains(RagResource.class, "ingestDirectory", "Book chapter: 5");

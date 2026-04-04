@@ -130,6 +130,7 @@ public class RuntimeRunRecorder {
                 null,
                 null,
                 null,
+                null,
                 null
         ));
     }
@@ -173,6 +174,7 @@ public class RuntimeRunRecorder {
                 null,
                 null,
                 step.toolCalls() == null ? 0 : step.toolCalls().size(),
+                null,
                 null,
                 null,
                 null,

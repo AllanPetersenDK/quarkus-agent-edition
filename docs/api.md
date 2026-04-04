@@ -66,6 +66,8 @@ Covered in Swagger:
 - `GET /multi-agent/history` - chapter-9 run history lookup seam
 - `GET /multi-agent/history/{runId}` - chapter-9 single-run inspection seam
 - `POST /api/v1/assistants/query` - first product-lane document/knowledge assistant seam
+- `GET /api/v1/assistants/admin/conversations` - product operator seam for persistent conversation summaries
+- `GET /api/v1/assistants/admin/conversations/{conversationId}` - product operator seam for persistent conversation detail
 - `GET /api/runtime/runs` - shared chapter-10 runtime run-history seam
 - `GET /api/runtime/runs/{runId}` - shared chapter-10 single-run inspection seam
 - `GET /workflow-demo` - internal deterministic workflow demo
@@ -75,6 +77,7 @@ The runtime inspection seam now also exposes `GET /api/runtime/sessions/{session
 Chapter 8 follows the same companion pattern: the runtime exposes a small code-agent run seam, while workspace state and generated tools remain inspectable through session-scoped endpoints rather than a separate platform.
 The first product lane follows the same “small seam first” rule: `POST /api/v1/assistants/query` delegates to RAG, memory, planning, reflection, and session state, while keeping the chapter demo endpoints available as companion surfaces rather than the recommended product path.
 The shared chapter-10 run history ties the manual runtime lane, the product lane, the code-agent lane, the multi-agent lane, the GAIA lane, and the evaluation lane together. The visible records stay intentionally compact and human-readable: run id, lane, input summary, timing, status, outcome, trace summary, tool usage, quality signals, and the key approval or failure details.
+Chapter 10 is also the shared evaluation and quality gate layer for the product lane: product runs record into the same history seam, and the product evaluation cases can be replayed and explained without the original live response body.
 
 Not covered in Swagger:
 
@@ -98,15 +101,36 @@ It is intentionally small and stable. The endpoint is built on the existing RAG,
 Product responses expose:
 
 - a conversation reference
+- a conversation creation flag
+- a conversation turn count
 - a final answer
 - source citations
 - compact memory hints
 - a small planning summary
 - a lightweight reflection result
+- a stable status and failure reason when the pipeline rejects the answer
 - product-lane signals for inspection
 
 The chapter demo endpoints remain useful for book-aligned exploration, but they are not the recommended product path.
 Product runs are also recorded in the shared chapter-10 run history so a query can be replayed or explained later through the same inspection seam as the other runtime lanes.
+Phase 2 makes the product lane a little more driftable: the conversation state is persisted in a JDBC-backed store with a PostgreSQL-compatible schema, while local smoke still uses the embedded H2 runtime database. The product contract stays small, and auth/roles/OIDC/tenancy are deliberately phase-3 work.
+
+### Product Operations
+
+`GET /api/v1/assistants/admin/conversations`
+
+Operator seam that lists persistent product conversations with their latest status, turn count, and quality signals.
+
+`GET /api/v1/assistants/admin/conversations/{conversationId}`
+
+Operator seam that returns the stored product conversation detail, including the full turn list for debugging and release-gate review.
+
+The product request contract is defensive by design:
+
+- `conversationId` is optional and gets normalized into a stable product conversation id when omitted
+- `query` is required and bounded with validation
+- `topK` is capped to a small safe range
+- persistence and pipeline failures return a structured product error response instead of an opaque stack trace
 
 ## Chapter 10 Run History And Evaluation
 
