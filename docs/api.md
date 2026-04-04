@@ -63,11 +63,13 @@ Covered in Swagger:
 - `POST /multi-agent` - internal chapter demo for the coordinator/reviewer flow
 - `GET /multi-agent/history` - chapter-9 run history lookup seam
 - `GET /multi-agent/history/{runId}` - chapter-9 single-run inspection seam
+- `POST /api/v1/assistants/query` - first product-lane document/knowledge assistant seam
 - `GET /workflow-demo` - internal deterministic workflow demo
 
 Chapter 7 planning and reflection are visible through the existing runtime/tool seams rather than a new workflow API: the runtime tool registry includes `create-tasks` and `reflection`, `GET /api/agent/tools` now works in the live runtime, and chapter-7 runs surface plan/reflection/replan markers in session trace entries.
 The runtime inspection seam now also exposes `GET /api/runtime/sessions/{sessionId}/plan` and `GET /api/runtime/sessions/{sessionId}/reflection` so the current chapter-7 plan and latest reflection/replan signal are visible without adding a separate workflow subsystem. In the current runtime, those inspection seams are meaningfully populated for chapter-7 sessions instead of acting as thin placeholders.
 Chapter 8 follows the same companion pattern: the runtime exposes a small code-agent run seam, while workspace state and generated tools remain inspectable through session-scoped endpoints rather than a separate platform.
+The first product lane follows the same “small seam first” rule: `POST /api/v1/assistants/query` delegates to RAG, memory, planning, reflection, and session state, while keeping the chapter demo endpoints available as companion surfaces rather than the recommended product path.
 
 Not covered in Swagger:
 
@@ -79,6 +81,26 @@ Not covered in Swagger:
 - internal chapter helper classes whose value is teaching flow rather than external invocation
 - the built-in Quarkus health endpoints under `/q/health`
 - the MCP server at `/mcp`
+
+## Product Lane
+
+The first product-oriented public seam is:
+
+- `POST /api/v1/assistants/query`
+
+It is intentionally small and stable. The endpoint is built on the existing RAG, memory, planning, reflection, and session capabilities, while keeping the chapter-demo endpoints available for the companion story.
+
+Product responses expose:
+
+- a conversation reference
+- a final answer
+- source citations
+- compact memory hints
+- a small planning summary
+- a lightweight reflection result
+- product-lane signals for inspection
+
+The chapter demo endpoints remain useful for book-aligned exploration, but they are not the recommended product path.
 
 ## Endpoint Notes
 

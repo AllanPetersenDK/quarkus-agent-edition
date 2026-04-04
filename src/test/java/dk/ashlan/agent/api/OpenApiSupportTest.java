@@ -64,6 +64,7 @@ class OpenApiSupportTest {
         assertOperationContains(RuntimeInspectionResource.class, "memory", "Book chapter: 6");
         assertOperationContains(RuntimeInspectionResource.class, "trace", "Book chapter mapping: chapter 4 runtime trace inspection seam");
         assertOperationContains(RuntimeInspectionResource.class, "resume", "Book chapter: 6");
+        assertOperationContains(dk.ashlan.agent.product.api.ProductAssistantResource.class, "query", "Product lane v1");
         assertOperationContains(RagResource.class, "ingest", "Book chapter: 5");
         assertOperationContains(RagResource.class, "ingestPath", "Book chapter: 5");
         assertOperationContains(RagResource.class, "ingestDirectory", "Book chapter: 5");

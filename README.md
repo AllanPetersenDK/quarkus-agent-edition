@@ -115,6 +115,7 @@ mvn test
 
 - OpenAPI: `http://localhost:8080/openapi`
 - Swagger UI: `http://localhost:8080/swagger-ui`
+- `POST /api/v1/assistants/query`
 - `POST /api/agent/run`
 - `GET /api/agent/tools`
 - `GET /api/runtime/health`
@@ -147,6 +148,8 @@ Chapter 6 now also exposes a small pause/resume seam for confirmation-gated tool
 - `GET /multi-agent/history/{runId}`
 - `GET /workflow-demo`
 - MCP server: `http://localhost:8080/mcp`
+
+The recommended product lane is `POST /api/v1/assistants/query`: a small document/knowledge assistant built on the mature RAG, memory, planning, reflection, and observability capabilities. Chapter demo endpoints remain available for the book companion story, but they are not the primary product surface.
 
 See [`docs/api.md`](docs/api.md) for the Swagger coverage boundary and the exact split between REST-exposed outer seams and internal chapter mechanics.
 See [`docs/fault-tolerance.md`](docs/fault-tolerance.md) for the current resilience policy on provider calls.
