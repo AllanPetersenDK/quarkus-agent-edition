@@ -169,6 +169,8 @@ Quarkus CDI resolves the JDBC-backed persistence beans in runtime; the in-memory
 explicit default/manual paths.
 `AgentOrchestrator` also has a small callback seam now, with `after_run` acting as the bridge into
 chapter-6 memory so the core loop stays simple while memory/persistence hooks remain extensible.
+That same seam also keeps `web-search` compression query-aware, while file and document tools still
+use straightforward truncation to keep context noise down.
 
 To enable the real OpenAI integrations locally, set the standard environment variable:
 

@@ -25,6 +25,7 @@ class ToolResultCompressionCallbackTest {
         assertEquals("read_document_file", compressed.toolName());
         assertTrue(compressed.output().contains("truncated"));
         assertTrue(Boolean.TRUE.equals(compressed.data().get("truncated")));
+        assertEquals("generic-truncation", compressed.data().get("compressionStrategy"));
     }
 
     @Test
