@@ -46,6 +46,8 @@ if [[ -f "$repo_root/.env" ]]; then
   set +a
 fi
 
+export QUARKUS_HTTP_PORT=8080
+
 if [[ -z "${GAIA_DATASET_URL:-}" ]]; then
   export GAIA_LOCAL_PATH="${GAIA_LOCAL_PATH:-$repo_root/target/gaia-data}"
   "$repo_root/scripts/setup-gaia-local.sh"
