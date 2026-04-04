@@ -59,6 +59,8 @@ Covered in Swagger:
 - `POST /multi-agent` - internal chapter demo for the coordinator/reviewer flow
 - `GET /workflow-demo` - internal deterministic workflow demo
 
+Chapter 7 planning and reflection are visible through the existing runtime/tool seams rather than a new workflow API: the runtime tool registry includes `create-tasks` and `reflection`, and chapter-7 runs now surface plan/reflection/replan markers in session trace entries.
+
 Not covered in Swagger:
 
 - `AgentOrchestrator` loop internals

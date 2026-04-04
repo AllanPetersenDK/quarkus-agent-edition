@@ -45,7 +45,7 @@ public class CreateTasksTool extends AbstractTool {
         String goal = text(arguments.get("goal"), arguments.get("topic"), arguments.get("task"));
         List<TaskItem> tasks = parseTasks(arguments.get("tasks"));
         if (tasks.isEmpty()) {
-            tasks = List.of(new TaskItem("No tasks supplied.", TaskStatus.PENDING));
+            tasks = List.of(new TaskItem("No tasks supplied.", TaskStatus.PENDING, "", ""));
         }
 
         StringBuilder builder = new StringBuilder("Task plan");

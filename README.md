@@ -187,11 +187,10 @@ Quarkus CDI resolves the JDBC-backed persistence beans in runtime; the in-memory
 explicit default/manual paths.
 `AgentOrchestrator` also has a small callback seam now, with `after_run` acting as the bridge into
 chapter-6 memory so the core loop stays simple while memory/persistence hooks remain extensible.
-Chapter 7 is now the active next track: lightweight planning and reflection build directly on the
-chapter 2-4 manual agent core and the chapter 6 context/memory foundation. Chapter 6 remains the
-runtime base for request-time context optimization, session continuity, and structured long-term
-memory, while chapter 7 adds a small task-plan and reflection cycle rather than a new workflow
-engine.
+Chapter 7 is now the active next track: planning and reflection build directly on the chapter 2-4
+manual agent core and the chapter 6 context/memory foundation. Chapter 6 remains the runtime base
+for request-time context optimization, session continuity, and structured long-term memory, while
+chapter 7 adds a small but visible task-plan and reflection cycle rather than a new workflow engine.
 Long-term memory is stored as compact problem-solving records with structured `problem` /
 `summary` / `approach` / `result` fields, ranked cross-session retrieval, and more selective
 dedup. The runtime chapter-6 path now persists that memory through a JDBC-backed vector-like seam

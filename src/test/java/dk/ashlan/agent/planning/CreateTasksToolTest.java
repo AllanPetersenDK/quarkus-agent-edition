@@ -17,16 +17,19 @@ class CreateTasksToolTest {
         JsonToolResult result = tool.execute(Map.of(
                 "goal", "Research Quarkus agents",
                 "tasks", List.of(
-                        Map.of("content", "Understand the request", "status", "pending"),
-                        Map.of("content", "Draft the plan", "status", "in_progress"),
-                        Map.of("content", "Ship the answer", "status", "completed")
+                        Map.of("content", "Understand the request", "status", "pending", "doneWhen", "The scope is clear."),
+                        Map.of("content", "Draft the plan", "status", "in_progress", "notes", "This is the active step."),
+                        Map.of("content", "Ship the answer", "status", "completed", "doneWhen", "The answer is ready.")
                 )
         ));
 
         assertTrue(result.output().contains("Goal: Research Quarkus agents"));
         assertTrue(result.output().contains("[ ] Understand the request"));
+        assertTrue(result.output().contains("done when: The scope is clear."));
         assertTrue(result.output().contains("[>] **Draft the plan**"));
+        assertTrue(result.output().contains("note: This is the active step."));
         assertTrue(result.output().contains("[x] ~~Ship the answer~~"));
+        assertTrue(result.output().contains("done when: The answer is ready."));
     }
 
     @Test

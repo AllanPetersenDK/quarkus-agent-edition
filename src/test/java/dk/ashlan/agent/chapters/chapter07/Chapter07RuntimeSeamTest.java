@@ -22,52 +22,50 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class Chapter07RuntimeSeamTest {
     @Test
-    void planningAndReflectionCycleRunsThroughTheExistingAgentLoop() {
-        ToolRegistry toolRegistry = new ToolRegistry(List.of(
-                new CalculatorTool(),
-                new CreateTasksTool(),
-                new ReflectionTool()
-        ));
-        MemoryService memoryService = new MemoryService(new SessionManager(), new InMemoryTaskMemoryStore(), new MemoryExtractionService());
-        AgentOrchestrator orchestrator = new AgentOrchestrator(
-                new DemoToolCallingLlmClient(),
-                toolRegistry,
-                new ToolExecutor(toolRegistry),
-                memoryService,
-                4,
-                "chapter 7 system prompt"
-        );
-
-        AgentRunResult result = orchestrator.run("Create a task plan and reflect on it for a multi-step chapter 7 answer about Quarkus agents.", "chapter7-cycle");
+    void planningReflectionAndThinAnswerControlAreVisibleInTrace() {
+        AgentRunResult result = orchestrator().run("Create a task plan and reflect on it for a multi-step chapter 7 answer about Quarkus agents.", "chapter7-cycle");
 
         assertEquals(StopReason.FINAL_ANSWER, result.stopReason());
-        assertTrue(result.trace().stream().anyMatch(entry -> entry.startsWith("tool:create-tasks:")));
-        assertTrue(result.trace().stream().anyMatch(entry -> entry.startsWith("tool:reflection:")));
+        assertTrue(result.trace().stream().anyMatch(entry -> entry.startsWith("chapter7-plan:")));
+        assertTrue(result.trace().stream().anyMatch(entry -> entry.startsWith("chapter7-reflection:")));
+        assertTrue(result.finalAnswer().contains("Planning/reflection complete:"));
+    }
+
+    @Test
+    void failureRecoveryTriggersAReplanBeforeTheFinalAnswer() {
+        AgentRunResult result = orchestrator().run("Create a task plan and recover from a failure while solving 2 / 0 for chapter 7.", "chapter7-recovery");
+
+        assertEquals(StopReason.FINAL_ANSWER, result.stopReason());
+        assertTrue(result.trace().stream().anyMatch(entry -> entry.startsWith("chapter7-plan:")));
+        assertTrue(result.trace().stream().anyMatch(entry -> entry.startsWith("chapter7-reflection:")));
+        assertTrue(result.trace().stream().anyMatch(entry -> entry.startsWith("chapter7-replan:")));
         assertTrue(result.finalAnswer().contains("Planning/reflection complete:"));
     }
 
     @Test
     void simpleQuestionsStillSkipChapterSevenPlanningTools() {
+        AgentRunResult result = orchestrator().run("What is 25 * 4?", "chapter7-simple");
+
+        assertEquals(StopReason.FINAL_ANSWER, result.stopReason());
+        assertTrue(result.finalAnswer().contains("25 * 4 = 100"));
+        assertTrue(result.trace().stream().noneMatch(entry -> entry.contains("chapter7-plan")));
+        assertTrue(result.trace().stream().noneMatch(entry -> entry.contains("chapter7-reflection")));
+    }
+
+    private AgentOrchestrator orchestrator() {
         ToolRegistry toolRegistry = new ToolRegistry(List.of(
                 new CalculatorTool(),
                 new CreateTasksTool(),
                 new ReflectionTool()
         ));
         MemoryService memoryService = new MemoryService(new SessionManager(), new InMemoryTaskMemoryStore(), new MemoryExtractionService());
-        AgentOrchestrator orchestrator = new AgentOrchestrator(
+        return new AgentOrchestrator(
                 new DemoToolCallingLlmClient(),
                 toolRegistry,
                 new ToolExecutor(toolRegistry),
                 memoryService,
-                3,
+                5,
                 "chapter 7 system prompt"
         );
-
-        AgentRunResult result = orchestrator.run("What is 25 * 4?", "chapter7-simple");
-
-        assertEquals(StopReason.FINAL_ANSWER, result.stopReason());
-        assertTrue(result.finalAnswer().contains("25 * 4 = 100"));
-        assertTrue(result.trace().stream().noneMatch(entry -> entry.contains("create-tasks")));
-        assertTrue(result.trace().stream().noneMatch(entry -> entry.contains("reflection")));
     }
 }

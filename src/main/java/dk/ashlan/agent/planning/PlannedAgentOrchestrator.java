@@ -18,13 +18,19 @@ public class PlannedAgentOrchestrator {
     }
 
     public AgentRunResult run(String goal) {
-        plannerService.plan(goal);
-        AgentRunResult initial = agentRunner.run(goal);
+        ExecutionPlan plan = plannerService.plan(goal);
+        AgentRunResult initial = agentRunner.run(plan.formattedPlan() + "\n\n" + goal);
         ReflectionResult reflection = reflectionService.reflect(initial.finalAnswer());
         if (reflection.accepted()) {
             return initial;
         }
-        AgentRunResult improved = agentRunner.run(goal + " Please expand the answer and include more detail.");
+        ExecutionPlan revisedPlan = plannerService.plan(goal + " " + reflection.feedback());
+        AgentRunResult improved = agentRunner.run(
+                "Revised plan:\n" + revisedPlan.formattedPlan()
+                        + "\n\nGoal: " + goal
+                        + "\nReflection feedback: " + reflection.feedback()
+                        + "\nPlease expand the answer and include more detail."
+        );
         ReflectionResult improvedReflection = reflectionService.reflect(improved.finalAnswer());
         StopReason stopReason = improvedReflection.accepted() ? improved.stopReason() : StopReason.REFLECTION_REJECTED;
         return new AgentRunResult(improved.finalAnswer(), stopReason, improved.iterations(), improved.trace());

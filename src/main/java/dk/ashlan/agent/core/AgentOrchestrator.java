@@ -308,6 +308,7 @@ public class AgentOrchestrator implements AgentRunner {
                     JsonToolResult blocked = JsonToolResult.failure(toolCall.toolName(), "Tool blocked by callback: " + toolCall.toolName());
                     JsonToolResult finalBlocked = fireAfterTool(context, toolCall, blocked, stepNumber);
                     toolResults.add(finalBlocked);
+                    recordChapter7Trace(trace, traceEntries, toolCall, finalBlocked);
                     if (toolCall.callId() == null || toolCall.callId().isBlank()) {
                         context.addToolMessage(toolCall.toolName(), finalBlocked.output());
                         session.addToolMessage(toolCall.toolName(), finalBlocked.output());
@@ -323,6 +324,7 @@ public class AgentOrchestrator implements AgentRunner {
                 JsonToolResult result = toolExecutor.execute(toolCall.toolName(), toolCall.arguments());
                 JsonToolResult adjustedResult = fireAfterTool(context, toolCall, result, stepNumber);
                 toolResults.add(adjustedResult);
+                recordChapter7Trace(trace, traceEntries, toolCall, adjustedResult);
                 if (toolCall.callId() == null || toolCall.callId().isBlank()) {
                     context.addToolMessage(toolCall.toolName(), adjustedResult.output());
                     session.addToolMessage(toolCall.toolName(), adjustedResult.output());
@@ -529,6 +531,25 @@ public class AgentOrchestrator implements AgentRunner {
         AfterRunContext callbackContext = new AfterRunContext(context.getSessionId(), context.getInput(), result, result.trace());
         for (AgentCallback callback : callbacks) {
             callback.afterRun(callbackContext);
+        }
+    }
+
+    private void recordChapter7Trace(List<String> trace, List<AgentTraceEntry> traceEntries, LlmToolCall toolCall, JsonToolResult toolResult) {
+        if (toolCall == null || toolResult == null || toolCall.toolName() == null) {
+            return;
+        }
+        String toolName = toolCall.toolName();
+        String output = toolResult.output() == null ? "" : toolResult.output();
+        if ("create-tasks".equals(toolName)) {
+            trace.add("chapter7-plan:" + normalizeTrace(output));
+            traceEntries.add(new AgentTraceEntry("planning", output));
+        } else if ("reflection".equals(toolName)) {
+            trace.add("chapter7-reflection:" + normalizeTrace(output));
+            traceEntries.add(new AgentTraceEntry("reflection", output));
+            if (output.contains("REPLAN NEEDED")) {
+                trace.add("chapter7-replan:" + normalizeTrace(output));
+                traceEntries.add(new AgentTraceEntry("replan", "needed"));
+            }
         }
     }
 

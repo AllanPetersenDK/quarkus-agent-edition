@@ -7,6 +7,7 @@ Plan before execution and reflect after execution so the agent can improve thin 
 ## Quarkus Translation
 
 The Java edition keeps planning and reflection as explicit services and small runtime tools around the main agent runner. This stays companion/runtime-grade: there is no new workflow engine, only a lightweight task-plan and reflection cycle on top of the existing manual agent core.
+Plan state is kept session/context-based and re-derived when the model asks for a replan, so the repo stays honest about being a runtime companion rather than a separate task-management platform.
 
 ## Central Classes
 
@@ -31,8 +32,10 @@ The Java edition keeps planning and reflection as explicit services and small ru
 
 - Planning happens before execution.
 - Reflection can reject answers that are too thin and can mark a replan need.
+- Failure recovery can move from a failed tool step into a reflection pass and then into a revised plan.
 - The re-entry loop is deterministic in the companion edition so it is easy to test.
 - The manual planning/reflection loop remains the baseline learning path, while the new tools let the same idea show up in the runtime registry and the existing `/api/agent/run` seam.
+- Runtime trace now exposes planning, reflection, and replan markers so a manual Swagger smoke-test can see the cycle directly.
 - The LangChain4j agentic demo is a comparison seam that shows a framework-backed workflow without replacing the manual services.
 - The LangChain4j tool-calling companion demo is a separate comparison seam that exercises the framework-backed tool path without replacing the manual services.
 
@@ -40,5 +43,6 @@ The Java edition keeps planning and reflection as explicit services and small ru
 
 - Demo: simple planning and reflection with the task-plan tool and the review tool.
 - Production placeholder: LLM-generated plans and reviewer-style grading.
+- Current implementation: stronger but still lightweight planning/reflection guidance, with session/context state rather than a separate persistence domain.
 - Companion demo: `LangChain4jAgenticCompanionDemo` for the framework-backed comparison path.
 - Companion tool-calling demo: `LangChain4jToolCallingCompanionDemo` for the framework-backed tool-calling comparison path.
