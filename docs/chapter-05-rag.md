@@ -27,6 +27,7 @@ The RAG module keeps the chapter mechanics visible without external infrastructu
 - Cosine similarity is used for ranking.
 - Chapter-5 query flow adds a small lexical/entity reranking layer on top of embeddings so entity-matching queries are more stable.
 - Answers are built from the best matching chunk instead of concatenating all retrieved chunks.
+- The chapter-5 file exploration demo and GAIA attachment handling reuse the same text/PDF/audio extraction helpers, so document support stays consistent across chapter flows.
 - Fake embeddings are deterministic so tests can validate retrieval.
 - The H2-backed vector store persists chunk text, metadata, and embeddings, then ranks rows in Java on retrieval.
 - Blank or corrupt persisted metadata or embeddings fail explicitly.

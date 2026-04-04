@@ -81,7 +81,7 @@ public class FilesystemToolService {
                     Path resolvedEntry = resolveZipEntry(destination, entry.getName());
                     if (entry.isDirectory()) {
                         Files.createDirectories(resolvedEntry);
-                        extracted.add(entryData(entry.getName(), "directory", null));
+                        extracted.add(entryData(entry.getName(), "folder", null));
                         continue;
                     }
                     Files.createDirectories(resolvedEntry.getParent());
@@ -120,22 +120,23 @@ public class FilesystemToolService {
                         "resolvedPath", target.toString()
                 ));
             }
-            List<Path> paths = collectPaths(target, recursive, Math.max(1, maxEntries));
+            int limit = Math.max(1, maxEntries);
+            List<Path> paths = collectPaths(target, recursive, limit + 1);
+            boolean truncated = paths.size() > limit;
+            List<Path> visiblePaths = truncated ? paths.subList(0, limit) : paths;
             List<Map<String, Object>> entries = new ArrayList<>();
-            for (Path item : paths) {
-                entries.add(entryData(relativeToRoot(item), Files.isDirectory(item) ? "directory" : "file", Files.isRegularFile(item) ? sizeOf(item) : null));
+            for (Path item : visiblePaths) {
+                entries.add(entryData(relativeToRoot(item), Files.isDirectory(item) ? "folder" : "file", Files.isRegularFile(item) ? sizeOf(item) : null));
             }
-            boolean truncated = entries.size() > maxEntries;
-            List<Map<String, Object>> visible = truncated ? entries.subList(0, maxEntries) : entries;
-            String output = "status=ok\nresolvedPath=" + target + "\nrecursive=" + recursive + "\nentries=" + visible.size() + "\npaths:\n" + formatEntries(visible, truncated);
+            String output = "status=ok\nresolvedPath=" + target + "\nrecursive=" + recursive + "\nentries=" + entries.size() + "\npaths:\n" + formatEntries(entries, truncated);
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("status", "ok");
             data.put("path", path == null ? "" : path);
             data.put("resolvedPath", target.toString());
             data.put("recursive", recursive);
-            data.put("maxEntries", maxEntries);
+            data.put("maxEntries", limit);
             data.put("truncated", truncated);
-            data.put("entries", visible);
+            data.put("entries", entries);
             return new JsonToolResult("list_files", true, output, data);
         } catch (RuntimeException | IOException exception) {
             return failure("list_files", "listing failed: " + exception.getMessage(), Map.of(
@@ -150,11 +151,11 @@ public class FilesystemToolService {
         return readTextLike("read_file", path, true);
     }
 
-    public JsonToolResult readMediaFile(String path) {
+    public JsonToolResult readDocumentFile(String path) {
         try {
             Path resolved = resolveRequired(path);
             if (!Files.exists(resolved)) {
-                return failure("read_media_file", "file does not exist: " + resolved, Map.of(
+                return failure("read_document_file", "file does not exist: " + resolved, Map.of(
                         "status", "error",
                         "path", path,
                         "resolvedPath", resolved.toString()
@@ -166,16 +167,45 @@ public class FilesystemToolService {
             }
             if (isTextLike(extension) || "pdf".equals(extension)) {
                 GaiaExtractedAttachment extracted = attachmentExtractionService.extract(resolved);
-                return extractedToResult("read_media_file", resolved, extracted, path);
+                return extractedToResult("read_document_file", resolved, extracted, path);
             }
-            return failure("read_media_file", "unsupported media type for extraction: " + extension, Map.of(
+            return failure("read_document_file", "unsupported media type for extraction: " + extension, Map.of(
                     "status", "unsupported",
                     "path", path,
                     "resolvedPath", resolved.toString(),
                     "fileType", extension
             ));
         } catch (RuntimeException exception) {
-            return failure("read_media_file", "media read failed: " + exception.getMessage(), Map.of(
+            return failure("read_document_file", "document read failed: " + exception.getMessage(), Map.of(
+                    "status", "error",
+                    "path", path == null ? "" : path
+            ));
+        }
+    }
+
+    public JsonToolResult readMediaFile(String path) {
+        return readDocumentFile(path);
+    }
+
+    public JsonToolResult inspectPath(String path) {
+        try {
+            Path resolved = resolveRequired(path);
+            boolean exists = Files.exists(resolved);
+            String kind = !exists ? "missing" : Files.isDirectory(resolved) ? "folder" : "file";
+            String extension = exists && Files.isRegularFile(resolved) ? extension(resolved) : "";
+            Long size = exists && Files.isRegularFile(resolved) ? sizeOf(resolved) : null;
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("status", "ok");
+            data.put("path", path);
+            data.put("resolvedPath", resolved.toString());
+            data.put("exists", exists);
+            data.put("kind", kind);
+            data.put("extension", extension);
+            data.put("size", size);
+            String output = "status=ok\nexists=" + exists + "\nkind=" + kind + "\nresolvedPath=" + resolved + "\nextension=" + extension + "\nsize=" + (size == null ? "" : size);
+            return new JsonToolResult("inspect_path", true, output, data);
+        } catch (RuntimeException exception) {
+            return failure("inspect_path", "path inspection failed: " + exception.getMessage(), Map.of(
                     "status", "error",
                     "path", path == null ? "" : path
             ));
@@ -397,7 +427,7 @@ public class FilesystemToolService {
         StringBuilder builder = new StringBuilder();
         for (Map<String, Object> entry : entries) {
             builder.append("- ").append(entry.getOrDefault("path", ""));
-            if (Objects.equals(entry.get("kind"), "directory")) {
+            if (Objects.equals(entry.get("kind"), "directory") || Objects.equals(entry.get("kind"), "folder")) {
                 builder.append("/");
             }
             Object size = entry.get("size");

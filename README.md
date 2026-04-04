@@ -191,7 +191,7 @@ Demo and fake components are intentionally marked and include:
 - `InMemoryTaskMemoryStore`
 - `InMemorySessionStateStore` as the explicit fallback path
 - `WebSearchTool` and `WikipediaTool` as lightweight local placeholders
-- `unzip_file`, `list_files`, `read_file`, and `read_media_file` as chapter-5-style filesystem exploration tools under the same `ToolRegistry`/`ToolExecutor` path
+- `inspect_path`, `unzip_file`, `list_files`, `read_file`, and `read_document_file` as chapter-5-style filesystem exploration tools under the same `ToolRegistry`/`ToolExecutor` path, with `read_media_file` kept as a compatibility alias
 - `CompanionMcpTools` as the MCP-facing comparison seam
 - `CodeGenerationTool`
 - `TestExecutionTool`
@@ -229,6 +229,7 @@ Typical local flow:
 
 `scripts/run-dev.sh` automatically downloads the GAIA validation snapshot into `target/gaia-data` on first use when `GAIA_DATASET_URL` is not set.
 If you want to prepare the snapshot without starting dev mode, run `scripts/setup-gaia-local.sh` directly.
+Chapter-5 file exploration uses the same workspace guardrail and document-reading foundation, so the agent can step through zip files, plain text, PDFs, and supported audio without a separate extraction stack.
 GAIA also uses the live `web-search` runtime tool for current web/video lookup questions, and common audio attachments such as `mp3`, `wav`, and `m4a` are transcribed when `OPENAI_API_KEY` is configured.
 Set `GAIA_AUDIO_TRANSCRIPTION_MODEL` if you want to override the default `gpt-4o-mini-transcribe` audio model.
 GAIA now also extracts plain text from text-like attachments and PDFs (`txt`, `md`, `csv`, `json`, `html`, `xml`, `pdf`) and injects the extracted text into the validation context. Unsupported types stay explicit, and OCR/vision are still out of scope.
