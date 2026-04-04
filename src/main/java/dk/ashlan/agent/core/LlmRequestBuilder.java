@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LlmRequestBuilder {
+    public static final String REQUEST_PREP_TRACE_ATTRIBUTE = "requestPrepTraceEntry";
     private final String systemPrompt;
     private final MemoryService memoryService;
     private final ProcessLlmRequestTool processLlmRequestTool;
@@ -28,10 +29,19 @@ public class LlmRequestBuilder {
             messages.add(LlmMessage.system(systemPrompt));
         }
         if (processLlmRequestTool != null) {
-            messages.addAll(processLlmRequestTool.inject(context));
+            List<LlmMessage> injectedMessages = processLlmRequestTool.inject(context);
+            messages.addAll(injectedMessages);
+            if (!injectedMessages.isEmpty()) {
+                context.putAttribute(REQUEST_PREP_TRACE_ATTRIBUTE,
+                        new AgentTraceEntry("request-prep", "memory-injection:" + injectedMessages.size() + " via hidden-request-prep"));
+            }
         } else if (memoryService != null) {
-            memoryService.relevantMemories(context.getSessionId(), context.getInput())
-                    .forEach(memory -> messages.add(LlmMessage.system("Memory: " + memory)));
+            List<String> relevantMemories = memoryService.relevantMemories(context.getSessionId(), context.getInput());
+            relevantMemories.forEach(memory -> messages.add(LlmMessage.system("Memory: " + memory)));
+            if (!relevantMemories.isEmpty()) {
+                context.putAttribute(REQUEST_PREP_TRACE_ATTRIBUTE,
+                        new AgentTraceEntry("request-prep", "memory-injection:" + relevantMemories.size() + " via hidden-request-prep"));
+            }
         }
         messages.addAll(context.getMessages());
         return messages;

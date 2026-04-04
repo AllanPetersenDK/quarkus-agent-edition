@@ -124,7 +124,7 @@ Response body:
 Field notes:
 
 - `message` is required and validated with Jakarta Bean Validation.
-- `sessionId` is optional and defaults to `default` when omitted or blank.
+- `sessionId` is optional for normal runs and becomes ephemeral-safe when omitted or blank in the REST `/api/agent/run` seam. The direct core convenience path still keeps the compatibility `default` fallback for internal callers, so it is not guaranteed to be anonymous-safe.
 - `answer` maps directly from `AgentRunResult.finalAnswer()`.
 - `stopReason` maps from the existing `StopReason` enum.
 - `iterations` and `trace` map directly from the existing agent runtime result.
@@ -402,11 +402,11 @@ Read-only session inspection seam that exposes the stored conversation messages.
 
 `GET /api/runtime/sessions/{sessionId}/memory`
 
-Read-only memory inspection seam that returns the relevant memories for a session and query. The response now exposes the structured record fields as well as the raw memory text, so storage-vs-presentation is easier to inspect directly through Swagger.
+Read-only memory inspection seam that returns the relevant memories for a session and query. The response now exposes the structured record fields as well as the raw memory text, so storage-vs-presentation is easier to inspect directly through Swagger. The chapter-6 task-memory backend is persisted and vector-like, powered by embeddings, but retrieval still ranks rows in-process rather than using a dedicated vector index.
 
 `GET /api/runtime/sessions/{sessionId}/trace`
 
-Read-only chapter-4 trace inspection seam that returns the structured step history recorded for the session.
+Read-only chapter-4 trace inspection seam that returns the structured step history recorded for the session. Request-prep memory injection appears here as a small `request-prep` trace entry, which keeps auto-injection visible without pretending it was a normal registry tool call.
 
 ### RAG
 

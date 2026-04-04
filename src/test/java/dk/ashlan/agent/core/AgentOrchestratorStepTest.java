@@ -7,6 +7,7 @@ import dk.ashlan.agent.memory.InMemoryTaskMemoryStore;
 import dk.ashlan.agent.memory.MemoryExtractionService;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
+import dk.ashlan.agent.tools.ProcessLlmRequestTool;
 import dk.ashlan.agent.tools.CalculatorTool;
 import dk.ashlan.agent.tools.ToolExecutor;
 import dk.ashlan.agent.tools.ToolRegistry;
@@ -75,5 +76,30 @@ class AgentOrchestratorStepTest {
         assertEquals(1, calls.get());
         assertEquals("answer: direct chapter-4 result", result.finalAnswer());
         assertTrue(result.isFinal());
+    }
+
+    @Test
+    void stepTraceExposesHiddenMemoryInjectionAsRequestPrep() {
+        MemoryService memoryService = new MemoryService(new SessionManager(), new InMemoryTaskMemoryStore(), new MemoryExtractionService());
+        memoryService.remember("session-1", "goal", "Remember that my favorite database is PostgreSQL.");
+
+        LlmClient llmClient = (messages, toolRegistry, context) -> LlmCompletion.answer("answer: memory-aware result");
+        ToolRegistry toolRegistry = new ToolRegistry(List.of(new CalculatorTool()));
+        AgentOrchestrator orchestrator = new AgentOrchestrator(
+                llmClient,
+                toolRegistry,
+                new ToolExecutor(toolRegistry),
+                memoryService,
+                new SessionManager(),
+                List.of(),
+                new ProcessLlmRequestTool(memoryService),
+                3,
+                "system prompt"
+        );
+
+        AgentStepResult result = orchestrator.step("Tell me about PostgreSQL", "session-1");
+
+        assertTrue(result.traceEntries().stream().anyMatch(entry ->
+                "request-prep".equals(entry.kind()) && entry.message().contains("memory-injection:1")));
     }
 }

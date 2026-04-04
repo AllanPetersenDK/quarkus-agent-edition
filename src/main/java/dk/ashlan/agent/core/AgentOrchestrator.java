@@ -259,6 +259,11 @@ public class AgentOrchestrator implements AgentRunner {
         List<String> trace = new ArrayList<>();
         List<AgentTraceEntry> traceEntries = new ArrayList<>();
         List<dk.ashlan.agent.llm.LlmMessage> messages = requestBuilder.build(context);
+        Object requestPrepTraceEntry = context.getAttribute(LlmRequestBuilder.REQUEST_PREP_TRACE_ATTRIBUTE);
+        if (requestPrepTraceEntry instanceof AgentTraceEntry entry) {
+            trace.add(entry.kind() + ":" + entry.message());
+            traceEntries.add(entry);
+        }
         trace.add("iteration:" + stepNumber);
         traceEntries.add(new AgentTraceEntry("step", "iteration:" + stepNumber));
 

@@ -6,10 +6,11 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 
 - Pattern 1 is request-time context optimization: `beforeLlm` trims the active request projection, but the full execution history stays intact, and `/api/runtime/context/sliding-window` now exposes the sliding-window track as a first-class demo seam
 - Pattern 2 is session continuity: `SessionManager` and `SessionState` keep multi-turn state separate from memory
-- Pattern 3 is structured long-term memory: compact problem-solving records are written after a run and retrieved across sessions with ranked structured lookup instead of flat string matching, now through a persistent JDBC-backed vector-like seam in runtime
+- Pattern 3 is structured long-term memory: compact problem-solving records are written after a run and retrieved across sessions with ranked structured lookup instead of flat string matching, now through a persistent JDBC-backed vector-like seam powered by embeddings in runtime
 - `after_run` is the canonical bridge into compact memory persistence
 - explicit memory search remains a tool, while `conversation-search` and `recall-memory` are the visible retrieval seams and auto-injection is a runtime convenience backed by a hidden request-prep helper that the builder wires in for compatibility
 - context projection is now directly observable through Swagger: `/api/runtime/context/optimize` shows the full request projection, strategy, and cache-friendly no-op paths, while `/api/runtime/context/sliding-window` previews the windowed track
+- request-prep auto-injection now leaves a small `request-prep` trace entry so the hidden/internal memory-injection seam is visible without pretending it is a normal tool-registry call
 - pause/resume for confirmation tools is an internal agent feature, not a callback trick, and pending tool calls are persisted in session state
 - `POST /api/runtime/sessions/{sessionId}/resume` is the small Swagger-visible pause/resume seam, and `confirmation-demo` is the tiny approval-gated demo tool used to exercise it
 - `POST /api/agent/run` also accepts `toolConfirmations` for the same chapter-6 resume bridge when an explicit session id is supplied, so the book-style pause/resume demo can stay close to the manual agent surface
@@ -58,7 +59,7 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - Conversation history: the live `ExecutionContext` / session message stream that preserves the full run history.
 - Session state: the persisted multi-turn state tracked by `SessionManager` and the chapter-6 `Session` demos.
 - Short-term memory: `SlidingWindowStrategy`, `SummarizationStrategy`, and the `beforeLlm` context optimizer that project a smaller request without deleting the ground truth. The new sliding-window preview seam makes that track visible without mutating session state.
-- Long-term memory: `MemoryService`, `ConversationSearchTool`, `RecallMemoryTool`, and the cross-session demo managers. Retrieval is ranked using the structured record fields, and the runtime path now persists those records through a JDBC-backed vector-like seam, so the visible tool path feels more companion/runtime-grade than a raw string dump.
+- Long-term memory: `MemoryService`, `ConversationSearchTool`, `RecallMemoryTool`, and the cross-session demo managers. Retrieval is ranked using the structured record fields, and the runtime path now persists those records through a JDBC-backed vector-like seam powered by embeddings, so the visible tool path feels more companion/runtime-grade than a raw string dump.
 - Bridge: `after_run` persists a compact memory signal after a run completes.
 
 ## Design Notes
@@ -76,7 +77,7 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - `ToolDefinition.requiresConfirmation()` plus `PendingToolCall` and `ToolConfirmation` form the small pause/resume bridge for confirmation-gated tools.
 - `MemoryAwareAgentOrchestrator` remains as a thin chapter-6 façade, but the actual memory persistence hook is now callback-driven.
 - `ConversationSearchTool` and `RecallMemoryTool` are the explicit memory retrieval tools, while automatic memory injection now routes through a hidden/internal `process_llm_request`-style request-prep seam and still keeps the builder fallback for compatibility.
-- Long-term memory is stored as compact problem-solving records with `taskSummary`, `approach`, `finalAnswer`, and small correctness/error fields when they are available, and retrieval ranks those records using the structured fields rather than the raw memory string alone. The runtime store keeps that shape in JDBC so the memory layer is observable as a real persistence seam rather than a flat demo cache.
+- Long-term memory is stored as compact problem-solving records with `taskSummary`, `approach`, `finalAnswer`, and small correctness/error fields when they are available, and retrieval ranks those records using the structured fields rather than the raw memory string alone. The runtime store keeps that shape in JDBC so the memory layer is observable as a real persistence seam rather than a flat demo cache, but the search path is still row-scanned and scored in Java rather than powered by a dedicated vector index.
 - Dedup is structured as well: exact and near-duplicate writes are suppressed with a compact dedup key and token overlap, so the store behaves like a long-term memory layer rather than a raw transcript cache.
 - `ConfirmationDemoTool` is a chapter-6 demo tool only; it exists to make the pause/resume flow visible without turning approval gating into a broad runtime policy.
 - The manual REST chapter-6 path treats missing session ids as ephemeral/anonymized. Direct core convenience calls still keep the compatibility default-session fallback for internal callers, so they are not guaranteed to be anonymous-safe. That distinction is deliberate and keeps the API seam safer without widening the core orchestration surface.

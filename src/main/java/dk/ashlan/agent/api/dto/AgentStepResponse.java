@@ -70,7 +70,7 @@ public record AgentStepResponse(
     }
 
     public record TraceEntryResponse(
-            @Schema(description = "Trace entry kind, such as step, tool-call, tool-result, or assistant-message.")
+            @Schema(description = "Trace entry kind, such as request-prep, step, tool-call, tool-result, or assistant-message.")
             String kind,
             @Schema(description = "Human-readable trace message.")
             String message

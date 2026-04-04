@@ -31,6 +31,7 @@ This is the first persistence layer because session continuity is the most immed
 
 - RAG chunk/vector storage in the chapter demos and local manual instantiations
 - Long-term memory extraction data outside the session state
+- The chapter-6 task-memory seam is persisted and vector-like, powered by embeddings, but its retrieval path is still an in-process row scan with Java scoring rather than a dedicated vector index
 - Chapter demo stores and helper stacks that are intentionally deterministic
 
 ## Limitations

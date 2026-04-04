@@ -4,17 +4,25 @@ import dk.ashlan.agent.core.AfterRunContext;
 import dk.ashlan.agent.core.AgentRunResult;
 import dk.ashlan.agent.core.StopReason;
 import dk.ashlan.agent.memory.InMemoryTaskMemoryStore;
+import dk.ashlan.agent.memory.JdbcTaskMemoryStore;
 import dk.ashlan.agent.memory.MemoryExtractionService;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
 import dk.ashlan.agent.memory.TaskMemory;
+import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Path;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AfterRunMemoryCallbackTest {
+    @TempDir
+    Path tempDir;
+
     @Test
     void persistsRunSignalAfterCompletion() {
         MemoryService memoryService = new MemoryService(
@@ -76,5 +84,50 @@ class AfterRunMemoryCallbackTest {
 
         assertTrue(memoryService.longTermMemories("ephemeral-123", "25 * 4", 1).isEmpty());
         assertTrue(memoryService.relevantMemories("ephemeral-123", "25 * 4").isEmpty());
+    }
+
+    @Test
+    void runtimeAfterRunBridgeSuppressesNearDuplicateSignalsInJdbcPersistence() {
+        JdbcDataSource dataSource = new JdbcDataSource();
+        dataSource.setURL("jdbc:h2:file:" + tempDir.resolve("after-run-memory").toAbsolutePath() + ";AUTO_SERVER=FALSE;DB_CLOSE_ON_EXIT=FALSE");
+        dataSource.setUser("sa");
+        dataSource.setPassword("sa");
+
+        MemoryService memoryService = new MemoryService(
+                new SessionManager(),
+                new JdbcTaskMemoryStore(dataSource),
+                new MemoryExtractionService()
+        );
+        AfterRunMemoryCallback callback = new AfterRunMemoryCallback(memoryService);
+
+        AgentRunResult first = new AgentRunResult(
+                "Got it. Your favorite database is PostgreSQL, and you prefer concise answers.",
+                StopReason.FINAL_ANSWER,
+                2,
+                List.of("iteration:1", "answer: Got it. Your favorite database is PostgreSQL, and you prefer concise answers.")
+        );
+        AgentRunResult nearDuplicate = new AgentRunResult(
+                "Understood. Your favorite database is PostgreSQL, and you prefer concise answers.",
+                StopReason.FINAL_ANSWER,
+                2,
+                List.of("iteration:1", "answer: Understood. Your favorite database is PostgreSQL, and you prefer concise answers.")
+        );
+
+        callback.afterRun(new AfterRunContext(
+                "session-1",
+                "Remember that my favorite database is PostgreSQL and I prefer concise answers.",
+                first,
+                first.trace()
+        ));
+        callback.afterRun(new AfterRunContext(
+                "session-2",
+                "Please remember that my favorite database is PostgreSQL and I prefer concise answers.",
+                nearDuplicate,
+                nearDuplicate.trace()
+        ));
+
+        List<TaskMemory> memories = memoryService.longTermMemories("session-3", "PostgreSQL", 5);
+        assertEquals(1, memories.size());
+        assertTrue(memories.get(0).result().contains("PostgreSQL"));
     }
 }

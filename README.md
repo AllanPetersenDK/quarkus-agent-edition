@@ -193,9 +193,10 @@ stays a separate companion story.
 Long-term memory is stored as compact problem-solving records with structured `problem` /
 `summary` / `approach` / `result` fields, ranked cross-session retrieval, and more selective
 dedup. The runtime chapter-6 path now persists that memory through a JDBC-backed vector-like seam
-rather than only an in-memory demo store. The explicit `recall-memory` / `conversation-search`
-tools are the visible retrieval seams while request auto-injection remains a secondary convenience,
-now backed by a hidden request-prep helper that the builder wires in for compatibility.
+powered by embeddings rather than only an in-memory demo store. The explicit `recall-memory` /
+`conversation-search` tools are the visible retrieval seams while request auto-injection remains a
+secondary convenience, now backed by a hidden request-prep helper that the builder wires in for
+compatibility and surfaces as a small request-prep trace entry.
 The chapter-6 context story is also more observable now: `/api/runtime/context/optimize` shows the
 full projection, `/api/runtime/context/sliding-window` previews the sliding-window track in
 isolation, and the trace summary marks cache-friendly no-op requests explicitly.
