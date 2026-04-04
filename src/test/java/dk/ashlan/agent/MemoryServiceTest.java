@@ -30,6 +30,7 @@ class MemoryServiceTest {
         memoryService.remember("session-1", "goal", "I also work with Java 21");
 
         assertTrue(memoryService.relevantMemories("session-1", "Copenhagen").get(0).contains("Copenhagen"));
+        assertTrue(memoryService.longTermMemories("session-1", "Copenhagen", 1).get(0).problem().contains("location"));
     }
 
     @Test
@@ -54,7 +55,7 @@ class MemoryServiceTest {
 
         assertTrue(memoryService.relevantMemories("session-2", "Alice").stream()
                 .anyMatch(memory -> memory.contains("User name: Alice")));
-        assertTrue(memoryService.relevantMemories("session-2", "Alice").stream()
-                .anyMatch(memory -> memory.contains("User work context: marketer")));
+        assertTrue(memoryService.longTermMemories("session-2", "Alice", 1).get(0).taskSummary().contains("danish-profile"));
+        assertTrue(memoryService.longTermMemories("session-2", "Alice", 1).get(0).finalAnswer().contains("Alice"));
     }
 }

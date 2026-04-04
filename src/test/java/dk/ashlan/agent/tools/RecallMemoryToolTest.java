@@ -19,6 +19,18 @@ class RecallMemoryToolTest {
 
         String output = tool.execute(Map.of("sessionId", "session-1", "query", "favorite database")).output();
 
+        assertTrue(output.contains("Problem:"));
+        assertTrue(output.contains("Result:"));
         assertTrue(output.contains("PostgreSQL"));
+    }
+
+    @Test
+    void returnsCompactMessageWhenNoMemoryMatches() {
+        MemoryService memoryService = new MemoryService(new InMemoryTaskMemoryStore(), new MemoryExtractionService());
+        RecallMemoryTool tool = new RecallMemoryTool(memoryService);
+
+        String output = tool.execute(Map.of("sessionId", "session-1", "query", "nothing-useful")).output();
+
+        assertTrue(output.contains("No relevant memories found."));
     }
 }

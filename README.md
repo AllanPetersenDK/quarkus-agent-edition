@@ -190,6 +190,9 @@ chapter-6 memory so the core loop stays simple while memory/persistence hooks re
 Chapter 6 is now the active next track: the repo has a small context-optimization seam, session
 continuity, explicit memory search, and a pause/resume bridge for confirmation-gated tools, while
 keeping chapter 5 as a separate companion story.
+Long-term memory is now stored as compact problem-solving records with a small structured shape,
+and the explicit `recall-memory` tool is the primary retrieval seam while request auto-injection
+remains a secondary convenience.
 Pending confirmations are persisted in session state, and a resume step can process multiple
 pending tool calls in one whitelist pass.
 The main `/api/agent/run` seam can also carry `toolConfirmations` for the chapter-6 resume path,

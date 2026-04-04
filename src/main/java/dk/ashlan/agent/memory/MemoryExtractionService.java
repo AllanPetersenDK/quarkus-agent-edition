@@ -45,34 +45,44 @@ public class MemoryExtractionService {
             }
         }
         if (lowered.contains("my name is ")) {
-            return MemoryExtractionResult.add(new TaskMemory(sessionId, task, "User name: " + normalized.substring(lowered.indexOf("my name is ") + 11).trim()), "name");
+            String value = extractTail(normalized, lowered, "my name is ");
+            return MemoryExtractionResult.add(structured(sessionId, task, "User name: " + value, "name", "name disclosure", value, null, null), "name");
         }
         if (lowered.contains("i live in ")) {
-            return MemoryExtractionResult.add(new TaskMemory(sessionId, task, "User location: " + normalized.substring(lowered.indexOf("i live in ") + 10).trim()), "location");
-        }
-        if (lowered.contains("my favorite ")) {
-            return MemoryExtractionResult.add(new TaskMemory(sessionId, task, "User preference: " + normalized.substring(lowered.indexOf("my favorite ") + 13).trim()), "preference");
-        }
-        if (lowered.contains("i prefer ")) {
-            return MemoryExtractionResult.add(new TaskMemory(sessionId, task, "User preference: " + normalized.substring(lowered.indexOf("i prefer ") + 9).trim()), "preference");
-        }
-        if (lowered.contains("i work with ")) {
-            return MemoryExtractionResult.add(new TaskMemory(sessionId, task, "User work context: " + normalized.substring(lowered.indexOf("i work with ") + 12).trim()), "work-context");
-        }
-        if (lowered.contains("i use ")) {
-            return MemoryExtractionResult.add(new TaskMemory(sessionId, task, "User tool preference: " + normalized.substring(lowered.indexOf("i use ") + 6).trim()), "tool-preference");
-        }
-        if (lowered.contains("i like ")) {
-            return MemoryExtractionResult.add(new TaskMemory(sessionId, task, "User interest: " + normalized.substring(lowered.indexOf("i like ") + 7).trim()), "interest");
-        }
-        if (lowered.contains("i enjoy ")) {
-            return MemoryExtractionResult.add(new TaskMemory(sessionId, task, "User interest: " + normalized.substring(lowered.indexOf("i enjoy ") + 8).trim()), "interest");
+            String value = extractTail(normalized, lowered, "i live in ");
+            return MemoryExtractionResult.add(structured(sessionId, task, "User location: " + value, "location", "location disclosure", value, null, null), "location");
         }
         if (lowered.contains("remember that ")) {
-            return MemoryExtractionResult.add(new TaskMemory(sessionId, task, normalized.substring(lowered.indexOf("remember that ") + 14).trim()), "remember");
+            String value = extractTail(normalized, lowered, "remember that ");
+            return MemoryExtractionResult.add(structured(sessionId, task, value, "remember", "explicit remember instruction", value, null, null), "remember");
+        }
+        if (lowered.contains("my favorite ")) {
+            String value = extractTail(normalized, lowered, "my favorite ");
+            return MemoryExtractionResult.add(structured(sessionId, task, "User preference: " + value, "preference", "preference disclosure", value, null, null), "preference");
+        }
+        if (lowered.contains("i prefer ")) {
+            String value = extractTail(normalized, lowered, "i prefer ");
+            return MemoryExtractionResult.add(structured(sessionId, task, "User preference: " + value, "preference", "preference disclosure", value, null, null), "preference");
+        }
+        if (lowered.contains("i work with ")) {
+            String value = extractTail(normalized, lowered, "i work with ");
+            return MemoryExtractionResult.add(structured(sessionId, task, "User work context: " + value, "work-context", "work context disclosure", value, null, null), "work-context");
+        }
+        if (lowered.contains("i use ")) {
+            String value = extractTail(normalized, lowered, "i use ");
+            return MemoryExtractionResult.add(structured(sessionId, task, "User tool preference: " + value, "tool-preference", "tool preference disclosure", value, null, null), "tool-preference");
+        }
+        if (lowered.contains("i like ")) {
+            String value = extractTail(normalized, lowered, "i like ");
+            return MemoryExtractionResult.add(structured(sessionId, task, "User interest: " + value, "interest", "interest disclosure", value, null, null), "interest");
+        }
+        if (lowered.contains("i enjoy ")) {
+            String value = extractTail(normalized, lowered, "i enjoy ");
+            return MemoryExtractionResult.add(structured(sessionId, task, "User interest: " + value, "interest", "interest disclosure", value, null, null), "interest");
         }
         if (lowered.contains("the answer is ") || lowered.contains("the result is ")) {
-            return MemoryExtractionResult.add(new TaskMemory(sessionId, task, compactAnswer(normalized)), "answer");
+            String value = extractAnswer(normalized);
+            return MemoryExtractionResult.add(structured(sessionId, task, compactAnswer(normalized), "answer", "answer declaration", value, null, null), "answer");
         }
         return MemoryExtractionResult.skip("unsupported-pattern");
     }
@@ -84,16 +94,42 @@ public class MemoryExtractionService {
             return MemoryExtractionResult.skip("unsupported-danish-pattern");
         }
         StringBuilder compact = new StringBuilder();
+        StringBuilder finalAnswer = new StringBuilder();
         if (name != null && !name.isBlank()) {
             compact.append("User name: ").append(name.trim());
+            finalAnswer.append(name.trim());
         }
         if (work != null && !work.isBlank()) {
             if (compact.length() > 0) {
                 compact.append("; ");
+                finalAnswer.append(" / ");
             }
             compact.append("User work context: ").append(work.trim());
+            finalAnswer.append(work.trim());
         }
-        return MemoryExtractionResult.add(new TaskMemory(sessionId, task, compact.toString()), "danish-profile");
+        return MemoryExtractionResult.add(structured(
+                sessionId,
+                task,
+                compact.toString(),
+                "danish-profile",
+                "explicit profile statement",
+                finalAnswer.toString(),
+                null,
+                null
+        ), "danish-profile");
+    }
+
+    private TaskMemory structured(
+            String sessionId,
+            String task,
+            String memory,
+            String taskSummary,
+            String approach,
+            String finalAnswer,
+            Boolean correct,
+            String errorAnalysis
+    ) {
+        return new TaskMemory(sessionId, task, memory, taskSummary, approach, finalAnswer, correct, errorAnalysis);
     }
 
     private String captureGroup(Pattern pattern, String message) {
@@ -107,6 +143,14 @@ public class MemoryExtractionService {
         return matcher.groupCount() >= 1 ? matcher.group(1) : "";
     }
 
+    private String extractTail(String message, String lowered, String marker) {
+        int index = lowered.indexOf(marker);
+        if (index < 0) {
+            return "";
+        }
+        return message.substring(index + marker.length()).trim();
+    }
+
     private String compactAnswer(String message) {
         String normalized = normalize(message);
         String[] pieces = normalized.split("(?i)\\b(?:the answer is|the result is)\\b", 2);
@@ -114,6 +158,23 @@ public class MemoryExtractionService {
             return normalized;
         }
         return "Observed answer: " + pieces[1].trim();
+    }
+
+    private String extractAnswer(String message) {
+        String normalized = normalize(message);
+        int traceIndex = normalized.toLowerCase(Locale.ROOT).indexOf(" | trace:");
+        if (traceIndex >= 0) {
+            normalized = normalized.substring(0, traceIndex).trim();
+        }
+        int arrowIndex = normalized.indexOf("=>");
+        if (arrowIndex >= 0) {
+            normalized = normalized.substring(arrowIndex + 2).trim();
+        }
+        String[] pieces = normalized.split("(?i)\\b(?:the answer is|the result is)\\b", 2);
+        if (pieces.length < 2) {
+            return normalized;
+        }
+        return pieces[1].trim();
     }
 
     private String normalize(String value) {

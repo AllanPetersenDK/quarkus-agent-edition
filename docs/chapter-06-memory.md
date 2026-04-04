@@ -73,6 +73,7 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - `ToolDefinition.requiresConfirmation()` plus `PendingToolCall` and `ToolConfirmation` form the small pause/resume bridge for confirmation-gated tools.
 - `MemoryAwareAgentOrchestrator` remains as a thin chapter-6 façade, but the actual memory persistence hook is now callback-driven.
 - `ConversationSearchTool` and `RecallMemoryTool` are the explicit memory retrieval tools, while automatic memory injection stays a small convenience inside the request builder.
+- Long-term memory is stored as compact problem-solving records with `taskSummary`, `approach`, `finalAnswer`, and small correctness/error fields when they are available.
 - `ConfirmationDemoTool` is a chapter-6 demo tool only; it exists to make the pause/resume flow visible without turning approval gating into a broad runtime policy.
 
 ## Demo vs Production
