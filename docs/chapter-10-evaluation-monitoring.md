@@ -28,9 +28,12 @@ The edition keeps evaluation and trace capture in dedicated services instead of 
 - Metrics are modeled explicitly so later observability work has a clean target.
 - The companion demo measures real wall-clock duration for the evaluation run instead of relying on a synthetic constant.
 - The admin evaluation endpoint now uses the same real elapsed-time pattern, so chapter demo and runtime API stay aligned.
+- A small GAIA starter validation flow is available for Level 1 no-attachment cases. It is intended for development validation only and does not attempt attachment parsing or broader benchmark coverage.
+- The GAIA starter loader can read Hugging Face parquet validation files directly, so `GAIA_DATASET_URL` may point at `metadata.level1.parquet`.
 
 ## Demo vs Production
 
 - Demo: in-memory results and traces.
 - Runtime default: local evaluation runner with explicit duration measurement.
+- GAIA starter flow: Level 1 validation cases without attachments, filtered from the Hugging Face dataset input and evaluated with the existing manual runtime agent.
 - Production placeholders: Micrometer, OpenTelemetry, durable evaluation storage, and admin/auth protection if the endpoint is exposed outside the companion app.

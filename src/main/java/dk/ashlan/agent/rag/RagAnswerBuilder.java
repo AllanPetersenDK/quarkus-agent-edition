@@ -1,8 +1,11 @@
 package dk.ashlan.agent.rag;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import java.util.List;
 import java.util.Optional;
 
+@ApplicationScoped
 final class RagAnswerBuilder {
     String build(String query, List<RetrievalResult> results) {
         if (results.isEmpty()) {

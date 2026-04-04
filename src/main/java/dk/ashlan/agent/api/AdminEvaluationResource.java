@@ -6,6 +6,9 @@ import dk.ashlan.agent.eval.EvalCase;
 import dk.ashlan.agent.eval.EvalResult;
 import dk.ashlan.agent.eval.EvaluationRunner;
 import dk.ashlan.agent.eval.RunMetrics;
+import dk.ashlan.agent.eval.gaia.GaiaEvaluationRunner;
+import dk.ashlan.agent.eval.gaia.GaiaValidationRequest;
+import dk.ashlan.agent.eval.gaia.GaiaValidationResponse;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.NotFoundException;
@@ -33,10 +36,12 @@ import java.util.concurrent.TimeUnit;
 public class AdminEvaluationResource {
     private final EvaluationRunner evaluationRunner;
     private final AgentTraceService traceService;
+    private final GaiaEvaluationRunner gaiaEvaluationRunner;
 
-    public AdminEvaluationResource(EvaluationRunner evaluationRunner, AgentTraceService traceService) {
+    public AdminEvaluationResource(EvaluationRunner evaluationRunner, AgentTraceService traceService, GaiaEvaluationRunner gaiaEvaluationRunner) {
         this.evaluationRunner = evaluationRunner;
         this.traceService = traceService;
+        this.gaiaEvaluationRunner = gaiaEvaluationRunner;
     }
 
     @POST
@@ -60,6 +65,27 @@ public class AdminEvaluationResource {
         long durationMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
         RunMetrics metrics = evaluationRunner.metrics(results, durationMillis);
         return Map.of("results", results, "metrics", metrics);
+    }
+
+    @POST
+    @Path("/gaia")
+    @Operation(
+            summary = "Run GAIA starter validation",
+            description = "Book chapter: 10. Starter GAIA validation flow for Level 1 cases without attachments. It exercises the existing manual runtime agent only and keeps attachment-heavy GAIA cases out of scope."
+    )
+    @RequestBody(
+            description = "Subset limit for the GAIA starter validation run.",
+            required = true,
+            content = @Content(schema = @Schema(implementation = GaiaValidationRequest.class))
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Filtered GAIA validation results and summary.",
+            content = @Content(schema = @Schema(implementation = GaiaValidationResponse.class))
+    )
+    public GaiaValidationResponse runGaia(GaiaValidationRequest request) {
+        int limit = request == null ? 0 : request.effectiveLimit(10);
+        return gaiaEvaluationRunner.run(limit);
     }
 
     @GET

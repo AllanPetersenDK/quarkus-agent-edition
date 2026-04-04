@@ -38,6 +38,7 @@ Covered in Swagger:
 - `POST /api/rag/ingest` - chapter 5-oriented document ingest into the RAG stack
 - `GET /api/rag/query` - chapter 5-oriented RAG query and answer
 - `POST /admin/evaluations` - evaluation run
+- `POST /admin/evaluations/gaia` - GAIA starter validation run for Level 1 no-attachment cases
 - `GET /admin/evaluations/{caseId}` - evaluation trace lookup
 - `POST /api/companion/langchain4j/run` - LangChain4j companion run
 - `POST /api/companion/langchain4j/agentic-demo` - LangChain4j agentic companion demo
@@ -224,6 +225,10 @@ The chapter-5 query flow now uses a small hybrid reranker and builds `answer` fr
 `POST /admin/evaluations`
 
 Internal admin seam that runs chapter evaluation cases and returns results plus metrics.
+
+`POST /admin/evaluations/gaia`
+
+Starter GAIA validation seam for Level 1 cases without attachments. The flow is intentionally narrow, validates the existing manual runtime agent only, and returns per-case debug detail plus an aggregate summary.
 
 `GET /admin/evaluations/{caseId}`
 

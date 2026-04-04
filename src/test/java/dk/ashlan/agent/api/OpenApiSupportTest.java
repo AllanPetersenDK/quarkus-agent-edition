@@ -41,6 +41,7 @@ class OpenApiSupportTest {
         assertOperationContains(AgentResource.class, "runStructured", "Book chapter mapping: chapter 4 structured-output seam");
         assertOperationContains(ToolResource.class, "listTools", "Book chapter mapping: cross-cutting runtime seam");
         assertOperationContains(AdminEvaluationResource.class, "run", "Book chapter: 10");
+        assertOperationContains(AdminEvaluationResource.class, "runGaia", "Book chapter: 10");
         assertOperationContains(AdminEvaluationResource.class, "trace", "Book chapter: 10");
         assertOperationContains(CodeAgentResource.class, "run", "Book chapter: 8");
         assertOperationContains(MultiAgentResource.class, "run", "Book chapter: 9");

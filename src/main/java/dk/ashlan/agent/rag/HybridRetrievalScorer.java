@@ -1,8 +1,11 @@
 package dk.ashlan.agent.rag;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import java.util.Comparator;
 import java.util.List;
 
+@ApplicationScoped
 final class HybridRetrievalScorer {
     List<RetrievalResult> rerank(String query, List<RetrievalResult> candidates, int topK) {
         if (candidates.isEmpty() || topK <= 0) {
