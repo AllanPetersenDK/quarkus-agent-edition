@@ -40,6 +40,20 @@ class AgentsFacadeTest {
         assertEquals("memory answer", result.finalAnswer());
     }
 
+    @Test
+    void chapterFourConvenienceRunStillUsesDefaultCompatibilitySession() {
+        AgentOrchestrator orchestrator = new AgentOrchestrator(null, null, null, null, 1, "") {
+            @Override
+            public AgentRunResult run(String message, String sessionId) {
+                return new AgentRunResult(message + ":" + sessionId, StopReason.FINAL_ANSWER, 1, java.util.List.of(message));
+            }
+        };
+
+        AgentRunResult result = orchestrator.run("hello");
+
+        assertEquals("hello:default", result.finalAnswer());
+    }
+
     private static final class AgentOrchestratorAdapter extends AgentOrchestrator {
         private final AgentRunner runner;
 

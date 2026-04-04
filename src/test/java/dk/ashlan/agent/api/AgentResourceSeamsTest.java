@@ -134,6 +134,25 @@ class AgentResourceSeamsTest {
     }
 
     @Test
+    void runEndpointRejectsConfirmationPayloadsWithoutSessionId() {
+        AgentOrchestrator orchestrator = new AgentOrchestrator(null, null, null, null, 1, "") {
+            @Override
+            public AgentRunResult resume(String sessionId, List<ToolConfirmation> confirmations) {
+                return new AgentRunResult("should not run", StopReason.FINAL_ANSWER, 1, List.of());
+            }
+        };
+        AgentResource resource = new AgentResource(orchestrator);
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> resource.runAgent(new AgentRunRequest(
+                null,
+                null,
+                List.of(ToolConfirmation.approved("call-1", Map.of("path", "temp.txt")))
+        )));
+
+        assertTrue(exception.getMessage().contains("sessionId is required"));
+    }
+
+    @Test
     void noSessionRunsUseEphemeralIsolationWhileExplicitSessionsPassThrough() {
         List<String> observedSessions = new ArrayList<>();
         AgentOrchestrator orchestrator = new AgentOrchestrator(null, null, null, null, 1, "") {

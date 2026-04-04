@@ -192,19 +192,22 @@ session continuity, and Pattern 3 structured long-term memory are all present, w
 stays a separate companion story.
 Long-term memory is stored as compact problem-solving records with structured `problem` /
 `summary` / `approach` / `result` fields, ranked cross-session retrieval, and more selective
-dedup. The runtime chapter-6 path now persists that memory through a JDBC/vector-backed seam rather
-than only an in-memory demo store. The explicit `recall-memory` / `conversation-search` tools are
-the visible retrieval seams while request auto-injection remains a secondary convenience, now
-backed by a hidden `process_llm_request`-style request-prep tool.
+dedup. The runtime chapter-6 path now persists that memory through a JDBC-backed vector-like seam
+rather than only an in-memory demo store. The explicit `recall-memory` / `conversation-search`
+tools are the visible retrieval seams while request auto-injection remains a secondary convenience,
+now backed by a hidden/internal `process_llm_request`-style request-prep seam.
 The chapter-6 context story is also more observable now: `/api/runtime/context/optimize` shows the
 full projection, `/api/runtime/context/sliding-window` previews the sliding-window track in
 isolation, and the trace summary marks cache-friendly no-op requests explicitly.
 Pending confirmations are persisted in session state, and a resume step can process multiple
 pending tool calls in one whitelist pass.
-The main `/api/agent/run` seam can also carry `toolConfirmations` for the chapter-6 resume path,
-and the book demo uses a small confirmation-gated `delete-file` tool to make the flow visible.
+The main `/api/agent/run` seam can also carry `toolConfirmations` for the chapter-6 resume path
+when an explicit session id is supplied, and the book demo uses a small confirmation-gated
+`delete-file` tool to make the flow visible.
 Delete/remove requests are deterministically preflighted into that confirmation flow so the
 book test does not depend on the model spontaneously choosing the tool call.
+REST no-session calls are ephemeral-safe, while direct core convenience calls still keep the
+compatibility default-session fallback for internal callers.
 That same seam also keeps `web-search` compression query-aware, while file and document tools still
 use straightforward truncation to keep context noise down.
 

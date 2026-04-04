@@ -46,7 +46,7 @@ public class AgentResource {
             description = "Book chapter mapping: chapter 4 manual-agent core seam. REST-exposed manual agent loop that delegates to the manual AgentOrchestrator."
     )
     @RequestBody(
-            description = "User message and optional session id for the runtime agent loop.",
+            description = "User message and optional session id for the runtime agent loop. If tool confirmations are supplied, sessionId must be present so the request can resume an explicit session instead of an anonymous ephemeral run.",
             required = true,
             content = @Content(schema = @Schema(implementation = AgentRunRequest.class))
     )
@@ -58,6 +58,9 @@ public class AgentResource {
     @APIResponse(responseCode = "400", description = "Invalid request payload.")
     public AgentRunResponse runAgent(@Valid AgentRunRequest input) {
         List<ToolConfirmation> confirmations = input.toolConfirmations() == null ? List.of() : input.toolConfirmations();
+        if (!confirmations.isEmpty() && (input.sessionId() == null || input.sessionId().isBlank())) {
+            throw new BadRequestException("sessionId is required when toolConfirmations are supplied");
+        }
         String sessionId = effectiveSessionId(input, confirmations);
         AgentRunResult result = confirmations.isEmpty()
                 ? orchestrator.run(input.message(), sessionId)

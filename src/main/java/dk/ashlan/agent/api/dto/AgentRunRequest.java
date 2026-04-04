@@ -15,7 +15,7 @@ public record AgentRunRequest(
         )
         String message,
         @Schema(
-                description = "Conversation session identifier used for memory lookup. Leave blank for an anonymous ephemeral run.",
+                description = "Conversation session identifier used for memory lookup. Leave blank for an anonymous ephemeral run; required when toolConfirmations are supplied.",
                 nullable = true
         )
         String sessionId,

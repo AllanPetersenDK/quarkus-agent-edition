@@ -78,7 +78,7 @@ Not covered in Swagger:
 
 Runtime API: this is the main REST-exposed manual agent loop and the chapter-4 core seam.
 Same-session calls now replay prior role-aware conversation history, so a session can remember user-provided facts across turns without relying on tool memory.
-The same endpoint also accepts `toolConfirmations` for the small chapter-6 pause/resume bridge; when those are supplied, the request routes to the existing resume path instead of a fresh run.
+The same endpoint also accepts `toolConfirmations` for the small chapter-6 pause/resume bridge; when those are supplied, the request routes to the existing resume path instead of a fresh run, and an explicit `sessionId` is required so the confirmations do not drift onto an anonymous ephemeral run.
 
 Request body:
 
