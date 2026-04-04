@@ -35,6 +35,27 @@ public class WebSearchTool extends AbstractTool {
     @Override
     protected String executeSafely(Map<String, Object> arguments) {
         String query = String.valueOf(arguments.getOrDefault("query", ""));
-        return webSearchBackend.search(query).toCompactText();
+        String result = webSearchBackend.search(query).toCompactText();
+        if (requiresSpecificEntityAnswer(query)) {
+            return result + "\nExact answer guidance: prefer the most specific named entity, species, or source explicitly supported by the search result; do not collapse to a broader category.";
+        }
+        return result;
+    }
+
+    private boolean requiresSpecificEntityAnswer(String query) {
+        if (query == null) {
+            return false;
+        }
+        String normalized = query.toLowerCase();
+        return normalized.contains("which species")
+                || normalized.contains("what species")
+                || normalized.contains("which type")
+                || normalized.contains("what type")
+                || normalized.contains("which name")
+                || normalized.contains("what name")
+                || normalized.contains("which source")
+                || normalized.contains("source mentions")
+                || normalized.contains("who is")
+                || normalized.contains("what is the name");
     }
 }

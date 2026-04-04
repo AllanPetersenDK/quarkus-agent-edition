@@ -54,6 +54,8 @@ class GaiaValidationRunnerTest {
         assertEquals(0, result.failed());
         assertEquals("task-1", result.results().getFirst().taskId());
         assertTrue(result.results().getFirst().trace().stream().anyMatch(event -> event.startsWith("attachment:present")));
+        assertTrue(result.results().getFirst().trace().stream().anyMatch(event -> event.contains("attachment:text-extracted")));
+        assertTrue(result.results().getFirst().attachment().note().contains("GAIA attachment text extracted"));
         assertTrue(runner.trace("task-1").trace().stream().anyMatch(event -> event.contains("scoreReason")));
     }
 

@@ -13,10 +13,16 @@ import java.util.List;
 @ApplicationScoped
 public class GaiaAttachmentResolver {
     private final GaiaAudioTranscriptionService audioTranscriptionService;
+    private final GaiaAttachmentExtractionService attachmentExtractionService;
 
     @Inject
-    public GaiaAttachmentResolver(GaiaAudioTranscriptionService audioTranscriptionService) {
+    public GaiaAttachmentResolver(GaiaAudioTranscriptionService audioTranscriptionService, GaiaAttachmentExtractionService attachmentExtractionService) {
         this.audioTranscriptionService = audioTranscriptionService;
+        this.attachmentExtractionService = attachmentExtractionService;
+    }
+
+    public GaiaAttachmentResolver(GaiaAudioTranscriptionService audioTranscriptionService) {
+        this(audioTranscriptionService, new GaiaAttachmentExtractionService());
     }
 
     public GaiaAttachment resolve(GaiaExample example, String baseSource) {
@@ -34,15 +40,9 @@ public class GaiaAttachmentResolver {
                 return new GaiaAttachment(fileName, filePath, resolved.toString(), GaiaAttachmentStatus.MISSING, "attachment file is missing: " + resolved, List.of("attachment:missing"));
             }
             String extension = extension(resolved.getFileName().toString());
-            if (isTextLike(extension)) {
-                return new GaiaAttachment(
-                        fileName,
-                        filePath,
-                        resolved.toString(),
-                        GaiaAttachmentStatus.PRESENT,
-                        buildTextNote(resolved, fileName),
-                        List.of("attachment:present:" + safeName(fileName, resolved), "attachment:text-readable")
-                );
+            if (isTextLike(extension) || "pdf".equalsIgnoreCase(extension)) {
+                GaiaExtractedAttachment extracted = attachmentExtractionService.extract(resolved);
+                return buildExtractedAttachment(fileName, filePath, resolved, extracted);
             }
             if (isAudioLike(extension)) {
                 try {
@@ -84,8 +84,8 @@ public class GaiaAttachmentResolver {
                     filePath,
                     resolved,
                     GaiaAttachmentStatus.PRESENT,
-                    "attachment present at " + resolved,
-                    List.of("attachment:present:" + safeName(fileName, Path.of(cleanedPath)))
+                    "GAIA attachment present at " + resolved + " but text extraction is unavailable for remote sources.",
+                    List.of("attachment:present:" + safeName(fileName, Path.of(cleanedPath)), "attachment:text-extraction-unavailable")
             );
         }
         if (isAudioLike(extension)) {
@@ -116,18 +116,10 @@ public class GaiaAttachmentResolver {
             case MISSING -> "GAIA attachment missing: " + defaultText(attachment.fileName(), attachment.filePath());
             case UNSUPPORTED_TYPE -> "GAIA attachment present but unsupported: " + attachment.note() + ". Resolved path: " + attachment.resolvedPath();
             case AUDIO_TRANSCRIPTION_FAILED -> "GAIA audio attachment present but transcription failed: " + attachment.note() + ". Resolved path: " + attachment.resolvedPath();
+            case TEXT_EXTRACTION_FAILED -> "GAIA attachment text extraction failed: " + attachment.note() + ". Resolved path: " + attachment.resolvedPath();
+            case TEXT_EXTRACTED -> "GAIA attachment text extracted from " + defaultText(attachment.fileName(), attachment.filePath()) + ". Use this content when answering the task.\n" + attachment.note();
             case PRESENT, AUDIO_TRANSCRIBED -> "GAIA attachment available: " + attachment.note();
         };
-    }
-
-    private String buildTextNote(Path path, String fileName) {
-        try {
-            String text = Files.readString(path, StandardCharsets.UTF_8);
-            String preview = text.length() > 4000 ? text.substring(0, 4000) + "..." : text;
-            return "GAIA attachment text preview for " + defaultText(fileName, path.getFileName().toString()) + ":\n" + preview;
-        } catch (IOException exception) {
-            return "GAIA attachment present but could not be read as text: " + path;
-        }
     }
 
     private String buildAudioNote(Path path, String fileName, String transcript) {
@@ -171,6 +163,24 @@ public class GaiaAttachmentResolver {
             case "txt", "md", "csv", "json", "jsonl", "ndjson", "yaml", "yml" -> true;
             default -> false;
         };
+    }
+
+    private GaiaAttachment buildExtractedAttachment(String fileName, String filePath, Path resolved, GaiaExtractedAttachment extracted) {
+        List<String> traceEvents = new java.util.ArrayList<>();
+        traceEvents.add("attachment:present:" + safeName(fileName, resolved));
+        traceEvents.addAll(extracted.traceEvents());
+        String note = extracted.extractionNote();
+        if (extracted.hasText() && extracted.extractedText() != null && !extracted.extractedText().isBlank()) {
+            note = note + "\n" + extracted.extractedText();
+        }
+        return new GaiaAttachment(
+                fileName,
+                filePath,
+                resolved.toString(),
+                extracted.status(),
+                note,
+                List.copyOf(traceEvents)
+        );
     }
 
     private boolean isAudioLike(String extension) {

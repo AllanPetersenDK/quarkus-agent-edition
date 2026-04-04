@@ -40,7 +40,7 @@ class GaiaDatasetServiceTest {
         assertEquals(1, examples.size());
         assertEquals("task-1", examples.getFirst().taskId());
         assertTrue(examples.getFirst().attachment().present());
-        assertTrue(examples.getFirst().attachment().note().contains("GAIA attachment text preview"));
+        assertTrue(examples.getFirst().attachment().note().contains("GAIA attachment text extracted"));
     }
 
     @Test
