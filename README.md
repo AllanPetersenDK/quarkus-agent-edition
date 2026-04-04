@@ -192,8 +192,13 @@ session continuity, and Pattern 3 structured long-term memory are all present, w
 stays a separate companion story.
 Long-term memory is stored as compact problem-solving records with structured `problem` /
 `summary` / `approach` / `result` fields, ranked cross-session retrieval, and more selective
-dedup. The explicit `recall-memory` / `conversation-search` tools are the visible retrieval seams
-while request auto-injection remains a secondary convenience.
+dedup. The runtime chapter-6 path now persists that memory through a JDBC/vector-backed seam rather
+than only an in-memory demo store. The explicit `recall-memory` / `conversation-search` tools are
+the visible retrieval seams while request auto-injection remains a secondary convenience, now
+backed by a hidden `process_llm_request`-style request-prep tool.
+The chapter-6 context story is also more observable now: `/api/runtime/context/optimize` shows the
+full projection, `/api/runtime/context/sliding-window` previews the sliding-window track in
+isolation, and the trace summary marks cache-friendly no-op requests explicitly.
 Pending confirmations are persisted in session state, and a resume step can process multiple
 pending tool calls in one whitelist pass.
 The main `/api/agent/run` seam can also carry `toolConfirmations` for the chapter-6 resume path,
@@ -225,7 +230,8 @@ Demo and fake components are intentionally marked and include:
 - `FakeEmbeddingClient`
 - `InMemoryVectorStore`
 - `JdbcVectorStore` in the runtime CDI path
-- `InMemoryTaskMemoryStore`
+- `JdbcTaskMemoryStore` in the runtime CDI path
+- `InMemoryTaskMemoryStore` as the explicit manual fallback path
 - `InMemorySessionStateStore` as the explicit fallback path
 - `WebSearchTool` and `WikipediaTool` as lightweight local placeholders
 - `inspect_path`, `unzip_file`, `list_files`, `read_file`, and `read_document_file` as chapter-5-style filesystem exploration tools under the same `ToolRegistry`/`ToolExecutor` path, with `read_media_file` kept as a compatibility alias. Filesystem access is read-only and stays inside the shared workspace root; symlink access is rejected.

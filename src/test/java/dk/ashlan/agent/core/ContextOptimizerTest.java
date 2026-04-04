@@ -127,5 +127,37 @@ class ContextOptimizerTest {
 
         assertTrue(context.projectedMessages().isPresent());
         assertTrue(context.optimizationSummary().orElse("").startsWith("context-optimizer:"));
+        assertTrue(context.optimizationSummary().orElse("").contains("cache-friendly")
+                || context.optimizationSummary().orElse("").contains("cache-rewrite"));
+    }
+
+    @Test
+    void slidingWindowPreviewKeepsTheTailAndPreservesInput() {
+        ContextOptimizer optimizer = new ContextOptimizer(
+                new SlidingWindowStrategy(),
+                new SummarizationStrategy(),
+                80,
+                4,
+                3,
+                40
+        );
+        List<LlmMessage> messages = List.of(
+                LlmMessage.system("You are helpful."),
+                LlmMessage.user("one"),
+                LlmMessage.assistant("two"),
+                LlmMessage.user("three"),
+                LlmMessage.assistant("four"),
+                LlmMessage.user("five")
+        );
+        List<LlmMessage> original = List.copyOf(messages);
+
+        ContextOptimizationResult result = optimizer.previewSlidingWindow(new LlmRequest(messages));
+
+        assertEquals("sliding-window", result.strategy());
+        assertTrue(result.changed());
+        assertEquals(original, messages);
+        assertEquals(4, result.messages().size());
+        assertEquals("system", result.messages().get(0).role());
+        assertTrue(result.messages().stream().anyMatch(message -> "user".equals(message.role()) && "five".equals(message.content())));
     }
 }

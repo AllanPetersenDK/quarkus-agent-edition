@@ -258,11 +258,32 @@ public class RuntimeInspectionResource {
     public record MemoryEntryResponse(
             @Schema(description = "Task label associated with the memory.")
             String task,
+            @Schema(description = "Structured problem statement when available.")
+            String problem,
+            @Schema(description = "Structured summary when available.")
+            String summary,
+            @Schema(description = "Structured approach description when available.")
+            String approach,
+            @Schema(description = "Structured result text when available.")
+            String result,
+            @Schema(description = "Whether the memory was marked correct, if known.")
+            Boolean correct,
+            @Schema(description = "Structured error analysis when available.")
+            String errorAnalysis,
             @Schema(description = "Memory text extracted for the task.")
             String memory
     ) {
         static MemoryEntryResponse from(TaskMemory memory) {
-            return new MemoryEntryResponse(memory.task(), memory.memory());
+            return new MemoryEntryResponse(
+                    memory.task(),
+                    memory.problem(),
+                    memory.summary(),
+                    memory.approach(),
+                    memory.result(),
+                    memory.correct(),
+                    memory.errorAnalysis(),
+                    memory.memory()
+            );
         }
     }
 

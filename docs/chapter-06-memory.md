@@ -4,11 +4,12 @@ This chapter maps the Python memory and session model into Java services and str
 
 The current Quarkus implementation now treats chapter 6 as the next active chapter track:
 
-- Pattern 1 is request-time context optimization: `beforeLlm` trims the active request projection, but the full execution history stays intact
+- Pattern 1 is request-time context optimization: `beforeLlm` trims the active request projection, but the full execution history stays intact, and `/api/runtime/context/sliding-window` now exposes the sliding-window track as a first-class demo seam
 - Pattern 2 is session continuity: `SessionManager` and `SessionState` keep multi-turn state separate from memory
-- Pattern 3 is structured long-term memory: compact problem-solving records are written after a run and retrieved across sessions with ranked structured lookup instead of flat string matching
+- Pattern 3 is structured long-term memory: compact problem-solving records are written after a run and retrieved across sessions with ranked structured lookup instead of flat string matching, now through a persistent JDBC/vector-backed seam in runtime
 - `after_run` is the canonical bridge into compact memory persistence
-- explicit memory search remains a tool, while `conversation-search` and `recall-memory` are the visible retrieval seams and auto-injection is a runtime convenience
+- explicit memory search remains a tool, while `conversation-search` and `recall-memory` are the visible retrieval seams and auto-injection is a runtime convenience backed by a hidden `process_llm_request`-style request-prep tool
+- context projection is now directly observable through Swagger: `/api/runtime/context/optimize` shows the full request projection, strategy, and cache-friendly no-op paths, while `/api/runtime/context/sliding-window` previews the windowed track
 - pause/resume for confirmation tools is an internal agent feature, not a callback trick, and pending tool calls are persisted in session state
 - `POST /api/runtime/sessions/{sessionId}/resume` is the small Swagger-visible pause/resume seam, and `confirmation-demo` is the tiny approval-gated demo tool used to exercise it
 - `POST /api/agent/run` also accepts `toolConfirmations` for the same chapter-6 resume bridge, so the book-style pause/resume demo can stay close to the manual agent surface
@@ -45,7 +46,9 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - `dk.ashlan.agent.sessions.TaskCrossSessionManager`
 - `dk.ashlan.agent.sessions.UserCrossSessionManager`
 - `dk.ashlan.agent.memory.MemoryService`
+- `dk.ashlan.agent.memory.JdbcTaskMemoryStore`
 - `dk.ashlan.agent.memory.MemoryAwareAgentOrchestrator`
+- `dk.ashlan.agent.tools.ProcessLlmRequestTool`
 - `dk.ashlan.agent.core.PendingToolCall`
 - `dk.ashlan.agent.core.ToolConfirmation`
 - `dk.ashlan.agent.chapters.chapter06.*`
@@ -54,8 +57,8 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 
 - Conversation history: the live `ExecutionContext` / session message stream that preserves the full run history.
 - Session state: the persisted multi-turn state tracked by `SessionManager` and the chapter-6 `Session` demos.
-- Short-term memory: `SlidingWindowStrategy`, `SummarizationStrategy`, and the `beforeLlm` context optimizer that project a smaller request without deleting the ground truth.
-- Long-term memory: `MemoryService`, `ConversationSearchTool`, `RecallMemoryTool`, and the cross-session demo managers. Retrieval is ranked using the structured record fields, so the visible tool path feels more companion/runtime-grade than a raw string dump.
+- Short-term memory: `SlidingWindowStrategy`, `SummarizationStrategy`, and the `beforeLlm` context optimizer that project a smaller request without deleting the ground truth. The new sliding-window preview seam makes that track visible without mutating session state.
+- Long-term memory: `MemoryService`, `ConversationSearchTool`, `RecallMemoryTool`, and the cross-session demo managers. Retrieval is ranked using the structured record fields, and the runtime path now persists those records through a JDBC/vector-backed seam, so the visible tool path feels more companion/runtime-grade than a raw string dump.
 - Bridge: `after_run` persists a compact memory signal after a run completes.
 
 ## Design Notes
@@ -63,23 +66,23 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - Session continuity is now persisted through H2-backed session state, so restart-like reloads preserve messages.
 - Pending tool confirmations are part of that persisted session state, so pause/resume survives reloads too.
 - The no-arg memory session path now uses an explicit in-memory store instead of a null-based fallback, which keeps the dev/test path clear.
-- CDI runtime still resolves the JDBC-backed store, while the in-memory store is only the explicit default path for manual construction.
+- CDI runtime resolves the JDBC-backed task-memory store, while the in-memory store remains the explicit default path for manual construction and tests.
 - Cross-session memory is split from per-session state, and retrieval does not depend on session continuity.
 - Strategy classes keep the architecture close to the Python reference.
 - `SessionState` is the mutable per-session core, while `dk.ashlan.agent.sessions.Session` is the companion runtime-facing session object.
 - The chapter demos are intentionally tiny and use seeded in-memory data so the memory behaviors remain easy to observe.
 - `AgentOrchestrator` now exposes a small callback seam, and the canonical runtime bridge into memory persistence lives in `after_run` instead of the core tool loop.
-- `beforeLlm` now carries a small, deterministic context-optimization projection so the active request can shrink without deleting execution history.
+- `beforeLlm` now carries a small, deterministic context-optimization projection so the active request can shrink without deleting execution history, and the trace summary marks cache-friendly no-op requests versus rewrite cases.
 - `ToolDefinition.requiresConfirmation()` plus `PendingToolCall` and `ToolConfirmation` form the small pause/resume bridge for confirmation-gated tools.
 - `MemoryAwareAgentOrchestrator` remains as a thin chapter-6 façade, but the actual memory persistence hook is now callback-driven.
-- `ConversationSearchTool` and `RecallMemoryTool` are the explicit memory retrieval tools, while automatic memory injection stays a small convenience inside the request builder.
-- Long-term memory is stored as compact problem-solving records with `taskSummary`, `approach`, `finalAnswer`, and small correctness/error fields when they are available, and retrieval ranks those records using the structured fields rather than the raw memory string alone.
+- `ConversationSearchTool` and `RecallMemoryTool` are the explicit memory retrieval tools, while automatic memory injection now routes through a hidden `process_llm_request`-style request-prep seam and still keeps the builder fallback for compatibility.
+- Long-term memory is stored as compact problem-solving records with `taskSummary`, `approach`, `finalAnswer`, and small correctness/error fields when they are available, and retrieval ranks those records using the structured fields rather than the raw memory string alone. The runtime store keeps that shape in JDBC so the memory layer is observable as a real persistence seam rather than a flat demo cache.
 - Dedup is structured as well: exact and near-duplicate writes are suppressed with a compact dedup key and token overlap, so the store behaves like a long-term memory layer rather than a raw transcript cache.
 - `ConfirmationDemoTool` is a chapter-6 demo tool only; it exists to make the pause/resume flow visible without turning approval gating into a broad runtime policy.
 
 ## Demo vs Production
 
 - Demo: in-memory strategies and cross-session stores.
-- Persistent layer: file-based H2 for session continuity.
-- Still in-memory: RAG chunk store, cross-session demo stores, and strategy-level demo helpers.
+- Persistent layer: file-based H2 for session continuity and the JDBC-backed task-memory seam.
+- Still in-memory: RAG chunk store, cross-session demo stores, strategy-level demo helpers, and manual chapter demos that want explicit lightweight fixtures.
 - The chapter-6 memory bridge is intentionally small: it prepares the repo for further memory iterations without turning it into a separate platform.

@@ -23,17 +23,24 @@ class RuntimeContextResourceTest {
         Tag tag = RuntimeContextResource.class.getAnnotation(Tag.class);
         Path classPath = RuntimeContextResource.class.getAnnotation(Path.class);
         Method optimize = RuntimeContextResource.class.getMethod("optimize", ContextOptimizeRequest.class);
+        Method slidingWindow = RuntimeContextResource.class.getMethod("slidingWindow", ContextOptimizeRequest.class);
         Operation operation = optimize.getAnnotation(Operation.class);
+        Operation slidingWindowOperation = slidingWindow.getAnnotation(Operation.class);
         Path methodPath = optimize.getAnnotation(Path.class);
+        Path slidingWindowPath = slidingWindow.getAnnotation(Path.class);
 
         assertNotNull(tag);
         assertNotNull(classPath);
         assertNotNull(methodPath);
+        assertNotNull(slidingWindowPath);
         assertNotNull(operation);
+        assertNotNull(slidingWindowOperation);
         assertEquals("/api/runtime/context", classPath.value());
         assertEquals("/optimize", methodPath.value());
+        assertEquals("/sliding-window", slidingWindowPath.value());
         assertTrue(tag.description().contains("chapter-6"));
         assertTrue(operation.description().contains("request-time context optimization inspection seam"));
+        assertTrue(slidingWindowOperation.description().contains("sliding-window inspection seam"));
     }
 
     @Test
@@ -90,5 +97,34 @@ class RuntimeContextResourceTest {
         assertTrue(summarization.projectedMessages().stream().anyMatch(message -> "system".equals(message.role())
                 && message.content() != null
                 && message.content().startsWith("Context summary: ")));
+    }
+
+    @Test
+    void slidingWindowPreviewSurfacesTheFirstClassWindowSeam() {
+        RuntimeContextResource resource = new RuntimeContextResource(
+                new ContextOptimizer(
+                        new SlidingWindowStrategy(),
+                        new SummarizationStrategy(),
+                        100,
+                        4,
+                        2,
+                        40
+                )
+        );
+
+        ContextOptimizeResponse response = resource.slidingWindow(new ContextOptimizeRequest(List.of(
+                new ContextOptimizeRequest.ContextOptimizeMessage("system", "You are helpful.", null, null),
+                new ContextOptimizeRequest.ContextOptimizeMessage("user", "one", null, null),
+                new ContextOptimizeRequest.ContextOptimizeMessage("assistant", "two", null, null),
+                new ContextOptimizeRequest.ContextOptimizeMessage("user", "three", null, null),
+                new ContextOptimizeRequest.ContextOptimizeMessage("assistant", "four", null, null),
+                new ContextOptimizeRequest.ContextOptimizeMessage("user", "five", null, null)
+        )));
+
+        assertEquals("sliding-window", response.strategy());
+        assertTrue(response.changed());
+        assertEquals(4, response.projectedMessages().size());
+        assertEquals("system", response.projectedMessages().get(0).role());
+        assertTrue(response.projectedMessages().stream().anyMatch(message -> "user".equals(message.role()) && "five".equals(message.content())));
     }
 }

@@ -38,6 +38,7 @@ Covered in Swagger:
 - `GET /api/runtime/sessions/{sessionId}/memory` - memory inspection, more naturally chapter 6-oriented than chapter 4-oriented
 - `POST /api/runtime/sessions/{sessionId}/resume` - chapter-6 pause/resume seam for confirmation-gated tools
 - `GET /api/runtime/sessions/{sessionId}/trace` - chapter-4 runtime trace inspection seam
+- `POST /api/runtime/context/sliding-window` - chapter-6 sliding-window preview seam
 - `POST /api/runtime/memory/recall` - chapter-6 explicit long-term memory retrieval seam
 - `POST /api/runtime/memory/conversation-search` - chapter-6 explicit conversation memory retrieval seam
 - `POST /api/runtime/context/optimize` - chapter-6 request-time context optimization inspection seam
@@ -309,6 +310,38 @@ Response body:
 }
 ```
 
+`POST /api/runtime/context/sliding-window`
+
+Chapter-6 sliding-window preview seam. This endpoint isolates the sliding-window strategy so the short-term context track is visible on its own, without changing session state or requiring the full optimizer threshold to trigger.
+
+Request body:
+
+```json
+{
+  "messages": [
+    { "role": "system", "content": "You are helpful." },
+    { "role": "user", "content": "one" },
+    { "role": "assistant", "content": "two" },
+    { "role": "user", "content": "three" },
+    { "role": "assistant", "content": "four" },
+    { "role": "user", "content": "five" }
+  ]
+}
+```
+
+Response body:
+
+```json
+{
+  "originalTokenCount": 38,
+  "projectedTokenCount": 24,
+  "strategy": "sliding-window",
+  "changed": true,
+  "originalMessages": [],
+  "projectedMessages": []
+}
+```
+
 `POST /api/agent/run/structured`
 
 Chapter-4 structured-output seam around the manual loop. This supports one controlled demo schema named `chapter4-answer` and returns a normalized structured answer plus the raw one-step agent result.
@@ -369,7 +402,7 @@ Read-only session inspection seam that exposes the stored conversation messages.
 
 `GET /api/runtime/sessions/{sessionId}/memory`
 
-Read-only memory inspection seam that returns the relevant memories for a session and query.
+Read-only memory inspection seam that returns the relevant memories for a session and query. The response now exposes the structured record fields as well as the raw memory text, so storage-vs-presentation is easier to inspect directly through Swagger.
 
 `GET /api/runtime/sessions/{sessionId}/trace`
 

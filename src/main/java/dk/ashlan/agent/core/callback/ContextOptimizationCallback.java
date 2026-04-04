@@ -25,11 +25,12 @@ public class ContextOptimizationCallback implements AgentCallback {
         }
         ContextOptimizationResult result = optimizer.optimize(new LlmRequest(context.messages()));
         if (!result.changed()) {
-            context.setOptimizationSummary("context-optimizer:none:" + result.originalTokenCount());
+            context.setOptimizationSummary("context-optimizer:none:cache-friendly:" + result.originalTokenCount());
             return;
         }
         context.projectMessages(result.messages());
         context.setOptimizationSummary("context-optimizer:" + result.strategy()
+                + ":cache-rewrite"
                 + ":" + result.originalTokenCount()
                 + "->" + result.projectedTokenCount());
     }

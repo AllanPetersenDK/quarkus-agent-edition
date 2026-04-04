@@ -12,6 +12,7 @@ import dk.ashlan.agent.memory.SessionTraceStore;
 import dk.ashlan.agent.core.callback.AgentCallback;
 import dk.ashlan.agent.core.callback.AfterRunMemoryCallback;
 import dk.ashlan.agent.tools.JsonToolResult;
+import dk.ashlan.agent.tools.ProcessLlmRequestTool;
 import dk.ashlan.agent.tools.ToolExecutor;
 import dk.ashlan.agent.tools.ToolRegistry;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -41,6 +42,7 @@ public class AgentOrchestrator implements AgentRunner {
     private final MemoryService memoryService;
     private final SessionManager sessionManager;
     private final List<AgentCallback> callbacks;
+    private final ProcessLlmRequestTool processLlmRequestTool;
     private final int maxIterations;
     private final String systemPrompt;
     @Inject
@@ -56,11 +58,12 @@ public class AgentOrchestrator implements AgentRunner {
             MemoryService memoryService,
             SessionManager sessionManager,
             Instance<AgentCallback> callbacks,
+            ProcessLlmRequestTool processLlmRequestTool,
             @ConfigProperty(name = "agent.max-iterations") int maxIterations,
             @ConfigProperty(name = "agent.system-prompt") String systemPrompt,
             Config config
     ) {
-        this(selectClient(llmClients, config), toolRegistry, toolExecutor, memoryService, sessionManager, resolveCallbacks(callbacks), maxIterations, systemPrompt);
+        this(selectClient(llmClients, config), toolRegistry, toolExecutor, memoryService, sessionManager, resolveCallbacks(callbacks), processLlmRequestTool, maxIterations, systemPrompt);
     }
 
     public AgentOrchestrator(
@@ -71,7 +74,7 @@ public class AgentOrchestrator implements AgentRunner {
             int maxIterations,
             String systemPrompt
     ) {
-        this(llmClient, toolRegistry, toolExecutor, memoryService, null, List.of(), maxIterations, systemPrompt);
+        this(llmClient, toolRegistry, toolExecutor, memoryService, null, List.of(), null, maxIterations, systemPrompt);
     }
 
     public AgentOrchestrator(
@@ -83,7 +86,7 @@ public class AgentOrchestrator implements AgentRunner {
             int maxIterations,
             String systemPrompt
     ) {
-        this(llmClient, toolRegistry, toolExecutor, memoryService, sessionManager, List.of(), maxIterations, systemPrompt);
+        this(llmClient, toolRegistry, toolExecutor, memoryService, sessionManager, List.of(), null, maxIterations, systemPrompt);
     }
 
     public AgentOrchestrator(
@@ -96,12 +99,27 @@ public class AgentOrchestrator implements AgentRunner {
             int maxIterations,
             String systemPrompt
     ) {
+        this(llmClient, toolRegistry, toolExecutor, memoryService, sessionManager, callbacks, null, maxIterations, systemPrompt);
+    }
+
+    public AgentOrchestrator(
+            LlmClient llmClient,
+            ToolRegistry toolRegistry,
+            ToolExecutor toolExecutor,
+            MemoryService memoryService,
+            SessionManager sessionManager,
+            List<AgentCallback> callbacks,
+            ProcessLlmRequestTool processLlmRequestTool,
+            int maxIterations,
+            String systemPrompt
+    ) {
         this.llmClient = llmClient;
         this.toolRegistry = toolRegistry;
         this.toolExecutor = toolExecutor;
         this.memoryService = memoryService;
         this.sessionManager = sessionManager;
         this.callbacks = callbacks == null ? List.of() : List.copyOf(sortCallbacks(callbacks));
+        this.processLlmRequestTool = processLlmRequestTool;
         this.maxIterations = maxIterations;
         this.systemPrompt = systemPrompt;
     }
@@ -190,12 +208,12 @@ public class AgentOrchestrator implements AgentRunner {
         }
         ExecutionContext context = new ExecutionContext(message, sessionId, initialMessages);
         session.addUserMessage(message);
-        LlmRequestBuilder requestBuilder = new LlmRequestBuilder(systemPrompt, memoryService);
+        LlmRequestBuilder requestBuilder = new LlmRequestBuilder(systemPrompt, memoryService, processLlmRequestTool);
         return executeStep(context, requestBuilder, session, nextStepNumber(sessionId)).stepResult();
     }
 
     private AgentRunResult continueRun(ExecutionContext context, SessionState session, int stepNumber, List<String> initialTrace) {
-        LlmRequestBuilder requestBuilder = new LlmRequestBuilder(systemPrompt, memoryService);
+        LlmRequestBuilder requestBuilder = new LlmRequestBuilder(systemPrompt, memoryService, processLlmRequestTool);
         List<String> trace = new ArrayList<>();
         if (initialTrace != null && !initialTrace.isEmpty()) {
             trace.addAll(initialTrace);

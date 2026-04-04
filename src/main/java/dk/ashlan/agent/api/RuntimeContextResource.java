@@ -53,12 +53,40 @@ public class RuntimeContextResource {
                 .map(this::toMessage)
                 .toList();
         ContextOptimizationResult result = contextOptimizer.optimize(new LlmRequest(messages));
+        return buildResponse(request.messages(), result);
+    }
+
+    @POST
+    @Path("/sliding-window")
+    @Operation(
+            summary = "Preview a sliding-window projection",
+            description = "Book chapter mapping: chapter 6 sliding-window inspection seam. This endpoint shows the existing sliding-window strategy in isolation, so the chapter-6 context hierarchy is visible without mutating session state or running the agent loop."
+    )
+    @RequestBody(
+            description = "Messages to project through the existing chapter-6 sliding-window strategy.",
+            required = true,
+            content = @Content(schema = @Schema(implementation = ContextOptimizeRequest.class))
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Token counts, sliding-window strategy, and the original/projected message sets.",
+            content = @Content(schema = @Schema(implementation = ContextOptimizeResponse.class))
+    )
+    public ContextOptimizeResponse slidingWindow(@Valid ContextOptimizeRequest request) {
+        List<LlmMessage> messages = request.messages().stream()
+                .map(this::toMessage)
+                .toList();
+        ContextOptimizationResult result = contextOptimizer.previewSlidingWindow(new LlmRequest(messages));
+        return buildResponse(request.messages(), result);
+    }
+
+    private ContextOptimizeResponse buildResponse(List<ContextOptimizeRequest.ContextOptimizeMessage> originalMessages, ContextOptimizationResult result) {
         return new ContextOptimizeResponse(
                 result.originalTokenCount(),
                 result.projectedTokenCount(),
                 result.strategy(),
                 result.changed(),
-                request.messages(),
+                originalMessages,
                 result.messages().stream().map(this::toDto).toList()
         );
     }

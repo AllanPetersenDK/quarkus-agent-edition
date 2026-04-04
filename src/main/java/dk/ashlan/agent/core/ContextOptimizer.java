@@ -54,6 +54,17 @@ public class ContextOptimizer {
         return new ContextOptimizationResult(List.copyOf(summarized), "summarization", originalTokens, summarizedTokens);
     }
 
+    public ContextOptimizationResult previewSlidingWindow(LlmRequest request) {
+        List<LlmMessage> input = request == null || request.messages() == null ? List.of() : List.copyOf(request.messages());
+        int originalTokens = new LlmRequest(input).estimatedTokenCount();
+        List<LlmMessage> projected = slidingWindowStrategy.trimConversation(input, slidingWindowSize);
+        int projectedTokens = new LlmRequest(projected).estimatedTokenCount();
+        if (projected.equals(input)) {
+            return ContextOptimizationResult.unchanged(input, originalTokens);
+        }
+        return new ContextOptimizationResult(List.copyOf(projected), "sliding-window", originalTokens, projectedTokens);
+    }
+
     private List<LlmMessage> compactToolMessages(List<LlmMessage> messages) {
         List<LlmMessage> compacted = new ArrayList<>(messages.size());
         for (LlmMessage message : messages) {
