@@ -143,6 +143,8 @@ Chapter-5 now also has a bulk directory ingest seam, and the shared document-rea
 Chapter 6 now also exposes a small pause/resume seam for confirmation-gated tools at `POST /api/runtime/sessions/{sessionId}/resume`, and the `confirmation-demo` tool is a tiny approval-gated demo hook for exercising that flow in Swagger.
 - `POST /api/code-agent/run`
 - `POST /multi-agent`
+- `GET /multi-agent/history`
+- `GET /multi-agent/history/{runId}`
 - `GET /workflow-demo`
 - MCP server: `http://localhost:8080/mcp`
 

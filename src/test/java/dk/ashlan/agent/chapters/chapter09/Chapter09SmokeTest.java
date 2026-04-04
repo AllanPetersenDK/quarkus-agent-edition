@@ -9,6 +9,7 @@ class Chapter09SmokeTest {
     void chapter09DemosWork() {
         assertTrue(new ResearchCoordinationDemo().run().output().contains("Research summary"));
         assertTrue(new CodingCoordinationDemo().run().output().contains("Coding plan"));
-        assertTrue(new ReviewerDemo().run("thin").contains("thin"));
+        assertTrue(new ReviewerDemo().run("thin").contains("Rejected"));
+        assertTrue(new ReviewerDemo().run("Detailed implementation output with enough context").contains("Approved"));
     }
 }

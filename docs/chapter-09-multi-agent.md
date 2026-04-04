@@ -24,8 +24,10 @@ The multi-agent design is expressed as CDI-managed specialists, a router, and a 
 ## Design Choices
 
 - Routing is deterministic enough for tests and demos.
-- The reviewer can reject thin outputs.
+- The reviewer can reject thin outputs, so approval is a real signal rather than a decorative field.
 - Specialists stay small and focused.
+- The HTTP response exposes the selected specialist, route reason, reviewer outcome, and a compact coordinator summary so the chapter is observable without reading internals.
+- Chapter 9 now also keeps a small run history, so multi-agent runs can be looked up again by `runId` through Swagger-visible history endpoints.
 
 ## Demo vs Production
 

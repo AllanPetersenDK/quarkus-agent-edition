@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CoordinatorAgentTest {
@@ -25,5 +27,10 @@ class CoordinatorAgentTest {
         assertEquals("research", result.agentName());
         assertTrue(result.output().contains("Research summary"));
         assertTrue(result.approved());
+        assertTrue(result.review().contains("Approved"));
+        assertTrue(result.routeReason().contains("research"));
+        assertTrue(result.coordinatorSummary().contains("routed to research"));
+        assertNotNull(result.routeReason());
+        assertFalse(result.review().isBlank());
     }
 }

@@ -61,6 +61,8 @@ Covered in Swagger:
 - `GET /api/runtime/sessions/{sessionId}/generated-tools` - chapter-8 generated-tool registry seam
 - `POST /api/runtime/sessions/{sessionId}/generated-tools/invoke` - chapter-8 generated-tool invocation seam
 - `POST /multi-agent` - internal chapter demo for the coordinator/reviewer flow
+- `GET /multi-agent/history` - chapter-9 run history lookup seam
+- `GET /multi-agent/history/{runId}` - chapter-9 single-run inspection seam
 - `GET /workflow-demo` - internal deterministic workflow demo
 
 Chapter 7 planning and reflection are visible through the existing runtime/tool seams rather than a new workflow API: the runtime tool registry includes `create-tasks` and `reflection`, `GET /api/agent/tools` now works in the live runtime, and chapter-7 runs surface plan/reflection/replan markers in session trace entries.
@@ -587,7 +589,7 @@ Book chapter: 8 companion seam for the deterministic workspace/code-agent workfl
 
 `POST /multi-agent`
 
-Internal chapter demo for the coordinator/reviewer flow.
+Internal chapter demo for the coordinator/reviewer flow. The response now carries the chosen specialist, a route reason, the specialist output, the reviewer signal, and a short coordinator summary so the multi-agent behavior is visible from the HTTP body itself.
 
 `GET /workflow-demo`
 

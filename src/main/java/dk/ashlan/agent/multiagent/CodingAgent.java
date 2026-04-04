@@ -2,6 +2,9 @@ package dk.ashlan.agent.multiagent;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.time.Instant;
+import java.util.List;
+
 @ApplicationScoped
 public class CodingAgent implements SpecialistAgent {
     @Override
@@ -16,6 +19,18 @@ public class CodingAgent implements SpecialistAgent {
 
     @Override
     public AgentTaskResult execute(AgentTask task) {
-        return new AgentTaskResult(name(), "Coding plan for: " + task.objective(), true, "Ready to implement.");
+        String output = "Coding plan for: " + task.objective() + ". Key steps: define the seam, wire the endpoint, and verify with tests.";
+        return new AgentTaskResult(
+                task.id(),
+                Instant.now(),
+                task.objective(),
+                name(),
+                output,
+                true,
+                "Ready to implement.",
+                "coding-specialist",
+                "Coding specialist draft for: " + task.objective(),
+                List.of("chapter9-draft:coding")
+        );
     }
 }

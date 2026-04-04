@@ -2,6 +2,9 @@ package dk.ashlan.agent.multiagent;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.time.Instant;
+import java.util.List;
+
 @ApplicationScoped
 public class ResearchAgent implements SpecialistAgent {
     @Override
@@ -16,6 +19,18 @@ public class ResearchAgent implements SpecialistAgent {
 
     @Override
     public AgentTaskResult execute(AgentTask task) {
-        return new AgentTaskResult(name(), "Research summary for: " + task.objective(), true, "Looks good.");
+        String output = "Research summary for: " + task.objective() + ". Key angle: compare sources and capture stable facts.";
+        return new AgentTaskResult(
+                task.id(),
+                Instant.now(),
+                task.objective(),
+                name(),
+                output,
+                true,
+                "Looks good.",
+                "research-specialist",
+                "Research specialist draft for: " + task.objective(),
+                List.of("chapter9-draft:research")
+        );
     }
 }
