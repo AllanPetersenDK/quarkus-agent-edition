@@ -195,7 +195,7 @@ Long-term memory is stored as compact problem-solving records with structured `p
 dedup. The runtime chapter-6 path now persists that memory through a JDBC-backed vector-like seam
 rather than only an in-memory demo store. The explicit `recall-memory` / `conversation-search`
 tools are the visible retrieval seams while request auto-injection remains a secondary convenience,
-now backed by a hidden/internal `process_llm_request`-style request-prep seam.
+now backed by a hidden request-prep helper that the builder wires in for compatibility.
 The chapter-6 context story is also more observable now: `/api/runtime/context/optimize` shows the
 full projection, `/api/runtime/context/sliding-window` previews the sliding-window track in
 isolation, and the trace summary marks cache-friendly no-op requests explicitly.
@@ -206,8 +206,9 @@ when an explicit session id is supplied, and the book demo uses a small confirma
 `delete-file` tool to make the flow visible.
 Delete/remove requests are deterministically preflighted into that confirmation flow so the
 book test does not depend on the model spontaneously choosing the tool call.
-REST no-session calls are ephemeral-safe, while direct core convenience calls still keep the
-compatibility default-session fallback for internal callers.
+REST no-session calls are ephemeral-safe. Direct core convenience calls still keep the
+compatibility default-session fallback for internal callers, so they are not guaranteed to be
+anonymous-safe.
 That same seam also keeps `web-search` compression query-aware, while file and document tools still
 use straightforward truncation to keep context noise down.
 

@@ -8,7 +8,7 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - Pattern 2 is session continuity: `SessionManager` and `SessionState` keep multi-turn state separate from memory
 - Pattern 3 is structured long-term memory: compact problem-solving records are written after a run and retrieved across sessions with ranked structured lookup instead of flat string matching, now through a persistent JDBC-backed vector-like seam in runtime
 - `after_run` is the canonical bridge into compact memory persistence
-- explicit memory search remains a tool, while `conversation-search` and `recall-memory` are the visible retrieval seams and auto-injection is a runtime convenience backed by a hidden/internal `process_llm_request`-style request-prep seam
+- explicit memory search remains a tool, while `conversation-search` and `recall-memory` are the visible retrieval seams and auto-injection is a runtime convenience backed by a hidden request-prep helper that the builder wires in for compatibility
 - context projection is now directly observable through Swagger: `/api/runtime/context/optimize` shows the full request projection, strategy, and cache-friendly no-op paths, while `/api/runtime/context/sliding-window` previews the windowed track
 - pause/resume for confirmation tools is an internal agent feature, not a callback trick, and pending tool calls are persisted in session state
 - `POST /api/runtime/sessions/{sessionId}/resume` is the small Swagger-visible pause/resume seam, and `confirmation-demo` is the tiny approval-gated demo tool used to exercise it
@@ -79,7 +79,7 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - Long-term memory is stored as compact problem-solving records with `taskSummary`, `approach`, `finalAnswer`, and small correctness/error fields when they are available, and retrieval ranks those records using the structured fields rather than the raw memory string alone. The runtime store keeps that shape in JDBC so the memory layer is observable as a real persistence seam rather than a flat demo cache.
 - Dedup is structured as well: exact and near-duplicate writes are suppressed with a compact dedup key and token overlap, so the store behaves like a long-term memory layer rather than a raw transcript cache.
 - `ConfirmationDemoTool` is a chapter-6 demo tool only; it exists to make the pause/resume flow visible without turning approval gating into a broad runtime policy.
-- The manual REST chapter-6 path treats missing session ids as ephemeral/anonymized, while direct core convenience calls still keep the compatibility default-session fallback for internal callers. That distinction is deliberate and keeps the API seam safer without widening the core orchestration surface.
+- The manual REST chapter-6 path treats missing session ids as ephemeral/anonymized. Direct core convenience calls still keep the compatibility default-session fallback for internal callers, so they are not guaranteed to be anonymous-safe. That distinction is deliberate and keeps the API seam safer without widening the core orchestration surface.
 
 ## Demo vs Production
 
