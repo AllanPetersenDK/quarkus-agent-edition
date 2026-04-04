@@ -41,6 +41,9 @@ public class InMemoryTaskMemoryStore implements TaskMemoryStore {
     public List<TaskMemory> findRelevant(String sessionId, String query, int limit) {
         String normalizedQuery = normalize(query);
         List<String> queryTokens = tokenize(query);
+        if (normalizedQuery.isBlank() || limit <= 0) {
+            return List.of();
+        }
         return memories.stream()
                 .sorted(Comparator
                         .comparingDouble((TaskMemory memory) -> score(memory, normalizedQuery, queryTokens))
@@ -54,26 +57,28 @@ public class InMemoryTaskMemoryStore implements TaskMemoryStore {
             return 0.0;
         }
         String searchable = normalize(memory.searchableText());
-        String dedup = normalize(memory.dedupKey());
         double score = 0.0;
-        if (searchable.contains(normalizedQuery)) {
-            score += 8.0;
-        }
-        if (!normalize(memory.problem()).isBlank() && normalize(memory.problem()).contains(normalizedQuery)) {
-            score += 3.0;
-        }
-        if (!normalize(memory.result()).isBlank() && normalize(memory.result()).contains(normalizedQuery)) {
-            score += 3.0;
-        }
-        score += tokenScore(memory.taskSummary(), queryTokens, 4.0);
-        score += tokenScore(memory.approach(), queryTokens, 2.0);
-        score += tokenScore(memory.finalAnswer(), queryTokens, 3.0);
-        score += tokenScore(memory.memory(), queryTokens, 2.5);
+        score += phraseScore(memory.summary(), normalizedQuery, 8.0);
+        score += phraseScore(memory.problem(), normalizedQuery, 7.0);
+        score += phraseScore(memory.approach(), normalizedQuery, 4.0);
+        score += phraseScore(memory.result(), normalizedQuery, 6.0);
+        score += phraseScore(memory.memory(), normalizedQuery, 3.0);
+        score += phraseScore(memory.errorAnalysis(), normalizedQuery, 1.5);
+        score += phraseScore(memory.task(), normalizedQuery, 1.0);
+
+        score += tokenScore(memory.summary(), queryTokens, 4.5);
+        score += tokenScore(memory.problem(), queryTokens, 4.0);
+        score += tokenScore(memory.approach(), queryTokens, 2.5);
+        score += tokenScore(memory.result(), queryTokens, 4.0);
+        score += tokenScore(memory.memory(), queryTokens, 2.0);
         score += tokenScore(memory.errorAnalysis(), queryTokens, 1.0);
         score += tokenScore(memory.task(), queryTokens, 1.5);
         score += overlapBoost(memory.searchableTokens(), queryTokens);
-        if (dedup.contains(normalizedQuery)) {
-            score += 1.5;
+        if (normalize(memory.structuredDedupKey()).contains(normalizedQuery)) {
+            score += 1.0;
+        }
+        if (normalize(memory.result()).contains(normalizedQuery) && !normalize(memory.summary()).contains(normalizedQuery)) {
+            score += 0.5;
         }
         return score;
     }
@@ -82,11 +87,28 @@ public class InMemoryTaskMemoryStore implements TaskMemoryStore {
         if (field == null || field.isBlank() || queryTokens.isEmpty()) {
             return 0.0;
         }
-        String normalizedField = normalize(field);
+        Set<String> fieldTokens = Set.copyOf(tokenize(field));
+        if (fieldTokens.isEmpty()) {
+            return 0.0;
+        }
         long matches = queryTokens.stream()
-                .filter(token -> normalizedField.contains(token))
+                .filter(fieldTokens::contains)
                 .count();
         return matches * weight;
+    }
+
+    private double phraseScore(String field, String normalizedQuery, double weight) {
+        if (field == null || field.isBlank() || normalizedQuery.isBlank()) {
+            return 0.0;
+        }
+        String normalizedField = normalize(field);
+        if (normalizedField.isBlank()) {
+            return 0.0;
+        }
+        if (normalizedField.equals(normalizedQuery)) {
+            return weight * 1.5;
+        }
+        return normalizedField.contains(normalizedQuery) ? weight : 0.0;
     }
 
     private double overlapBoost(List<String> memoryTokens, List<String> queryTokens) {

@@ -24,30 +24,31 @@ class AfterRunMemoryCallbackTest {
         );
         AfterRunMemoryCallback callback = new AfterRunMemoryCallback(memoryService);
         AgentRunResult result = new AgentRunResult(
-                "Your favorite database is PostgreSQL.",
+                "25 * 4 = 100",
                 StopReason.FINAL_ANSWER,
                 2,
                 List.of(
                         "iteration:1",
-                        "tool:web-search:[compacted tool output; originalChars=2048] result",
-                        "answer: Your favorite database is PostgreSQL."
+                        "tool:calculator:25 * 4",
+                        "answer: 25 * 4 = 100"
                 )
         );
 
         callback.afterRun(new AfterRunContext(
                 "session-1",
-                "Remember that my favorite database is PostgreSQL.",
+                "What is 25 * 4?",
                 result,
                 result.trace()
         ));
 
-        TaskMemory stored = memoryService.longTermMemories("session-1", "PostgreSQL", 1).get(0);
-        assertTrue(stored.approach().contains("explicit"));
-        assertTrue(stored.task().contains("Remember that my favorite database is PostgreSQL."));
-        assertTrue(stored.result().contains("PostgreSQL"));
-        assertTrue(memoryService.relevantMemories("session-1", "PostgreSQL").stream()
-                .anyMatch(memory -> memory.contains("PostgreSQL")));
-        assertTrue(memoryService.relevantMemories("session-1", "PostgreSQL").stream()
+        TaskMemory stored = memoryService.longTermMemories("session-1", "25 * 4", 1).get(0);
+        assertTrue(stored.approach().contains("after-run"));
+        assertTrue(stored.problem().contains("What is 25 * 4?"));
+        assertTrue(stored.summary().contains("What is 25 * 4?"));
+        assertTrue(stored.result().contains("100"));
+        assertTrue(memoryService.relevantMemories("session-1", "25 * 4").stream()
+                .anyMatch(memory -> memory.contains("25 * 4")));
+        assertTrue(memoryService.relevantMemories("session-1", "25 * 4").stream()
                 .noneMatch(memory -> memory.contains("trace:")));
     }
 }

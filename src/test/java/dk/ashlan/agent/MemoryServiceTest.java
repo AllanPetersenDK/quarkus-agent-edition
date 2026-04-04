@@ -32,20 +32,42 @@ class MemoryServiceTest {
         memoryService.remember("session-1", "goal", "I live in Copenhagen and like Quarkus");
         memoryService.remember("session-2", "goal", "I also work with Java 21");
 
-        assertTrue(memoryService.relevantMemories("session-3", "Copenhagen").get(0).contains("Copenhagen"));
-        assertTrue(memoryService.longTermMemories("session-3", "Copenhagen", 1).get(0).problem().contains("location"));
+        TaskMemory memory = memoryService.longTermMemories("session-3", "Copenhagen", 1).get(0);
+        assertEquals("session-1", memory.sessionId());
+        assertTrue(memory.problem().contains("location"));
+        assertTrue(memory.result().contains("Copenhagen"));
     }
 
     @Test
-    void retrievalRanksTheMostRelevantMemoryFirst() {
-        MemoryService memoryService = new MemoryService(new SessionManager(), new InMemoryTaskMemoryStore(), new MemoryExtractionService());
+    void retrievalRanksStructuredFieldsAheadOfRawStringMatches() {
+        InMemoryTaskMemoryStore store = new InMemoryTaskMemoryStore();
+        store.save(new TaskMemory(
+                "session-1",
+                "goal",
+                "Completely unrelated raw text",
+                "database choice",
+                "preference disclosure",
+                "PostgreSQL",
+                null,
+                null
+        ));
+        store.save(new TaskMemory(
+                "session-2",
+                "goal",
+                "database PostgreSQL appears in the raw memory only",
+                "general note",
+                "miscellaneous",
+                "MySQL",
+                null,
+                null
+        ));
 
-        memoryService.remember("session-1", "goal", "Remember that my favorite database is PostgreSQL.");
-        memoryService.remember("session-2", "goal", "Remember that PostgreSQL is important for my current project.");
+        MemoryService memoryService = new MemoryService(new SessionManager(), store, new MemoryExtractionService());
+        List<TaskMemory> memories = memoryService.longTermMemories("session-3", "database PostgreSQL", 2);
 
-        List<TaskMemory> memories = memoryService.longTermMemories("session-3", "favorite database PostgreSQL", 2);
-
-        assertTrue(memories.get(0).memory().contains("favorite database"));
+        assertEquals("session-1", memories.get(0).sessionId());
+        assertTrue(memories.get(0).summary().contains("database choice"));
+        assertTrue(memories.get(0).result().contains("PostgreSQL"));
     }
 
     @Test
@@ -54,8 +76,12 @@ class MemoryServiceTest {
 
         assertEquals(MemoryWriteDecision.SKIP, memoryService.remember("session-1", "goal", "hello"));
         assertEquals(MemoryWriteDecision.ADD, memoryService.remember("session-1", "goal", "Remember that my favorite database is PostgreSQL."));
-        assertEquals(MemoryWriteDecision.SKIP, memoryService.remember("session-2", "goal", "Remember that my favorite database is PostgreSQL!"));
-        assertTrue(memoryService.relevantMemories("session-2", "PostgreSQL").size() == 1);
+        assertEquals(MemoryWriteDecision.SKIP, memoryService.remember("session-2", "goal", "Please remember that my favorite database is PostgreSQL."));
+        assertEquals(MemoryWriteDecision.SKIP, memoryService.remember("session-3", "goal", "Remember that my favorite database is PostgreSQL."));
+        assertEquals(MemoryWriteDecision.ADD, memoryService.remember("session-4", "goal", "Remember that my favorite editor is Neovim."));
+        assertTrue(memoryService.longTermMemories("session-2", "PostgreSQL", 2).stream()
+                .anyMatch(memory -> memory.result().contains("PostgreSQL")));
+        assertTrue(memoryService.longTermMemories("session-4", "Neovim", 1).get(0).result().contains("Neovim"));
     }
 
     @Test
@@ -68,9 +94,9 @@ class MemoryServiceTest {
                 "Mit navn er Alice, og jeg arbejder som marketer."
         ));
 
-        assertTrue(memoryService.relevantMemories("session-2", "Alice").stream()
-                .anyMatch(memory -> memory.contains("User name: Alice")));
-        assertTrue(memoryService.longTermMemories("session-2", "Alice", 1).get(0).taskSummary().contains("danish-profile"));
-        assertTrue(memoryService.longTermMemories("session-2", "Alice", 1).get(0).finalAnswer().contains("Alice"));
+        TaskMemory stored = memoryService.longTermMemories("session-2", "Alice", 1).get(0);
+        assertTrue(stored.memory().contains("User name: Alice"));
+        assertTrue(stored.summary().contains("danish-profile"));
+        assertTrue(stored.result().contains("Alice"));
     }
 }

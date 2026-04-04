@@ -1,6 +1,10 @@
 package dk.ashlan.agent.core;
 
 import dk.ashlan.agent.llm.LlmMessage;
+import dk.ashlan.agent.memory.InMemoryTaskMemoryStore;
+import dk.ashlan.agent.memory.MemoryExtractionService;
+import dk.ashlan.agent.memory.MemoryService;
+import dk.ashlan.agent.memory.SessionManager;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -23,5 +27,20 @@ class LlmRequestBuilderTest {
         assertTrue(messages.get(0).content().contains("What is the capital of France? -> answer directly."));
         assertTrue(messages.get(0).content().contains("What time is it right now? -> use clock."));
         assertTrue(messages.get(0).content().contains("Search Wikipedia for the capital of France. -> use wikipedia because the user explicitly requested lookup."));
+    }
+
+    @Test
+    void buildStillAutoInjectsRelevantMemoryBeforeUserMessages() {
+        MemoryService memoryService = new MemoryService(new SessionManager(), new InMemoryTaskMemoryStore(), new MemoryExtractionService());
+        memoryService.remember("session-1", "goal", "Remember that my favorite database is PostgreSQL.");
+
+        LlmRequestBuilder builder = new LlmRequestBuilder("You are a chapter 06 demo agent.", memoryService);
+        List<LlmMessage> messages = builder.build(new ExecutionContext("Tell me about PostgreSQL", "session-1"));
+
+        assertEquals("system", messages.get(0).role());
+        assertTrue(messages.get(1).role().equals("system"));
+        assertTrue(messages.get(1).content().contains("Memory:"));
+        assertTrue(messages.get(1).content().contains("PostgreSQL"));
+        assertEquals("user", messages.get(messages.size() - 1).role());
     }
 }

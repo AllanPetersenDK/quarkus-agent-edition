@@ -6,7 +6,7 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 
 - Pattern 1 is request-time context optimization: `beforeLlm` trims the active request projection, but the full execution history stays intact
 - Pattern 2 is session continuity: `SessionManager` and `SessionState` keep multi-turn state separate from memory
-- Pattern 3 is long-term memory: compact problem-solving records are written after a run and retrieved across sessions with lightweight ranking
+- Pattern 3 is structured long-term memory: compact problem-solving records are written after a run and retrieved across sessions with ranked structured lookup instead of flat string matching
 - `after_run` is the canonical bridge into compact memory persistence
 - explicit memory search remains a tool, while `conversation-search` and `recall-memory` are the visible retrieval seams and auto-injection is a runtime convenience
 - pause/resume for confirmation tools is an internal agent feature, not a callback trick, and pending tool calls are persisted in session state
@@ -74,6 +74,7 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - `MemoryAwareAgentOrchestrator` remains as a thin chapter-6 façade, but the actual memory persistence hook is now callback-driven.
 - `ConversationSearchTool` and `RecallMemoryTool` are the explicit memory retrieval tools, while automatic memory injection stays a small convenience inside the request builder.
 - Long-term memory is stored as compact problem-solving records with `taskSummary`, `approach`, `finalAnswer`, and small correctness/error fields when they are available, and retrieval ranks those records using the structured fields rather than the raw memory string alone.
+- Dedup is structured as well: exact and near-duplicate writes are suppressed with a compact dedup key and token overlap, so the store behaves like a long-term memory layer rather than a raw transcript cache.
 - `ConfirmationDemoTool` is a chapter-6 demo tool only; it exists to make the pause/resume flow visible without turning approval gating into a broad runtime policy.
 
 ## Demo vs Production

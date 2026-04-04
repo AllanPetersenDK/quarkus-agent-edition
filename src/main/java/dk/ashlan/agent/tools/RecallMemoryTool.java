@@ -36,23 +36,27 @@ public class RecallMemoryTool extends AbstractTool {
         }
         return memories.stream()
                 .map(this::format)
-                .collect(Collectors.joining("\n"));
+                .collect(Collectors.joining("\n\n"));
     }
 
     private String format(TaskMemory memory) {
         StringBuilder builder = new StringBuilder();
-        builder.append("Problem: ").append(firstNonBlank(memory.task(), memory.problem()));
-        if (memory.taskSummary() != null && !memory.taskSummary().isBlank()) {
-            builder.append(" | Summary: ").append(memory.taskSummary());
-        }
-        if (memory.approach() != null && !memory.approach().isBlank()) {
-            builder.append(" | Approach: ").append(memory.approach());
-        }
-        builder.append(" | Result: ").append(firstNonBlank(memory.result(), memory.memory()));
-        if (memory.errorAnalysis() != null && !memory.errorAnalysis().isBlank()) {
-            builder.append(" | Error analysis: ").append(memory.errorAnalysis());
-        }
+        appendField(builder, "Problem", firstNonBlank(memory.problem(), memory.task()));
+        appendField(builder, "Summary", memory.taskSummary());
+        appendField(builder, "Approach", memory.approach());
+        appendField(builder, "Result", firstNonBlank(memory.result(), memory.memory()));
+        appendField(builder, "Error analysis", memory.errorAnalysis());
         return builder.toString();
+    }
+
+    private void appendField(StringBuilder builder, String label, String value) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        if (!builder.isEmpty()) {
+            builder.append('\n');
+        }
+        builder.append(label).append(": ").append(value.trim());
     }
 
     private String firstNonBlank(String first, String fallback) {

@@ -4,33 +4,54 @@ import dk.ashlan.agent.memory.InMemoryTaskMemoryStore;
 import dk.ashlan.agent.memory.MemoryExtractionService;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
+import dk.ashlan.agent.memory.TaskMemory;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RecallMemoryToolTest {
     @Test
-    void returnsRelevantCrossSessionMemory() {
-        MemoryService memoryService = new MemoryService(new InMemoryTaskMemoryStore(), new MemoryExtractionService());
-        memoryService.remember("session-1", "goal", "Remember that my favorite database is PostgreSQL.");
+    void returnsRelevantCrossSessionMemoryWithStructuredFormatting() {
+        InMemoryTaskMemoryStore store = new InMemoryTaskMemoryStore();
+        store.save(new TaskMemory(
+                "session-1",
+                "goal",
+                "Problem: choose database",
+                "choose database",
+                "preference disclosure",
+                "PostgreSQL",
+                Boolean.TRUE,
+                "No issues detected"
+        ));
+        MemoryService memoryService = new MemoryService(store, new MemoryExtractionService());
         RecallMemoryTool tool = new RecallMemoryTool(memoryService);
 
-        String output = tool.execute(Map.of("sessionId", "session-1", "query", "favorite database")).output();
+        String output = tool.execute(Map.of("sessionId", "session-2", "query", "PostgreSQL")).output();
 
         assertTrue(output.contains("Problem:"));
+        assertTrue(output.contains("Summary:"));
+        assertTrue(output.contains("Approach:"));
         assertTrue(output.contains("Result:"));
         assertTrue(output.contains("PostgreSQL"));
+        assertTrue(output.contains("Error analysis:"));
     }
 
     @Test
-    void returnsCompactMessageWhenNoMemoryMatches() {
-        MemoryService memoryService = new MemoryService(new InMemoryTaskMemoryStore(), new MemoryExtractionService());
+    void omitsEmptyFieldsWhenTheyAreNotPresent() {
+        InMemoryTaskMemoryStore store = new InMemoryTaskMemoryStore();
+        store.save(new TaskMemory("session-1", "goal", "Remember that my favorite editor is Neovim."));
+        MemoryService memoryService = new MemoryService(store, new MemoryExtractionService());
         RecallMemoryTool tool = new RecallMemoryTool(memoryService);
 
-        String output = tool.execute(Map.of("sessionId", "session-1", "query", "nothing-useful")).output();
+        String output = tool.execute(Map.of("sessionId", "session-1", "query", "Neovim")).output();
 
-        assertTrue(output.contains("No relevant memories found."));
+        assertTrue(output.contains("Problem:"));
+        assertTrue(output.contains("Result:"));
+        assertFalse(output.contains("Summary:"));
+        assertFalse(output.contains("Approach:"));
+        assertFalse(output.contains("Error analysis:"));
     }
 }

@@ -23,24 +23,28 @@ public record TaskMemory(
         return isBlank(taskSummary) ? task : taskSummary;
     }
 
+    public String summary() {
+        return isBlank(taskSummary) ? problem() : taskSummary;
+    }
+
     public String result() {
         return isBlank(finalAnswer) ? memory : finalAnswer;
     }
 
-    String searchableText() {
-        return joinNonBlank(taskSummary, approach, finalAnswer, memory, errorAnalysis, task);
+    public String searchableText() {
+        return joinNonBlank(summary(), problem(), approach, result(), memory, errorAnalysis, task);
     }
 
-    String dedupKey() {
-        return normalizeForComparison(joinNonBlank(taskSummary, approach, finalAnswer, stripTrace(memory), errorAnalysis, task));
+    public String structuredDedupKey() {
+        return normalizeForComparison(joinNonBlank(summary(), problem(), approach, result(), errorAnalysis, task, stripTrace(memory)));
     }
 
-    List<String> searchableTokens() {
+    public List<String> searchableTokens() {
         return tokenize(searchableText());
     }
 
-    List<String> dedupTokens() {
-        return tokenize(dedupKey());
+    public List<String> dedupTokens() {
+        return tokenize(structuredDedupKey());
     }
 
     private boolean isBlank(String value) {

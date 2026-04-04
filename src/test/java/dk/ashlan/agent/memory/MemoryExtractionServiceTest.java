@@ -19,8 +19,8 @@ class MemoryExtractionServiceTest {
 
         assertEquals(MemoryWriteDecision.ADD, result.decision());
         assertNotNull(result.memory());
-        assertTrue(result.memory().problem().contains("remember"));
-        assertTrue(result.memory().approach().contains("explicit remember"));
+        assertTrue(result.memory().problem().contains("preference"));
+        assertTrue(result.memory().approach().contains("preference"));
         assertTrue(result.memory().result().contains("PostgreSQL"));
     }
 
@@ -31,13 +31,37 @@ class MemoryExtractionServiceTest {
         MemoryExtractionResult result = service.extract(
                 "session-1",
                 "goal",
-                "The result is 100 => The result is 100 | trace: iteration:1"
+                "What is 25 * 4? => 25 * 4 = 100 | trace: iteration:1"
         );
 
         assertEquals(MemoryWriteDecision.ADD, result.decision());
         assertNotNull(result.memory());
-        assertTrue(result.memory().problem().contains("answer"));
-        assertEquals("100", result.memory().result());
+        assertTrue(result.memory().problem().contains("What is 25 * 4?"));
+        assertTrue(result.memory().summary().contains("What is 25 * 4?"));
+        assertTrue(result.memory().result().contains("100"));
+        assertTrue(result.memory().approach().contains("after-run"));
+    }
+
+    @Test
+    void profileSignalsAndGenericNoiseAreHandledConservatively() {
+        MemoryExtractionService service = new MemoryExtractionService();
+
+        MemoryExtractionResult profile = service.extract(
+                "session-1",
+                "profile",
+                "I am a data engineer."
+        );
+        MemoryExtractionResult noise = service.extract(
+                "session-1",
+                "profile",
+                "thanks"
+        );
+
+        assertEquals(MemoryWriteDecision.ADD, profile.decision());
+        assertNotNull(profile.memory());
+        assertTrue(profile.memory().problem().contains("profile"));
+        assertTrue(profile.memory().result().contains("data engineer"));
+        assertEquals(MemoryWriteDecision.SKIP, noise.decision());
     }
 
     @Test
@@ -53,8 +77,8 @@ class MemoryExtractionServiceTest {
         assertEquals(MemoryWriteDecision.ADD, result.decision());
         assertNotNull(result.memory());
         assertTrue(result.memory().task().contains("Remember that I prefer concise answers and PostgreSQL."));
-        assertTrue(result.memory().approach().contains("explicit remember"));
+        assertTrue(result.memory().approach().contains("after-run"));
         assertTrue(result.memory().result().contains("Got it!"));
-        assertTrue(result.memory().memory().contains("User memory signal:"));
+        assertTrue(result.memory().memory().contains("Problem:"));
     }
 }

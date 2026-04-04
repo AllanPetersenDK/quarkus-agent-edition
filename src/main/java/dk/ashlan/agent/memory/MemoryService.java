@@ -54,14 +54,14 @@ public class MemoryService {
     }
 
     private boolean isDuplicate(TaskMemory candidate) {
-        String candidateKey = candidate.dedupKey();
+        String candidateKey = candidate.structuredDedupKey();
         if (candidateKey.isBlank()) {
             return true;
         }
-        return memoryStore.findRelevant(candidate.sessionId(), candidate.dedupKey(), 10).stream()
+        return memoryStore.findRelevant(candidate.sessionId(), candidateKey, 25).stream()
                 .anyMatch(existing -> existing != null
-                        && (existing.dedupKey().equals(candidateKey)
-                        || tokenOverlap(existing, candidate) >= 0.9d));
+                        && (existing.structuredDedupKey().equals(candidateKey)
+                        || tokenOverlap(existing, candidate) >= 0.85d));
     }
 
     private double tokenOverlap(TaskMemory first, TaskMemory second) {

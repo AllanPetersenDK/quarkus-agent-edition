@@ -187,12 +187,13 @@ Quarkus CDI resolves the JDBC-backed persistence beans in runtime; the in-memory
 explicit default/manual paths.
 `AgentOrchestrator` also has a small callback seam now, with `after_run` acting as the bridge into
 chapter-6 memory so the core loop stays simple while memory/persistence hooks remain extensible.
-Chapter 6 is now the active next track: Pattern 1 context optimization, Pattern 2 session
-continuity, and Pattern 3 structured long-term memory are all present, while chapter 5 stays a
-separate companion story.
-Long-term memory is stored as compact problem-solving records with a small structured shape and
-ranked cross-session retrieval, and the explicit `recall-memory` / `conversation-search` tools are
-the visible retrieval seams while request auto-injection remains a secondary convenience.
+Chapter 6 is now the active next track: Pattern 1 request-time context optimization, Pattern 2
+session continuity, and Pattern 3 structured long-term memory are all present, while chapter 5
+stays a separate companion story.
+Long-term memory is stored as compact problem-solving records with structured `problem` /
+`summary` / `approach` / `result` fields, ranked cross-session retrieval, and more selective
+dedup. The explicit `recall-memory` / `conversation-search` tools are the visible retrieval seams
+while request auto-injection remains a secondary convenience.
 Pending confirmations are persisted in session state, and a resume step can process multiple
 pending tool calls in one whitelist pass.
 The main `/api/agent/run` seam can also carry `toolConfirmations` for the chapter-6 resume path,
