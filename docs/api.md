@@ -30,6 +30,7 @@ Covered in Swagger:
 - `POST /api/agent/step` - chapter-4 manual-loop inspection seam
 - `POST /api/agent/run/structured` - chapter-4 structured-output seam around the manual loop
 - `GET /api/agent/tools` - chapter-3 tool-system discovery seam
+- `POST /api/agent/tools/invoke` - chapter-3 direct tool execution seam for Swagger-based tool testing
 - `GET /api/runtime/health` - combined readiness and liveness view
 - `GET /api/runtime/health/ready` - readiness snapshot
 - `GET /api/runtime/health/live` - liveness snapshot
@@ -37,6 +38,9 @@ Covered in Swagger:
 - `GET /api/runtime/sessions/{sessionId}/memory` - memory inspection, more naturally chapter 6-oriented than chapter 4-oriented
 - `POST /api/runtime/sessions/{sessionId}/resume` - chapter-6 pause/resume seam for confirmation-gated tools
 - `GET /api/runtime/sessions/{sessionId}/trace` - chapter-4 runtime trace inspection seam
+- `POST /api/runtime/memory/recall` - chapter-6 explicit long-term memory retrieval seam
+- `POST /api/runtime/memory/conversation-search` - chapter-6 explicit conversation memory retrieval seam
+- `POST /api/runtime/context/optimize` - chapter-6 request-time context optimization inspection seam
 - `POST /api/rag/ingest` - chapter 5-oriented document ingest into the RAG stack
 - `POST /api/rag/ingest/path` - chapter 5-oriented workspace path ingest through the shared document-read layer
 - `POST /api/rag/ingest/directory` - chapter 5-oriented bulk directory ingest through the shared document-read layer
@@ -199,6 +203,109 @@ Response body:
   "trace": [
     "pending_approved:confirmation-demo:call-1"
   ]
+}
+```
+
+`POST /api/agent/tools/invoke`
+
+Chapter-3 direct tool execution seam. This endpoint bypasses the manual agent loop so a registered tool can be exercised directly from Swagger.
+
+Request body:
+
+```json
+{
+  "toolName": "calculator",
+  "arguments": { "expression": "25 * 4" },
+  "sessionId": "default"
+}
+```
+
+Response body:
+
+```json
+{
+  "toolName": "calculator",
+  "success": true,
+  "output": "25 * 4 = 100",
+  "data": { "output": "25 * 4 = 100" },
+  "sessionId": "default",
+  "error": null
+}
+```
+
+`POST /api/runtime/memory/recall`
+
+Chapter-6 explicit long-term memory retrieval seam. This is the direct Swagger surface for cross-session problem-solving memory.
+
+Request body:
+
+```json
+{
+  "sessionId": "default",
+  "query": "PostgreSQL"
+}
+```
+
+Response body:
+
+```json
+{
+  "toolName": "recall-memory",
+  "sessionId": "default",
+  "query": "PostgreSQL",
+  "output": "Problem: ..."
+}
+```
+
+`POST /api/runtime/memory/conversation-search`
+
+Chapter-6 explicit conversation-memory retrieval seam. This is the direct Swagger surface for the existing conversation-search tool wiring.
+
+Request body:
+
+```json
+{
+  "sessionId": "default",
+  "query": "What did I say about PostgreSQL?"
+}
+```
+
+Response body:
+
+```json
+{
+  "toolName": "conversation-search",
+  "sessionId": "default",
+  "query": "What did I say about PostgreSQL?",
+  "output": "..."
+}
+```
+
+`POST /api/runtime/context/optimize`
+
+Chapter-6 request-time context optimization inspection seam. This endpoint shows how the existing optimizer projects a request before any LLM call, without mutating session state or triggering the agent loop.
+
+Request body:
+
+```json
+{
+  "messages": [
+    { "role": "system", "content": "You are helpful." },
+    { "role": "user", "content": "Explain the report" }
+  ]
+}
+```
+
+Response body:
+
+```json
+{
+  "originalTokenCount": 42,
+  "projectedTokenCount": 42,
+  "strategy": "none",
+  "changed": false,
+  "originalMessages": [],
+  "projectedMessages": []
 }
 ```
 
