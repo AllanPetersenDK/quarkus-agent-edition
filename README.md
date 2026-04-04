@@ -32,7 +32,7 @@ Later runtime seams are documented as extensions rather than as part of that cor
 - `src/main/java/dk/ashlan/agent/chapters/chapter04` Java demos mapped from `chapter_04_basic_agent/`.
 - `src/main/java/dk/ashlan/agent/chapters/chapter05` Java demos and RAG companion flows.
 - `src/main/java/dk/ashlan/agent/chapters/chapter06` Java demos mapped from `chapter_06_memory/`.
-- `src/main/java/dk/ashlan/agent/chapters/chapter07` Planning and reflection companion demos.
+- `src/main/java/dk/ashlan/agent/chapters/chapter07` Planning and reflection companion demos plus the lightweight chapter-7 task/reflection tools.
 - `src/main/java/dk/ashlan/agent/chapters/chapter07/companion` LangChain4j agentic comparison demo.
 - `src/main/java/dk/ashlan/agent/chapters/chapter08` Code-agent companion demos.
 - `src/main/java/dk/ashlan/agent/chapters/chapter09` Multi-agent companion demos.
@@ -45,7 +45,7 @@ Later runtime seams are documented as extensions rather than as part of that cor
 - `src/main/java/dk/ashlan/agent/sessions` Session and cross-session abstractions.
 - `src/main/java/dk/ashlan/agent/types` Shared content/event types.
 - `src/main/java/dk/ashlan/agent/rag` Retrieval and knowledge-base support.
-- `src/main/java/dk/ashlan/agent/planning` Planning and reflection services.
+- `src/main/java/dk/ashlan/agent/planning` Planning and reflection services plus the chapter-7 task/reflection tools.
 - `src/main/java/dk/ashlan/agent/code` Workspace-safe code-agent helpers.
 - `src/main/java/dk/ashlan/agent/multiagent` Multi-agent coordination layer.
 - `src/main/java/dk/ashlan/agent/eval` Evaluation and trace collection.
@@ -187,9 +187,11 @@ Quarkus CDI resolves the JDBC-backed persistence beans in runtime; the in-memory
 explicit default/manual paths.
 `AgentOrchestrator` also has a small callback seam now, with `after_run` acting as the bridge into
 chapter-6 memory so the core loop stays simple while memory/persistence hooks remain extensible.
-Chapter 6 is now the active next track: Pattern 1 request-time context optimization, Pattern 2
-session continuity, and Pattern 3 structured long-term memory are all present, while chapter 5
-stays a separate companion story.
+Chapter 7 is now the active next track: lightweight planning and reflection build directly on the
+chapter 2-4 manual agent core and the chapter 6 context/memory foundation. Chapter 6 remains the
+runtime base for request-time context optimization, session continuity, and structured long-term
+memory, while chapter 7 adds a small task-plan and reflection cycle rather than a new workflow
+engine.
 Long-term memory is stored as compact problem-solving records with structured `problem` /
 `summary` / `approach` / `result` fields, ranked cross-session retrieval, and more selective
 dedup. The runtime chapter-6 path now persists that memory through a JDBC-backed vector-like seam

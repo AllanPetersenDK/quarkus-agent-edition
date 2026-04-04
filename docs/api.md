@@ -211,6 +211,8 @@ Response body:
 
 Chapter-3 direct tool execution seam. This endpoint bypasses the manual agent loop so a registered tool can be exercised directly from Swagger.
 
+The runtime tool registry now also includes the lightweight chapter-7 planning/reflection tools (`create-tasks` and `reflection`), so they can be listed and invoked through the same seam without becoming a new public workflow API.
+
 Request body:
 
 ```json

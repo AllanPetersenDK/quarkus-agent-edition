@@ -121,3 +121,4 @@ For chapters 2-4, runtime default means the normal companion implementation arou
 
 These modules are intentional Quarkus-native extensions that were not present in the Python zip in the same form.
 They are primarily runtime-default or production-seam modules, not book-accurate demos.
+Chapter 7 now includes a small planning/reflection companion layer on top of the manual agent core: the services remain the learning baseline, and the runtime tools (`create-tasks`, `reflection`) are just lightweight seams that make the planning cycle visible in the same registry-driven runtime.
