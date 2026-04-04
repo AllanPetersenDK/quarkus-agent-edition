@@ -123,6 +123,7 @@ mvn test
 For local GAIA validation, `./scripts/run-dev.sh` will auto-download the workspace snapshot into `target/gaia-data` on first start when `GAIA_DATASET_URL` is not set.
 Chapter-5 path ingest now works the same way through the shared workspace/document read layer, so you can point the RAG companion seam at a workspace file path instead of copying text into a raw ingest request.
 Chapter-5 now also has a bulk directory ingest seam, and the shared document-read layer covers the workspace-safe text and office document types used by chapter 5 and GAIA.
+`GET /api/rag/query` now returns `bestChunk` and compact `citations` alongside the full ranked chunk list, which makes it easier to see which source won retrieval.
 - `POST /code-agent`
 - `POST /multi-agent`
 - `GET /workflow-demo`

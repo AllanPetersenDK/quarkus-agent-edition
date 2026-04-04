@@ -29,6 +29,7 @@ The RAG module keeps the chapter mechanics visible without external infrastructu
 - Cosine similarity is used for ranking.
 - Chapter-5 query flow adds a small lexical/entity reranking layer on top of embeddings so entity-matching queries are more stable.
 - Answers are built from the best matching chunk instead of concatenating all retrieved chunks.
+- Query responses now expose a small citation/debug layer with the best chunk and compact source citations, so it is easy to see which chunk won retrieval.
 - Chapter-5 ingest now has a small path-based seam that resolves a workspace file through the shared document-read layer before sending the extracted text into the existing RAG ingest flow.
 - Chapter-5 now also supports bulk directory ingest through the same shared document-read layer, with explicit per-file status for ingested, skipped, and failed entries.
 - Chunking now keeps a small overlap, uses more natural boundaries, and stores richer chunk metadata so retrieval/debugging is easier to follow.

@@ -110,11 +110,11 @@ public class RagResource {
     @Path("/query")
     @Operation(
             summary = "Query the RAG stack",
-            description = "Book chapter: 5. Swagger-visible RAG query seam that returns the matching chunks and a simple answer."
+            description = "Book chapter: 5. Swagger-visible RAG query seam that returns the matching chunks, compact citations, and a simple answer."
     )
     @APIResponse(
             responseCode = "200",
-            description = "RAG query answer and matched chunk summaries.",
+            description = "RAG query answer, best chunk, compact citations, and matched chunk summaries.",
             content = @Content(schema = @Schema(implementation = RagQueryResponse.class))
     )
     @APIResponse(responseCode = "400", description = "Missing or blank query.")
@@ -132,8 +132,12 @@ public class RagResource {
         List<RagChunkResponse> chunks = results.stream()
                 .map(RagChunkResponse::fromQuery)
                 .toList();
+        RagChunkResponse bestChunk = chunks.isEmpty() ? null : chunks.get(0);
+        List<RagCitationResponse> citations = results.stream()
+                .map(RagCitationResponse::fromQuery)
+                .toList();
         String answer = ragService.answer(effectiveQuery, results);
-        return new RagQueryResponse(effectiveQuery, answer, chunks);
+        return new RagQueryResponse(effectiveQuery, answer, bestChunk, citations, chunks);
     }
 
     public record RagIngestRequest(
@@ -239,9 +243,50 @@ public class RagResource {
             String query,
             @Schema(description = "Simple answer assembled from the matching RAG chunks.")
             String answer,
+            @Schema(description = "The highest-ranked chunk returned by retrieval. Useful for debugging the winning source.")
+            RagChunkResponse bestChunk,
+            @Schema(description = "Compact citation summaries for the retrieved chunks.")
+            List<RagCitationResponse> citations,
             @Schema(description = "Matched chunk summaries ordered by relevance.")
             List<RagChunkResponse> chunks
     ) {
+    }
+
+    public record RagCitationResponse(
+            @Schema(description = "Source document identifier.")
+            String sourceId,
+            @Schema(description = "Workspace-relative source path when available.")
+            String sourcePath,
+            @Schema(description = "Zero-based chunk index within the source document.")
+            int chunkIndex,
+            @Schema(description = "Stable chunk identifier.")
+            String chunkId,
+            @Schema(description = "Detected file type.")
+            String fileType,
+            @Schema(description = "Detected content type.")
+            String contentType,
+            @Schema(description = "Document-read status for the source.")
+            String documentStatus,
+            @Schema(description = "Short hint about the chunk's opening section.")
+            String sectionHint,
+            @Schema(description = "Similarity score for query responses.")
+            Double similarity
+    ) {
+        static RagCitationResponse fromQuery(RetrievalResult result) {
+            DocumentChunk chunk = result.chunk();
+            Map<String, String> metadata = chunk.metadata();
+            return new RagCitationResponse(
+                    chunk.sourceId(),
+                    metadata.getOrDefault("sourcePath", ""),
+                    chunk.chunkIndex(),
+                    metadata.getOrDefault("chunkId", ""),
+                    metadata.getOrDefault("fileType", ""),
+                    metadata.getOrDefault("contentType", ""),
+                    metadata.getOrDefault("documentStatus", ""),
+                    metadata.getOrDefault("sectionHint", ""),
+                    result.similarity()
+            );
+        }
     }
 
     public record RagChunkResponse(

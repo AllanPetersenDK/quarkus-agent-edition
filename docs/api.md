@@ -258,6 +258,7 @@ Per-file results report `INGESTED`, `SKIPPED_UNSUPPORTED`, `SKIPPED_DIRECTORY`, 
 
 Swagger-visible companion seam for querying the stored knowledge base.
 The chapter-5 query flow now uses a small hybrid reranker and builds `answer` from the best matching chunk instead of concatenating all retrieved chunks.
+Query responses also include `bestChunk` and compact `citations` so clients can see the winning source and the ranked evidence behind the answer without parsing the full chunk list.
 
 ### Evaluation
 
