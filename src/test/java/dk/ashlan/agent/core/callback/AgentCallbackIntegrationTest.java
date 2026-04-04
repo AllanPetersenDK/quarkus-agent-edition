@@ -97,7 +97,7 @@ class AgentCallbackIntegrationTest {
     }
 
     @Test
-    void noLongerStoresToolLoopMemoryWithoutAfterRunCallback() {
+    void runPersistsCompactMemoryAfterCompletionEvenWithoutAfterRunCallback() {
         SessionManager sessionManager = new SessionManager();
         InMemoryTaskMemoryStore store = new InMemoryTaskMemoryStore();
         MemoryService memoryService = new MemoryService(sessionManager, store, new MemoryExtractionService());
@@ -127,6 +127,7 @@ class AgentCallbackIntegrationTest {
 
         AgentRunResult result = orchestrator.run("What is 25 * 4?", "memory-session");
         assertEquals("The result is 100", result.finalAnswer());
-        assertTrue(memoryService.relevantMemories("memory-session", "100").isEmpty());
+        assertTrue(memoryService.relevantMemories("memory-session", "100").stream()
+                .anyMatch(memory -> memory.contains("The result is 100")));
     }
 }

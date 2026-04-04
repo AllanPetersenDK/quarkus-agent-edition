@@ -10,6 +10,7 @@ import dk.ashlan.agent.memory.SessionManager;
 import dk.ashlan.agent.memory.SessionState;
 import dk.ashlan.agent.memory.SessionTraceStore;
 import dk.ashlan.agent.core.callback.AgentCallback;
+import dk.ashlan.agent.core.callback.AfterRunMemoryCallback;
 import dk.ashlan.agent.tools.JsonToolResult;
 import dk.ashlan.agent.tools.ToolExecutor;
 import dk.ashlan.agent.tools.ToolRegistry;
@@ -492,6 +493,13 @@ public class AgentOrchestrator implements AgentRunner {
     }
 
     private void fireAfterRun(ExecutionContext context, AgentRunResult result) {
+        if (memoryService != null
+                && context != null
+                && result != null
+                && result.stopReason() != StopReason.PENDING_CONFIRMATION
+                && !hasAfterRunMemoryCallback()) {
+            memoryService.remember(context.getSessionId(), context.getInput(), buildAfterRunMemorySignal(context.getInput(), result.finalAnswer(), result.trace()));
+        }
         if (callbacks.isEmpty()) {
             return;
         }
@@ -499,6 +507,41 @@ public class AgentOrchestrator implements AgentRunner {
         for (AgentCallback callback : callbacks) {
             callback.afterRun(callbackContext);
         }
+    }
+
+    private String buildAfterRunMemorySignal(String input, String finalAnswer, List<String> trace) {
+        StringBuilder signal = new StringBuilder(normalizeTrace(input));
+        if (finalAnswer != null && !finalAnswer.isBlank()) {
+            signal.append(" => ").append(normalizeTrace(finalAnswer));
+        }
+        String tracePreview = compactTrace(trace);
+        if (!tracePreview.isBlank()) {
+            signal.append(" | trace: ").append(tracePreview);
+        }
+        return signal.toString().trim();
+    }
+
+    private String compactTrace(List<String> trace) {
+        if (trace == null || trace.isEmpty()) {
+            return "";
+        }
+        return trace.stream()
+                .filter(entry -> entry != null && !entry.isBlank())
+                .map(this::truncateTraceEntry)
+                .limit(3)
+                .collect(java.util.stream.Collectors.joining(" ; "));
+    }
+
+    private String truncateTraceEntry(String value) {
+        String normalized = normalizeTrace(value);
+        if (normalized.length() <= 120) {
+            return normalized;
+        }
+        return normalized.substring(0, 120).trim() + " …";
+    }
+
+    private boolean hasAfterRunMemoryCallback() {
+        return callbacks.stream().anyMatch(callback -> callback instanceof AfterRunMemoryCallback);
     }
 
     private void recordAgentRunMetrics(StopReason stopReason, int iterations, long elapsedNanos) {

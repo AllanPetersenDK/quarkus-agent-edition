@@ -19,6 +19,8 @@ public class MemoryExtractionService {
             "bye"
     );
     private static final Pattern SUMMARY_PATTERN = Pattern.compile("(?i)\\b(?:remember that|my name is|i live in|i prefer|my favorite|i work with|i use|i like|i enjoy|the answer is|the result is)\\b");
+    private static final Pattern DANISH_NAME_PATTERN = Pattern.compile("(?i)\\bmit navn er\\s+(.+?)(?:,|\\.|\\bog\\b|$)");
+    private static final Pattern DANISH_WORK_PATTERN = Pattern.compile("(?i)\\bjeg arbejder som\\s+(.+?)(?:,|\\.|\\bog\\b|$)");
 
     public MemoryExtractionResult extract(String sessionId, String task, String message) {
         String normalized = normalize(message);
@@ -29,10 +31,19 @@ public class MemoryExtractionService {
             return MemoryExtractionResult.skip("generic-noise");
         }
         if (!SUMMARY_PATTERN.matcher(normalized).find()) {
+            if (DANISH_NAME_PATTERN.matcher(normalized).find() || DANISH_WORK_PATTERN.matcher(normalized).find()) {
+                return extractDanishProfile(sessionId, task, normalized);
+            }
             return MemoryExtractionResult.skip("no-memory-signal");
         }
 
         String lowered = normalized.toLowerCase(Locale.ROOT);
+        if (lowered.contains("mit navn er ") || lowered.contains("jeg arbejder som ")) {
+            MemoryExtractionResult danishProfile = extractDanishProfile(sessionId, task, normalized);
+            if (danishProfile.decision() == MemoryWriteDecision.ADD) {
+                return danishProfile;
+            }
+        }
         if (lowered.contains("my name is ")) {
             return MemoryExtractionResult.add(new TaskMemory(sessionId, task, "User name: " + normalized.substring(lowered.indexOf("my name is ") + 11).trim()), "name");
         }
@@ -64,6 +75,36 @@ public class MemoryExtractionService {
             return MemoryExtractionResult.add(new TaskMemory(sessionId, task, compactAnswer(normalized)), "answer");
         }
         return MemoryExtractionResult.skip("unsupported-pattern");
+    }
+
+    private MemoryExtractionResult extractDanishProfile(String sessionId, String task, String message) {
+        String name = captureGroup(DANISH_NAME_PATTERN, message);
+        String work = captureGroup(DANISH_WORK_PATTERN, message);
+        if ((name == null || name.isBlank()) && (work == null || work.isBlank())) {
+            return MemoryExtractionResult.skip("unsupported-danish-pattern");
+        }
+        StringBuilder compact = new StringBuilder();
+        if (name != null && !name.isBlank()) {
+            compact.append("User name: ").append(name.trim());
+        }
+        if (work != null && !work.isBlank()) {
+            if (compact.length() > 0) {
+                compact.append("; ");
+            }
+            compact.append("User work context: ").append(work.trim());
+        }
+        return MemoryExtractionResult.add(new TaskMemory(sessionId, task, compact.toString()), "danish-profile");
+    }
+
+    private String captureGroup(Pattern pattern, String message) {
+        if (pattern == null || message == null) {
+            return "";
+        }
+        var matcher = pattern.matcher(message);
+        if (!matcher.find()) {
+            return "";
+        }
+        return matcher.groupCount() >= 1 ? matcher.group(1) : "";
     }
 
     private String compactAnswer(String message) {

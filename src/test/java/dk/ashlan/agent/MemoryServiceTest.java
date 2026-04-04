@@ -41,4 +41,20 @@ class MemoryServiceTest {
         assertEquals(MemoryWriteDecision.SKIP, memoryService.remember("session-1", "goal", "Remember that my favorite database is PostgreSQL."));
         assertTrue(memoryService.relevantMemories("session-1", "PostgreSQL").size() == 1);
     }
+
+    @Test
+    void danishProfileStatementsCreateCompactMemorySignal() {
+        MemoryService memoryService = new MemoryService(new SessionManager(), new InMemoryTaskMemoryStore(), new MemoryExtractionService());
+
+        assertEquals(MemoryWriteDecision.ADD, memoryService.remember(
+                "session-2",
+                "profile",
+                "Mit navn er Alice, og jeg arbejder som marketer."
+        ));
+
+        assertTrue(memoryService.relevantMemories("session-2", "Alice").stream()
+                .anyMatch(memory -> memory.contains("User name: Alice")));
+        assertTrue(memoryService.relevantMemories("session-2", "Alice").stream()
+                .anyMatch(memory -> memory.contains("User work context: marketer")));
+    }
 }
