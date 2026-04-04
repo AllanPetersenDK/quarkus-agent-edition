@@ -27,16 +27,22 @@ public class JdbcTaskMemoryStore implements TaskMemoryStore {
 
     private final DataSource dataSource;
     private final ObjectMapper objectMapper;
+    private final TaskMemoryRankingCache rankingCache;
 
     @Inject
-    public JdbcTaskMemoryStore(DataSource dataSource, ObjectMapper objectMapper) {
+    public JdbcTaskMemoryStore(DataSource dataSource, ObjectMapper objectMapper, TaskMemoryRankingCache rankingCache) {
         this.dataSource = dataSource;
         this.objectMapper = objectMapper;
+        this.rankingCache = rankingCache;
         ensureSchema();
     }
 
     public JdbcTaskMemoryStore(DataSource dataSource) {
-        this(dataSource, new ObjectMapper());
+        this(dataSource, new ObjectMapper(), null);
+    }
+
+    public JdbcTaskMemoryStore(DataSource dataSource, ObjectMapper objectMapper) {
+        this(dataSource, objectMapper, null);
     }
 
     @Override
@@ -123,7 +129,10 @@ public class JdbcTaskMemoryStore implements TaskMemoryStore {
                 ? new double[0]
                 : objectMapper.readValue(embeddingJson, VECTOR_TYPE);
         double vectorScore = TaskMemoryRanking.cosineSimilarity(queryVector, storedVector) * 12.0d;
-        return TaskMemoryRanking.score(memory, normalizedQuery) + vectorScore;
+        double rankingScore = rankingCache == null
+                ? TaskMemoryRanking.score(memory, normalizedQuery)
+                : rankingCache.score(memory, normalizedQuery);
+        return rankingScore + vectorScore;
     }
 
     private void ensureSchema() {
