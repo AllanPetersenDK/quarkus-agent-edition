@@ -231,7 +231,6 @@ Internal admin seam that runs chapter evaluation cases and returns results plus 
 `POST /admin/evaluations/gaia/run`
 
 GAIA validation/dev seam that loads a real GAIA validation snapshot from either a Hugging Face parquet URL or a local path. The flow resolves attachment presence into trace/context notes, applies deterministic scoring, and runs the existing manual runtime agent on a selectable subset.
-This is the canonical GAIA validation path; the older chapter-10 starter harness classes remain in the codebase only as legacy comparison helpers.
 
 `GET /admin/evaluations/gaia/{taskId}`
 
