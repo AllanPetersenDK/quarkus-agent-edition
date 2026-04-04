@@ -30,7 +30,9 @@ class GaiaDatasetServiceTest {
 
         GaiaDatasetService service = new GaiaDatasetService(
                 new GaiaParquetLoader(new ObjectMapper(), new SmallRyeConfigBuilder().build()),
-                new GaiaAttachmentResolver()
+                new GaiaAttachmentResolver(path -> {
+                    throw new AssertionError("audio transcription should not be used for text attachments");
+                })
         );
 
         List<GaiaExample> examples = service.load(new GaiaDatasetSelection(snapshotRoot.toString(), "", "2023", "validation", 1, 1, false));
@@ -45,7 +47,9 @@ class GaiaDatasetServiceTest {
     void failsClearlyWhenSourceIsMissing() {
         GaiaDatasetService service = new GaiaDatasetService(
                 new GaiaParquetLoader(new ObjectMapper(), new SmallRyeConfigBuilder().build()),
-                new GaiaAttachmentResolver()
+                new GaiaAttachmentResolver(path -> {
+                    throw new AssertionError("audio transcription should not be used for missing-source validation");
+                })
         );
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->

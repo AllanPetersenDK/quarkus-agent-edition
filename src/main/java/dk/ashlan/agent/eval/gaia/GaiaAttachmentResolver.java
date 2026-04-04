@@ -1,6 +1,7 @@
 package dk.ashlan.agent.eval.gaia;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.io.IOException;
 import java.net.URI;
@@ -11,6 +12,13 @@ import java.util.List;
 
 @ApplicationScoped
 public class GaiaAttachmentResolver {
+    private final GaiaAudioTranscriptionService audioTranscriptionService;
+
+    @Inject
+    public GaiaAttachmentResolver(GaiaAudioTranscriptionService audioTranscriptionService) {
+        this.audioTranscriptionService = audioTranscriptionService;
+    }
+
     public GaiaAttachment resolve(GaiaExample example, String baseSource) {
         String filePath = example.filePath();
         String fileName = example.fileName();
@@ -36,6 +44,28 @@ public class GaiaAttachmentResolver {
                         List.of("attachment:present:" + safeName(fileName, resolved), "attachment:text-readable")
                 );
             }
+            if (isAudioLike(extension)) {
+                try {
+                    String transcript = audioTranscriptionService.transcribe(resolved);
+                    return new GaiaAttachment(
+                            fileName,
+                            filePath,
+                            resolved.toString(),
+                            GaiaAttachmentStatus.AUDIO_TRANSCRIBED,
+                            buildAudioNote(resolved, fileName, transcript),
+                            List.of("attachment:present:" + safeName(fileName, resolved), "attachment:audio-transcribed")
+                    );
+                } catch (Exception exception) {
+                    return new GaiaAttachment(
+                            fileName,
+                            filePath,
+                            resolved.toString(),
+                            GaiaAttachmentStatus.AUDIO_TRANSCRIPTION_FAILED,
+                            "attachment present but audio transcription failed: " + exception.getMessage(),
+                            List.of("attachment:present:" + safeName(fileName, resolved), "attachment:audio-transcription-failed")
+                    );
+                }
+            }
             return new GaiaAttachment(
                     fileName,
                     filePath,
@@ -58,6 +88,16 @@ public class GaiaAttachmentResolver {
                     List.of("attachment:present:" + safeName(fileName, Path.of(cleanedPath)))
             );
         }
+        if (isAudioLike(extension)) {
+            return new GaiaAttachment(
+                    fileName,
+                    filePath,
+                    resolved,
+                    GaiaAttachmentStatus.AUDIO_TRANSCRIPTION_FAILED,
+                    "attachment present but audio transcription is unavailable for remote sources: " + resolved,
+                    List.of("attachment:present:" + safeName(fileName, Path.of(cleanedPath)), "attachment:audio-transcription-failed")
+            );
+        }
         return new GaiaAttachment(
                 fileName,
                 filePath,
@@ -75,7 +115,8 @@ public class GaiaAttachmentResolver {
         return switch (attachment.status()) {
             case MISSING -> "GAIA attachment missing: " + defaultText(attachment.fileName(), attachment.filePath());
             case UNSUPPORTED_TYPE -> "GAIA attachment present but unsupported: " + attachment.note() + ". Resolved path: " + attachment.resolvedPath();
-            case PRESENT -> "GAIA attachment available: " + attachment.note();
+            case AUDIO_TRANSCRIPTION_FAILED -> "GAIA audio attachment present but transcription failed: " + attachment.note() + ". Resolved path: " + attachment.resolvedPath();
+            case PRESENT, AUDIO_TRANSCRIBED -> "GAIA attachment available: " + attachment.note();
         };
     }
 
@@ -87,6 +128,14 @@ public class GaiaAttachmentResolver {
         } catch (IOException exception) {
             return "GAIA attachment present but could not be read as text: " + path;
         }
+    }
+
+    private String buildAudioNote(Path path, String fileName, String transcript) {
+        String preview = transcript == null ? "" : transcript;
+        if (preview.length() > 4000) {
+            preview = preview.substring(0, 4000) + "...";
+        }
+        return "GAIA audio transcript for " + defaultText(fileName, path.getFileName().toString()) + ":\n" + preview;
     }
 
     private Path resolveLocalBase(String baseSource) {
@@ -120,6 +169,13 @@ public class GaiaAttachmentResolver {
     private boolean isTextLike(String extension) {
         return switch (extension.toLowerCase()) {
             case "txt", "md", "csv", "json", "jsonl", "ndjson", "yaml", "yml" -> true;
+            default -> false;
+        };
+    }
+
+    private boolean isAudioLike(String extension) {
+        return switch (extension.toLowerCase()) {
+            case "mp3", "wav", "m4a", "mp4", "mpeg", "mpga", "ogg", "webm", "flac" -> true;
             default -> false;
         };
     }

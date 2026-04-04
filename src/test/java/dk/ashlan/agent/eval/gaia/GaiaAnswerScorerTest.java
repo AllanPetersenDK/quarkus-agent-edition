@@ -38,9 +38,11 @@ class GaiaAnswerScorerTest {
 
         GaiaScoreResult falsePositive = scorer.score("Rome", "Romeo");
         GaiaScoreResult supported = scorer.score(List.of("H2", "Hydrogen"), "The answer is H2.");
+        GaiaScoreResult pluralMatch = scorer.score("Rockhopper penguin", "Rockhopper penguins are featured.");
 
         assertFalse(falsePositive.passed());
         assertTrue(supported.passed());
+        assertTrue(pluralMatch.passed());
         assertEquals("H2", supported.matchedExpected());
     }
 }

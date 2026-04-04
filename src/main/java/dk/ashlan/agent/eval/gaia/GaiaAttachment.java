@@ -11,10 +11,10 @@ public record GaiaAttachment(
         List<String> traceEvents
 ) {
     public boolean present() {
-        return status == GaiaAttachmentStatus.PRESENT;
+        return status == GaiaAttachmentStatus.PRESENT || status == GaiaAttachmentStatus.AUDIO_TRANSCRIBED;
     }
 
     public boolean supported() {
-        return status == GaiaAttachmentStatus.PRESENT;
+        return status == GaiaAttachmentStatus.PRESENT || status == GaiaAttachmentStatus.AUDIO_TRANSCRIBED;
     }
 }

@@ -35,10 +35,14 @@ class GaiaValidationRunnerTest {
 
         GaiaValidationRunner runner = new GaiaValidationRunner(
                 agentOrchestrator(),
-                new GaiaDatasetService(new GaiaParquetLoader(new com.fasterxml.jackson.databind.ObjectMapper(), new SmallRyeConfigBuilder().build()), new GaiaAttachmentResolver()),
+                new GaiaDatasetService(new GaiaParquetLoader(new com.fasterxml.jackson.databind.ObjectMapper(), new SmallRyeConfigBuilder().build()), new GaiaAttachmentResolver(path -> {
+                    throw new AssertionError("audio transcription should not be used for text-only fixtures");
+                })),
                 new GaiaEvalCaseMapper(),
                 new GaiaAnswerScorer(),
-                new GaiaAttachmentResolver(),
+                new GaiaAttachmentResolver(path -> {
+                    throw new AssertionError("audio transcription should not be used for text-only fixtures");
+                }),
                 new GaiaEvaluationStore(),
                 new SmallRyeConfigBuilder().withDefaultValue("gaia.validation.default-config", "2023").withDefaultValue("gaia.validation.default-split", "validation").build()
         );

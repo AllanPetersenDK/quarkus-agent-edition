@@ -29,7 +29,7 @@ public class WebSearchTool extends AbstractTool {
 
     @Override
     public ToolDefinition definition() {
-        return new ToolDefinition(name(), "Search the live web through OpenAI Responses API for current, external, or explicitly requested lookup tasks. Not for simple stable facts or common general knowledge.");
+        return new ToolDefinition(name(), "Search the live web through OpenAI Responses API for current, external, or explicitly requested lookup tasks. Not for simple stable facts or common general knowledge. Use it for current video or other up-to-date verification requests.");
     }
 
     @Override

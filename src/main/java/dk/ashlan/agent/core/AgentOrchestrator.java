@@ -166,7 +166,7 @@ public class AgentOrchestrator implements AgentRunner {
                 trace.add("tool:" + toolCall.toolName() + ":" + result.output());
                 traceEntries.add(new AgentTraceEntry("tool-call", toolCall.toolName()));
                 traceEntries.add(new AgentTraceEntry("tool-result", result.output()));
-                if (result.success()) {
+                if (result.success() && memoryService != null) {
                     memoryService.remember(context.getSessionId(), context.getInput(), result.output());
                 }
             }

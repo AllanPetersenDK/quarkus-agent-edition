@@ -230,7 +230,7 @@ Internal admin seam that runs chapter evaluation cases and returns results plus 
 
 `POST /admin/evaluations/gaia/run`
 
-GAIA validation/dev seam that loads a real GAIA validation snapshot from either a Hugging Face parquet URL or a local path. The flow resolves attachment presence into trace/context notes, applies deterministic scoring, and runs the existing manual runtime agent on a selectable subset.
+GAIA validation/dev seam that loads a real GAIA validation snapshot from either a Hugging Face parquet URL or a local path. The flow resolves attachment presence into trace/context notes, transcribes common audio attachments when OpenAI audio transcription is available, applies deterministic scoring, and runs the existing manual runtime agent on a selectable subset. Current web or video lookup questions can use the runtime `web-search` tool.
 For local dev, the default workspace path is `target/gaia-data`, so a snapshot downloaded into the repo workspace can be used without any machine-specific absolute path.
 The recommended local flow is simply `./scripts/run-dev.sh`; if the workspace snapshot is missing, the script downloads the Hugging Face validation tree into `target/gaia-data` first.
 

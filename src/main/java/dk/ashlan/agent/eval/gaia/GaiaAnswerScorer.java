@@ -46,6 +46,7 @@ public class GaiaAnswerScorer {
                 .replaceAll("\\s+", " ")
                 .trim();
         normalized = stripLeadingArticle(normalized);
+        normalized = normalizeSimplePlurals(normalized);
         return normalized;
     }
 
@@ -144,5 +145,42 @@ public class GaiaAnswerScorer {
             return value.substring(3).trim();
         }
         return value;
+    }
+
+    private String normalizeSimplePlurals(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        List<String> tokens = new ArrayList<>();
+        for (String token : value.split("\\s+")) {
+            tokens.add(normalizePluralToken(token));
+        }
+        return String.join(" ", tokens).trim();
+    }
+
+    private String normalizePluralToken(String token) {
+        if (token == null || token.isBlank()) {
+            return "";
+        }
+        String cleaned = token.trim();
+        if (cleaned.length() > 4 && cleaned.endsWith("ies") && !cleaned.endsWith("eies")) {
+            return cleaned.substring(0, cleaned.length() - 3) + "y";
+        }
+        if (cleaned.length() > 4 && cleaned.endsWith("es") && (
+                cleaned.endsWith("ches")
+                        || cleaned.endsWith("shes")
+                        || cleaned.endsWith("xes")
+                        || cleaned.endsWith("zes")
+                        || cleaned.endsWith("ses"))) {
+            return cleaned.substring(0, cleaned.length() - 2);
+        }
+        if (cleaned.length() > 4 && cleaned.endsWith("s")
+                && !cleaned.endsWith("ss")
+                && !cleaned.endsWith("us")
+                && !cleaned.endsWith("is")
+                && !cleaned.endsWith("ous")) {
+            return cleaned.substring(0, cleaned.length() - 1);
+        }
+        return cleaned;
     }
 }
