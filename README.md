@@ -120,6 +120,7 @@ mvn test
 - `GET /api/runtime/health/live`
 - `GET /api/runtime/sessions/{sessionId}`
 - `GET /api/runtime/sessions/{sessionId}/memory`
+- `POST /api/runtime/sessions/{sessionId}/resume`
 - `POST /api/rag/ingest`
 - `POST /api/rag/ingest/path`
 - `GET /api/rag/query`
@@ -137,6 +138,7 @@ For local GAIA validation, `./scripts/run-dev.sh` will auto-download the workspa
 Chapter-5 path ingest now works the same way through the shared workspace/document read layer, so you can point the RAG companion seam at a workspace file path instead of copying text into a raw ingest request.
 Chapter-5 now also has a bulk directory ingest seam, and the shared document-read layer covers the workspace-safe text and office document types used by chapter 5 and GAIA.
 `GET /api/rag/query` now returns `bestChunk` and compact `citations` alongside the full ranked chunk list, which makes it easier to see which source won retrieval.
+Chapter 6 now also exposes a small pause/resume seam for confirmation-gated tools at `POST /api/runtime/sessions/{sessionId}/resume`, and the `confirmation-demo` tool is a tiny approval-gated demo hook for exercising that flow in Swagger.
 - `POST /code-agent`
 - `POST /multi-agent`
 - `GET /workflow-demo`

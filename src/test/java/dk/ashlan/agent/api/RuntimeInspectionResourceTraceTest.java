@@ -6,6 +6,7 @@ import dk.ashlan.agent.health.AgentReadinessHealthCheck;
 import dk.ashlan.agent.health.RuntimeLivenessHealthCheck;
 import dk.ashlan.agent.memory.InMemorySessionTraceStore;
 import dk.ashlan.agent.memory.InMemoryTaskMemoryStore;
+import dk.ashlan.agent.memory.MemoryAwareAgentOrchestrator;
 import dk.ashlan.agent.memory.MemoryExtractionService;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
@@ -38,7 +39,12 @@ class RuntimeInspectionResourceTraceTest {
                 new RuntimeLivenessHealthCheck(),
                 new SessionManager(),
                 new MemoryService(new SessionManager(), new InMemoryTaskMemoryStore(), new MemoryExtractionService()),
-                traceStore
+                traceStore,
+                new MemoryAwareAgentOrchestrator(
+                        new dk.ashlan.agent.core.AgentOrchestrator(null, null, null, null, 1, "") {
+                        },
+                        new MemoryService(new SessionManager(), new InMemoryTaskMemoryStore(), new MemoryExtractionService())
+                )
         );
 
         assertThrows(NotFoundException.class, () -> resource.trace("missing-session"));

@@ -179,6 +179,21 @@ public class OpenAiLlmClient implements BaseLlmClient {
                 properties.set("query", stringProperty("Search query."));
                 required.add("query");
             }
+            case "read_file", "read_document_file", "read_media_file", "inspect_path" -> {
+                properties.set("path", stringProperty("Workspace-relative path."));
+                required.add("path");
+            }
+            case "list_files" -> {
+                properties.set("path", stringProperty("Workspace-relative path."));
+                properties.set("recursive", booleanProperty("Traverse nested directories."));
+                properties.set("maxEntries", integerProperty("Maximum number of entries to return."));
+                required.add("path");
+            }
+            case "unzip_file" -> {
+                properties.set("zipPath", stringProperty("Workspace-relative path to the zip file."));
+                properties.set("extractTo", stringProperty("Optional workspace-relative destination path."));
+                required.add("zipPath");
+            }
             case "core-memory-upsert" -> {
                 properties.set("sessionId", stringProperty("Session identifier."));
                 properties.set("task", stringProperty("Memory category."));
@@ -196,6 +211,20 @@ public class OpenAiLlmClient implements BaseLlmClient {
     private ObjectNode stringProperty(String description) {
         ObjectNode property = objectMapper.createObjectNode();
         property.put("type", "string");
+        property.put("description", description);
+        return property;
+    }
+
+    private ObjectNode booleanProperty(String description) {
+        ObjectNode property = objectMapper.createObjectNode();
+        property.put("type", "boolean");
+        property.put("description", description);
+        return property;
+    }
+
+    private ObjectNode integerProperty(String description) {
+        ObjectNode property = objectMapper.createObjectNode();
+        property.put("type", "integer");
         property.put("description", description);
         return property;
     }

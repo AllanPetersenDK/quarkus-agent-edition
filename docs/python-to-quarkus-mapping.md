@@ -83,6 +83,7 @@ For chapters 2-4, runtime default means the normal companion implementation arou
 - Chapter 6 is the next active memory track: keep conversation history, session state, short-term request projection, and long-term memory conceptually separate.
 - `after_run` is the bridge into compact memory persistence, `beforeLlm` is the bridge into request optimization, and explicit memory search remains a tool rather than a hidden side effect.
 - Chapter 6 now also includes persisted pending confirmations and a small explicit retrieval alias (`recall-memory`) alongside the existing conversation-search tool.
+- The small `POST /api/runtime/sessions/{sessionId}/resume` seam and `ConfirmationDemoTool` are companion helpers for demonstrating chapter-6 pause/resume; they are not a replacement for the manual runtime core.
 - Pause/resume for confirmation-gated tools is an internal agent feature and should be read as part of the manual runtime, not as a chapter-5 companion pattern.
 
 ## `chapter_06_memory/`

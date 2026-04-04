@@ -35,6 +35,7 @@ Covered in Swagger:
 - `GET /api/runtime/health/live` - liveness snapshot
 - `GET /api/runtime/sessions/{sessionId}` - session inspection, more naturally chapter 6-oriented than chapter 4-oriented
 - `GET /api/runtime/sessions/{sessionId}/memory` - memory inspection, more naturally chapter 6-oriented than chapter 4-oriented
+- `POST /api/runtime/sessions/{sessionId}/resume` - chapter-6 pause/resume seam for confirmation-gated tools
 - `GET /api/runtime/sessions/{sessionId}/trace` - chapter-4 runtime trace inspection seam
 - `POST /api/rag/ingest` - chapter 5-oriented document ingest into the RAG stack
 - `POST /api/rag/ingest/path` - chapter 5-oriented workspace path ingest through the shared document-read layer
@@ -145,6 +146,38 @@ Response body:
     { "kind": "step", "message": "iteration:1" },
     { "kind": "tool-call", "message": "calculator" },
     { "kind": "tool-result", "message": "100" }
+  ]
+}
+```
+
+`POST /api/runtime/sessions/{sessionId}/resume`
+
+Chapter-6 pause/resume seam for confirmation-gated tools. This endpoint accepts a whitelist of confirmations and hands them back to the existing orchestrator; the orchestrator still owns the multi-pending confirmation logic.
+
+Request body:
+
+```json
+{
+  "confirmations": [
+    {
+      "toolCallId": "call-1",
+      "approved": true,
+      "arguments": { "topic": "chapter 6" },
+      "reason": null
+    }
+  ]
+}
+```
+
+Response body:
+
+```json
+{
+  "answer": "resumed",
+  "stopReason": "FINAL_ANSWER",
+  "iterations": 1,
+  "trace": [
+    "pending_approved:confirmation-demo:call-1"
   ]
 }
 ```

@@ -2,19 +2,24 @@ package dk.ashlan.agent.api;
 
 import dk.ashlan.agent.health.AgentReadinessHealthCheck;
 import dk.ashlan.agent.health.RuntimeLivenessHealthCheck;
+import dk.ashlan.agent.core.ToolConfirmation;
 import dk.ashlan.agent.memory.MemoryService;
+import dk.ashlan.agent.memory.MemoryAwareAgentOrchestrator;
 import dk.ashlan.agent.memory.SessionManager;
 import dk.ashlan.agent.memory.SessionState;
 import dk.ashlan.agent.memory.SessionTraceStore;
 import dk.ashlan.agent.memory.TaskMemory;
 import dk.ashlan.agent.api.dto.AgentStepResponse;
+import dk.ashlan.agent.api.dto.AgentRunResponse;
 import dk.ashlan.agent.api.dto.RuntimeSessionTraceResponse;
 import dk.ashlan.agent.llm.LlmMessage;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
@@ -39,19 +44,22 @@ public class RuntimeInspectionResource {
     private final SessionManager sessionManager;
     private final MemoryService memoryService;
     private final SessionTraceStore sessionTraceStore;
+    private final MemoryAwareAgentOrchestrator memoryAwareAgentOrchestrator;
 
     public RuntimeInspectionResource(
             @Readiness AgentReadinessHealthCheck readinessHealthCheck,
             @Liveness RuntimeLivenessHealthCheck livenessHealthCheck,
             SessionManager sessionManager,
             MemoryService memoryService,
-            SessionTraceStore sessionTraceStore
+            SessionTraceStore sessionTraceStore,
+            MemoryAwareAgentOrchestrator memoryAwareAgentOrchestrator
     ) {
         this.readinessHealthCheck = readinessHealthCheck;
         this.livenessHealthCheck = livenessHealthCheck;
         this.sessionManager = sessionManager;
         this.memoryService = memoryService;
         this.sessionTraceStore = sessionTraceStore;
+        this.memoryAwareAgentOrchestrator = memoryAwareAgentOrchestrator;
     }
 
     @GET
@@ -176,6 +184,32 @@ public class RuntimeInspectionResource {
         return RuntimeSessionTraceResponse.from(sessionId, steps);
     }
 
+    @POST
+    @Path("/sessions/{sessionId}/resume")
+    @Operation(
+            summary = "Resume a pending chapter-6 session",
+            description = "Book chapter: 6. Small pause/resume seam for confirmation-gated tools. The orchestrator keeps the multi-pending confirmation logic; this endpoint only supplies the session id and a whitelist of tool confirmations."
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Resumed run result for the requested session.",
+            content = @org.eclipse.microprofile.openapi.annotations.media.Content(schema = @Schema(implementation = AgentRunResponse.class))
+    )
+    @APIResponse(responseCode = "400", description = "No pending tool confirmation exists or the request is invalid.")
+    public AgentRunResponse resume(
+            @PathParam("sessionId") String sessionId,
+            ResumeSessionRequest request
+    ) {
+        if (request == null || request.confirmations() == null) {
+            throw new BadRequestException("confirmations are required");
+        }
+        try {
+            return AgentRunResponse.from(memoryAwareAgentOrchestrator.resume(sessionId, request.confirmations().stream().map(ResumeSessionRequest.ConfirmationRequest::toConfirmation).toList()));
+        } catch (IllegalStateException exception) {
+            throw new BadRequestException(exception.getMessage());
+        }
+    }
+
     public record RuntimeHealthOverviewResponse(
             @Schema(description = "Readiness snapshot for the runtime companion surface.")
             RuntimeHealthSnapshotResponse readiness,
@@ -229,6 +263,26 @@ public class RuntimeInspectionResource {
     ) {
         static MemoryEntryResponse from(TaskMemory memory) {
             return new MemoryEntryResponse(memory.task(), memory.memory());
+        }
+    }
+
+    public record ResumeSessionRequest(
+            @Schema(description = "Whitelist of tool confirmations for the pending session.")
+            List<ConfirmationRequest> confirmations
+    ) {
+        public record ConfirmationRequest(
+                @Schema(description = "Tool call identifier to approve or reject.")
+                String toolCallId,
+                @Schema(description = "Whether the tool call is approved.")
+                boolean approved,
+                @Schema(description = "Optional modified tool arguments to use if approved.")
+                Map<String, Object> arguments,
+                @Schema(description = "Optional rejection reason.")
+                String reason
+        ) {
+            ToolConfirmation toConfirmation() {
+                return new ToolConfirmation(toolCallId, approved, arguments, reason);
+            }
         }
     }
 
