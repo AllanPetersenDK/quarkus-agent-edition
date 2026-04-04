@@ -89,6 +89,8 @@ If your local Maven is older than 3.9, use the helper script instead:
 bash scripts/run-dev.sh
 ```
 
+The helper script now stops any existing listener on port `8080` before starting, so it does not silently keep running an older companion build. If Maven 3.9+ is unavailable, it falls back to packaging and running the current `target/quarkus-app/quarkus-run.jar` build instead of leaving the stale runtime in place.
+
 To run a specific chapter smoke test with one command, use one of these:
 
 ```bash
