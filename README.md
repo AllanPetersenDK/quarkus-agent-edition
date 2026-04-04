@@ -194,6 +194,8 @@ Pending confirmations are persisted in session state, and a resume step can proc
 pending tool calls in one whitelist pass.
 The main `/api/agent/run` seam can also carry `toolConfirmations` for the chapter-6 resume path,
 and the book demo uses a small confirmation-gated `delete-file` tool to make the flow visible.
+Delete/remove requests are deterministically preflighted into that confirmation flow so the
+book test does not depend on the model spontaneously choosing the tool call.
 That same seam also keeps `web-search` compression query-aware, while file and document tools still
 use straightforward truncation to keep context noise down.
 

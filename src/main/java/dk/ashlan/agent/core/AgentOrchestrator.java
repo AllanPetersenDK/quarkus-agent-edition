@@ -24,10 +24,16 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.concurrent.TimeUnit;
 
 @ApplicationScoped
 public class AgentOrchestrator implements AgentRunner {
+    private static final Pattern CONFIRMATION_FILE_PATTERN = Pattern.compile("(?i)\\b([\\w./-]+\\.[\\w\\d]+)\\b");
     private final LlmClient llmClient;
     private final ToolRegistry toolRegistry;
     private final ToolExecutor toolExecutor;
@@ -131,6 +137,7 @@ public class AgentOrchestrator implements AgentRunner {
             throw new IllegalStateException("No pending tool confirmation for sessionId=" + sessionId);
         }
         ExecutionContext context = new ExecutionContext(pendingCalls.get(0).input(), sessionId, session.messages(), false);
+        context.putAttribute("skipDeterministicConfirmationPreflight", Boolean.TRUE);
         session.clearPendingToolCalls();
 
         List<String> resumeTrace = new ArrayList<>();
@@ -236,6 +243,11 @@ public class AgentOrchestrator implements AgentRunner {
         trace.add("iteration:" + stepNumber);
         traceEntries.add(new AgentTraceEntry("step", "iteration:" + stepNumber));
 
+        Optional<StepExecution> deterministicPending = deterministicConfirmationStep(context, session, stepNumber, trace, traceEntries);
+        if (deterministicPending.isPresent()) {
+            return deterministicPending.get();
+        }
+
         BeforeLlmContext beforeLlmContext = fireBeforeLlm(context, messages, stepNumber);
         List<dk.ashlan.agent.llm.LlmMessage> optimizedMessages = beforeLlmContext.projectedMessages()
                 .orElse(beforeLlmContext.messages());
@@ -334,6 +346,101 @@ public class AgentOrchestrator implements AgentRunner {
             sessionTraceStore.append(stepResult);
         }
         return new StepExecution(stepResult, List.copyOf(trace), List.copyOf(pendingToolCalls));
+    }
+
+    private Optional<StepExecution> deterministicConfirmationStep(
+            ExecutionContext context,
+            SessionState session,
+            int stepNumber,
+            List<String> trace,
+            List<AgentTraceEntry> traceEntries
+    ) {
+        if (Boolean.TRUE.equals(context.getAttribute("skipDeterministicConfirmationPreflight"))) {
+            return Optional.empty();
+        }
+        dk.ashlan.agent.tools.Tool deleteTool = toolRegistry == null ? null : toolRegistry.find("delete-file");
+        if (deleteTool == null || deleteTool.definition() == null || !deleteTool.definition().requiresConfirmation()) {
+            return Optional.empty();
+        }
+
+        String input = normalizeTrace(context.getInput());
+        if (!looksLikeDeleteRequest(input)) {
+            return Optional.empty();
+        }
+
+        String path = extractConfirmationPath(input);
+        if (path.isBlank()) {
+            return Optional.empty();
+        }
+
+        String callId = deterministicCallId(context.getSessionId(), stepNumber, deleteTool.name(), path);
+        LlmToolCall toolCall = new LlmToolCall(deleteTool.name(), java.util.Map.of("path", path), callId);
+        PendingToolCall pendingToolCall = new PendingToolCall(
+                context.getSessionId(),
+                stepNumber,
+                context.getInput(),
+                toolCall,
+                confirmationMessage(deleteTool.definition().confirmationMessageTemplate(), path)
+        );
+
+        context.addAssistantToolCalls(List.of(toolCall));
+        session.addAssistantToolCalls(List.of(toolCall));
+        session.addPendingToolCall(pendingToolCall);
+
+        trace.add("pending_confirmation:" + deleteTool.name());
+        trace.add("pending_confirmation_id:" + normalizeTrace(callId));
+        trace.add("pending_confirmation_message:" + normalizeTrace(pendingToolCall.confirmationMessage()));
+        traceEntries.add(new AgentTraceEntry("pending-confirmation", deleteTool.name()));
+        traceEntries.add(new AgentTraceEntry("pending-confirmation-id", normalizeTrace(callId)));
+
+        AgentStepResult stepResult = new AgentStepResult(
+                context.getSessionId(),
+                stepNumber,
+                null,
+                List.of(toolCall),
+                List.of(),
+                null,
+                false,
+                List.copyOf(traceEntries)
+        );
+        if (sessionTraceStore != null) {
+            sessionTraceStore.append(stepResult);
+        }
+        return Optional.of(new StepExecution(stepResult, List.copyOf(trace), List.of(pendingToolCall)));
+    }
+
+    private boolean looksLikeDeleteRequest(String input) {
+        String normalized = input == null ? "" : input.toLowerCase(Locale.ROOT);
+        return normalized.contains("delete")
+                || normalized.contains("remove")
+                || normalized.contains("slet")
+                || normalized.contains("fjern");
+    }
+
+    private String extractConfirmationPath(String input) {
+        if (input == null || input.isBlank()) {
+            return "";
+        }
+        Matcher matcher = CONFIRMATION_FILE_PATTERN.matcher(input);
+        while (matcher.find()) {
+            String candidate = matcher.group(1);
+            if (candidate != null && !candidate.isBlank()) {
+                return candidate.replaceAll("^['\"`]|['\"`]$", "");
+            }
+        }
+        return "";
+    }
+
+    private String confirmationMessage(String template, String path) {
+        String base = template == null || template.isBlank()
+                ? "Approve deleting the requested workspace file?"
+                : template;
+        return base + " path=" + path;
+    }
+
+    private String deterministicCallId(String sessionId, int stepNumber, String toolName, String path) {
+        int hash = Math.abs(Objects.hash(sessionId, stepNumber, toolName, path));
+        return "call_preflight_" + Integer.toHexString(hash);
     }
 
     private BeforeLlmContext fireBeforeLlm(ExecutionContext context, List<LlmMessage> messages, int stepNumber) {

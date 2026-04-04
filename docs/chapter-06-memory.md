@@ -13,6 +13,7 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - `POST /api/runtime/sessions/{sessionId}/resume` is the small Swagger-visible pause/resume seam, and `confirmation-demo` is the tiny approval-gated demo tool used to exercise it
 - `POST /api/agent/run` also accepts `toolConfirmations` for the same chapter-6 resume bridge, so the book-style pause/resume demo can stay close to the manual agent surface
 - `delete-file` is the small confirmation-gated workspace deletion tool used for the chapter-6 hitl demo, not a general-purpose destructive platform feature
+- delete/remove requests are deterministically preflighted into that confirmation flow, so the book test does not depend on a spontaneous tool-choice from the model
 
 ## Python Files
 
