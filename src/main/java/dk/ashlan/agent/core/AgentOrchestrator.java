@@ -203,7 +203,7 @@ public class AgentOrchestrator implements AgentRunner {
                 for (PendingToolCall pendingToolCall : stepExecution.pendingToolCalls()) {
                     trace.add("pending_confirmation:" + pendingToolCall.toolCall().toolName());
                 }
-                AgentRunResult result = new AgentRunResult("", StopReason.PENDING_CONFIRMATION, Math.min(iterations + 1, maxIterations), trace);
+                AgentRunResult result = new AgentRunResult("", StopReason.PENDING_CONFIRMATION, Math.min(iterations + 1, maxIterations), trace, List.copyOf(stepExecution.pendingToolCalls()));
                 recordAgentRunMetrics(StopReason.PENDING_CONFIRMATION, iterations, System.nanoTime() - startedAt);
                 fireAfterRun(context, result);
                 return result;
@@ -220,7 +220,7 @@ public class AgentOrchestrator implements AgentRunner {
         }
         StopReason stopReason = context.isFinalAnswer() ? StopReason.FINAL_ANSWER : StopReason.MAX_ITERATIONS;
         recordAgentRunMetrics(stopReason, iterations, System.nanoTime() - startedAt);
-        AgentRunResult result = new AgentRunResult(context.getFinalAnswer(), stopReason, Math.min(iterations + 1, maxIterations), trace);
+        AgentRunResult result = new AgentRunResult(context.getFinalAnswer(), stopReason, Math.min(iterations + 1, maxIterations), trace, List.of());
         fireAfterRun(context, result);
         return result;
     }

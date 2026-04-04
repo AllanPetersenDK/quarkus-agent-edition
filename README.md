@@ -192,6 +192,8 @@ continuity, explicit memory search, and a pause/resume bridge for confirmation-g
 keeping chapter 5 as a separate companion story.
 Pending confirmations are persisted in session state, and a resume step can process multiple
 pending tool calls in one whitelist pass.
+The main `/api/agent/run` seam can also carry `toolConfirmations` for the chapter-6 resume path,
+and the book demo uses a small confirmation-gated `delete-file` tool to make the flow visible.
 That same seam also keeps `web-search` compression query-aware, while file and document tools still
 use straightforward truncation to keep context noise down.
 

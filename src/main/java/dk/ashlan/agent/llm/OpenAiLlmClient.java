@@ -179,7 +179,7 @@ public class OpenAiLlmClient implements BaseLlmClient {
                 properties.set("query", stringProperty("Search query."));
                 required.add("query");
             }
-            case "read_file", "read_document_file", "read_media_file", "inspect_path" -> {
+            case "read_file", "read_document_file", "read_media_file", "inspect_path", "delete-file" -> {
                 properties.set("path", stringProperty("Workspace-relative path."));
                 required.add("path");
             }

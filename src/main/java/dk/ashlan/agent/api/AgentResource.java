@@ -8,6 +8,7 @@ import dk.ashlan.agent.api.dto.AgentStepResponse;
 import dk.ashlan.agent.core.AgentOrchestrator;
 import dk.ashlan.agent.core.AgentRunResult;
 import dk.ashlan.agent.core.AgentStepResult;
+import dk.ashlan.agent.core.ToolConfirmation;
 import dk.ashlan.agent.core.StructuredOutputAgentOrchestrator;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.validation.Valid;
@@ -22,6 +23,8 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+
+import java.util.List;
 
 @Path("/api/agent")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -53,7 +56,10 @@ public class AgentResource {
     )
     @APIResponse(responseCode = "400", description = "Invalid request payload.")
     public AgentRunResponse runAgent(@Valid AgentRunRequest input) {
-        AgentRunResult result = orchestrator.run(input.message(), input.sessionId());
+        List<ToolConfirmation> confirmations = input.toolConfirmations() == null ? List.of() : input.toolConfirmations();
+        AgentRunResult result = confirmations.isEmpty()
+                ? orchestrator.run(input.message(), input.sessionId())
+                : orchestrator.resume(input.sessionId(), confirmations);
         return AgentRunResponse.from(result);
     }
 

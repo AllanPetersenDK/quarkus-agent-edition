@@ -1,12 +1,16 @@
 package dk.ashlan.agent.api;
 
 import dk.ashlan.agent.api.dto.AgentRunRequest;
+import dk.ashlan.agent.api.dto.AgentRunResponse;
 import dk.ashlan.agent.api.dto.AgentStepResponse;
 import dk.ashlan.agent.api.dto.AgentStructuredRunRequest;
 import dk.ashlan.agent.api.dto.AgentStructuredRunResponse;
 import dk.ashlan.agent.core.AgentOrchestrator;
 import dk.ashlan.agent.core.AgentStepResult;
 import dk.ashlan.agent.core.AgentTraceEntry;
+import dk.ashlan.agent.core.AgentRunResult;
+import dk.ashlan.agent.core.StopReason;
+import dk.ashlan.agent.core.ToolConfirmation;
 import dk.ashlan.agent.llm.LlmToolCall;
 import dk.ashlan.agent.tools.JsonToolResult;
 import jakarta.validation.Validation;
@@ -99,5 +103,32 @@ class AgentResourceSeamsTest {
                 new AgentStructuredRunRequest("Return a structured answer.", "structured-session", "banana")
         ));
         assertTrue(exception.getMessage().contains("Unsupported structured-output mode"));
+    }
+
+    @Test
+    void runEndpointRoutesConfirmationPayloadToResumeFlow() {
+        AgentOrchestrator orchestrator = new AgentOrchestrator(null, null, null, null, 1, "") {
+            @Override
+            public AgentRunResult resume(String sessionId, List<ToolConfirmation> confirmations) {
+                return new AgentRunResult(
+                        "resumed via confirmations",
+                        StopReason.FINAL_ANSWER,
+                        confirmations.size(),
+                        List.of("pending_approved:delete-file:call-1")
+                );
+            }
+        };
+        AgentResource resource = new AgentResource(orchestrator);
+
+        AgentRunResponse response = resource.runAgent(new AgentRunRequest(
+                null,
+                "resume-session",
+                List.of(ToolConfirmation.approved("call-1", Map.of("path", "temp.txt")))
+        ));
+
+        assertEquals("resumed via confirmations", response.answer());
+        assertEquals(StopReason.FINAL_ANSWER, response.stopReason());
+        assertEquals(1, response.iterations());
+        assertEquals("pending_approved:delete-file:call-1", response.trace().get(0));
     }
 }

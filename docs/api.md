@@ -73,6 +73,7 @@ Not covered in Swagger:
 
 Runtime API: this is the main REST-exposed manual agent loop and the chapter-4 core seam.
 Same-session calls now replay prior role-aware conversation history, so a session can remember user-provided facts across turns without relying on tool memory.
+The same endpoint also accepts `toolConfirmations` for the small chapter-6 pause/resume bridge; when those are supplied, the request routes to the existing resume path instead of a fresh run.
 
 Request body:
 
@@ -80,6 +81,24 @@ Request body:
 {
   "message": "What is 25 * 4?",
   "sessionId": "default"
+}
+```
+
+Resume-style payload:
+
+```json
+{
+  "sessionId": "c6-hitl-1",
+  "toolConfirmations": [
+    {
+      "toolCallId": "call-123",
+      "approved": true,
+      "arguments": {
+        "path": "temp.txt"
+      },
+      "reason": null
+    }
+  ]
 }
 ```
 
@@ -104,6 +123,7 @@ Field notes:
 - `answer` maps directly from `AgentRunResult.finalAnswer()`.
 - `stopReason` maps from the existing `StopReason` enum.
 - `iterations` and `trace` map directly from the existing agent runtime result.
+- When the request pauses on pending tools, the response also includes `pendingToolCalls` with the tool name, arguments, tool-call id, and confirmation message.
 
 `POST /api/agent/step`
 
