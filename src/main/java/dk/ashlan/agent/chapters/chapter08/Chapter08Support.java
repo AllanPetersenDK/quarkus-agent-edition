@@ -31,7 +31,7 @@ final class Chapter08Support {
                 new FileReadTool(workspaceService),
                 new FileWriteTool(workspaceService),
                 new CodeGenerationTool(),
-                new TestExecutionTool()
+                new TestExecutionTool(workspaceService)
         );
     }
 

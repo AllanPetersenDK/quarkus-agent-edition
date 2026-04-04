@@ -34,7 +34,7 @@ public class CodeAgentResource {
     )
     @APIResponse(
             responseCode = "200",
-            description = "Code-agent companion output and the accompanying placeholder test result.",
+            description = "Code-agent companion output and the accompanying workspace validation result.",
             content = @Content(schema = @Schema(implementation = CodeAgentRunResponse.class))
     )
     public CodeAgentRunResponse run(@Valid CodeAgentRunRequest input) {

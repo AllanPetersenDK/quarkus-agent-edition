@@ -287,6 +287,7 @@ public class RuntimeInspectionResource {
         return new CodeWorkspaceInspectionResponse(
                 session.sessionId(),
                 session.workspaceId(),
+                session.lastRunId(),
                 session.workspaceRoot(),
                 session.createdAt(),
                 session.updatedAt(),

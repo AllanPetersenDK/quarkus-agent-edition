@@ -5,6 +5,7 @@ import java.util.List;
 public record CodeAgentRunResult(
         String sessionId,
         String workspaceId,
+        String runId,
         String workspaceRoot,
         String response,
         String generatedArtifactPath,

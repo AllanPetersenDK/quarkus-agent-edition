@@ -10,6 +10,8 @@ public record CodeWorkspaceInspectionResponse(
         String sessionId,
         @Schema(description = "Workspace identifier derived from the session id.")
         String workspaceId,
+        @Schema(description = "Most recent Chapter 8 run identifier for the session.", nullable = true)
+        String lastRunId,
         @Schema(description = "Absolute workspace root path.")
         String workspaceRoot,
         @Schema(description = "Workspace creation timestamp.")

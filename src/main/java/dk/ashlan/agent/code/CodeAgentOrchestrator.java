@@ -30,20 +30,46 @@ public class CodeAgentOrchestrator {
 
     public CodeAgentRunResult run(String sessionId, String request) {
         CodeWorkspaceSession session = workspaceRegistry.session(sessionId);
-        session.rememberRequest(request);
+        String runId = session.beginRun(request);
         String generated = codeGenerationTool.generate(request);
-        session.recordTrace("chapter8-code-generated:generated/response.txt");
-        fileWriteTool.write(session.workspaceService(), "generated/response.txt", generated);
+        session.recordTrace("chapter8-code-generated:" + runId + ":generated/response.txt");
+        session.writeFile("generated/response.txt", generated);
         String skillCard = codeGenerationTool.generateSkillCard(request);
-        fileWriteTool.write(session.workspaceService(), "generated/skills/workspace-summary.md", skillCard);
-        session.registerWorkspaceSummaryTool(request, "generated/skills/workspace-summary.md");
-        CommandResult testResult = testExecutionTool.runTests();
-        session.recordTrace("chapter8-test-executed:placeholder");
-        fileWriteTool.write(session.workspaceService(), "generated/tests/result.txt", testResult.output());
-        String response = "Workspace: " + session.workspaceRoot() + "\n" + fileReadTool.read(session.workspaceService(), "generated/response.txt");
+        session.writeFile("generated/skills/workspace-summary.md", skillCard);
+        session.registerWorkspaceSummaryTool(
+                request,
+                "generated/skills/workspace-summary.md",
+                java.util.List.of("generated/response.txt", "generated/skills/workspace-summary.md", "generated/tests/result.txt"),
+                runId
+        );
+        CommandResult testResult = testExecutionTool.runTests(
+                session.workspaceService(),
+                request,
+                "generated/response.txt",
+                "generated/skills/workspace-summary.md",
+                "generated/tests/result.txt",
+                session.generatedTools()
+        );
+        session.recordTrace("chapter8-file-written:generated/tests/result.txt");
+        session.recordTrace(testResult.exitCode() == 0
+                ? "chapter8-validation-passed:" + runId + ":generated/tests/result.txt"
+                : "chapter8-validation-failed:" + runId + ":generated/tests/result.txt");
+        session.recordTrace(testResult.exitCode() == 0
+                ? "chapter8-test-executed:" + runId + ":success"
+                : "chapter8-test-executed:" + runId + ":failure");
+        String response = """
+                Workspace: %s
+
+                %s
+                """.formatted(
+                session.workspaceRoot(),
+                session.readFile("generated/response.txt")
+        );
+        session.recordFinalTrace("chapter8-run-complete:" + runId + ":generated/response.txt", response);
         return new CodeAgentRunResult(
                 session.sessionId(),
                 session.workspaceId(),
+                runId,
                 session.workspaceRoot(),
                 response,
                 "generated/response.txt",

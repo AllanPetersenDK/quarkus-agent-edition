@@ -1,5 +1,7 @@
 package dk.ashlan.agent.code;
 
+import dk.ashlan.agent.memory.SessionTraceStore;
+import jakarta.inject.Inject;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -13,13 +15,24 @@ import java.util.concurrent.ConcurrentHashMap;
 @ApplicationScoped
 public class CodeWorkspaceRegistry {
     private final Path baseRoot;
+    private final SessionTraceStore sessionTraceStore;
     private final Map<String, CodeWorkspaceSession> sessions = new ConcurrentHashMap<>();
 
     public CodeWorkspaceRegistry(
             @ConfigProperty(name = "code.chapter8.workspace-root", defaultValue = "target/chapter-08-workspaces")
             String workspaceRoot
     ) {
+        this(workspaceRoot, null);
+    }
+
+    @Inject
+    public CodeWorkspaceRegistry(
+            @ConfigProperty(name = "code.chapter8.workspace-root", defaultValue = "target/chapter-08-workspaces")
+            String workspaceRoot,
+            SessionTraceStore sessionTraceStore
+    ) {
         this.baseRoot = initializeBaseRoot(Path.of(workspaceRoot));
+        this.sessionTraceStore = sessionTraceStore;
     }
 
     public CodeWorkspaceSession session(String sessionId) {
@@ -27,7 +40,8 @@ public class CodeWorkspaceRegistry {
         return sessions.computeIfAbsent(safeSessionId, key -> new CodeWorkspaceSession(
                 sessionId == null || sessionId.isBlank() ? safeSessionId : sessionId,
                 safeSessionId,
-                baseRoot.resolve(safeSessionId)
+                baseRoot.resolve(safeSessionId),
+                sessionTraceStore
         ));
     }
 

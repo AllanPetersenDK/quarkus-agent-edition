@@ -19,11 +19,12 @@ public record RuntimeSessionTraceResponse(
     public static RuntimeSessionTraceResponse from(String sessionId, List<AgentStepResponse> steps) {
         String finalAnswer = null;
         StopReason stopReason = null;
-        if (!steps.isEmpty()) {
-            AgentStepResponse lastStep = steps.get(steps.size() - 1);
-            if (lastStep.isFinal()) {
-                finalAnswer = lastStep.finalAnswer();
+        for (int index = steps.size() - 1; index >= 0; index--) {
+            AgentStepResponse step = steps.get(index);
+            if (step.isFinal()) {
+                finalAnswer = step.finalAnswer();
                 stopReason = StopReason.FINAL_ANSWER;
+                break;
             }
         }
         return new RuntimeSessionTraceResponse(sessionId, steps, finalAnswer, stopReason);
