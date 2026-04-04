@@ -2,6 +2,7 @@ package dk.ashlan.agent.chapters.chapter08;
 
 import dk.ashlan.agent.code.CodeAgentOrchestrator;
 import dk.ashlan.agent.code.CodeGenerationTool;
+import dk.ashlan.agent.code.CodeWorkspaceRegistry;
 import dk.ashlan.agent.code.FileReadTool;
 import dk.ashlan.agent.code.FileWriteTool;
 import dk.ashlan.agent.code.TestExecutionTool;
@@ -19,10 +20,14 @@ final class Chapter08Support {
         return new WorkspaceService("target/chapter-08-workspace");
     }
 
+    static CodeWorkspaceRegistry workspaceRegistry() {
+        return new CodeWorkspaceRegistry("target/chapter-08-workspaces");
+    }
+
     static CodeAgentOrchestrator orchestrator() {
         WorkspaceService workspaceService = workspaceService();
         return new CodeAgentOrchestrator(
-                workspaceService,
+                workspaceRegistry(),
                 new FileReadTool(workspaceService),
                 new FileWriteTool(workspaceService),
                 new CodeGenerationTool(),

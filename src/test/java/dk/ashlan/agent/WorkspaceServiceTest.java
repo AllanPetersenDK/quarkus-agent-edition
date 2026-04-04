@@ -26,5 +26,7 @@ class WorkspaceServiceTest {
         workspaceService.write("nested/file.txt", "hello");
 
         assertTrue(workspaceService.read("nested/file.txt").contains("hello"));
+        assertTrue(workspaceService.listFiles().contains("nested/file.txt"));
+        assertTrue(workspaceService.fileCount() >= 1);
     }
 }

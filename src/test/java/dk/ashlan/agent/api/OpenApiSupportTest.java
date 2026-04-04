@@ -47,6 +47,10 @@ class OpenApiSupportTest {
         assertOperationContains(GaiaEvaluationResource.class, "task", "Book chapter: 10");
         assertOperationContains(GaiaEvaluationResource.class, "runLookup", "Book chapter: 10");
         assertOperationContains(CodeAgentResource.class, "run", "Book chapter: 8");
+        assertOperationContains(RuntimeInspectionResource.class, "workspace", "Book chapter: 8");
+        assertOperationContains(RuntimeInspectionResource.class, "workspaceFiles", "Book chapter: 8");
+        assertOperationContains(RuntimeInspectionResource.class, "generatedTools", "Book chapter: 8");
+        assertOperationContains(RuntimeInspectionResource.class, "generatedToolInvoke", "Book chapter: 8");
         assertOperationContains(MultiAgentResource.class, "run", "Book chapter: 9");
         assertOperationContains(WorkflowResource.class, "demo", "Book chapter: 7");
         assertOperationContains(CompanionResource.class, "run", "Book chapter mapping: chapter 7 companion seam");

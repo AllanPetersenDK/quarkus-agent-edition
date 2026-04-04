@@ -9,7 +9,7 @@ The current security posture is a documented stance, not a live auth implementat
 |---|---|---|
 | `POST /api/agent/run` | Main companion API for the agent loop | Safe for local/dev use and private deployments; not hardened for public internet exposure |
 | `GET /api/agent/tools` | Public companion metadata | Safe to keep open in the companion app |
-| `POST /code-agent` | Code-agent production seam | Treat as internal/admin-only if exposed outside localhost |
+| `POST /api/code-agent/run` | Code-agent production seam | Treat as internal/admin-only if exposed outside localhost |
 | `POST /multi-agent` | Multi-agent production seam | Treat as internal/admin-only if exposed outside localhost |
 | `POST /admin/evaluations` | Evaluation/admin seam | Treat as internal/admin-only if exposed outside localhost |
 | `POST /admin/evaluations/gaia/run` | GAIA validation/dev seam | Treat as internal/admin-only if exposed outside localhost |
@@ -32,5 +32,5 @@ The current security posture is a documented stance, not a live auth implementat
 If you want to expose this beyond local/private network use, add `quarkus-oidc` and then protect:
 
 - `admin` and `eval` endpoints with an admin role
-- `code-agent` and `multi-agent` with an operator role
+- `/api/code-agent/run` and `multi-agent` with an operator role
 - keep `api/agent/run` either public for demos or operator-only for non-demo deployments

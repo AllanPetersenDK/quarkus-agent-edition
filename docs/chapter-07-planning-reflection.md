@@ -8,6 +8,7 @@ Plan before execution and reflect after execution so the agent can improve thin 
 
 The Java edition keeps planning and reflection as explicit services and small runtime tools around the main agent runner. This stays companion/runtime-grade: there is no new workflow engine, only a lightweight task-plan and reflection cycle on top of the existing manual agent core.
 Plan state is kept session/context-based and re-derived when the model asks for a replan, so the repo stays honest about being a runtime companion rather than a separate task-management platform.
+In the current runtime, chapter 7 is also Swagger-bevisbar: the registry exposes `create-tasks` and `reflection`, runtime sessions expose `/plan` and `/reflection`, and trace entries surface `chapter7-plan`, `chapter7-reflection`, and `chapter7-replan` markers when the loop changes course.
 
 ## Central Classes
 
@@ -37,6 +38,7 @@ Plan state is kept session/context-based and re-derived when the model asks for 
 - The manual planning/reflection loop remains the baseline learning path, while the new tools let the same idea show up in the runtime registry and the existing `/api/agent/run` seam.
 - Runtime trace now exposes planning, reflection, and replan markers so a manual Swagger smoke-test can see the cycle directly.
 - Runtime inspection also exposes `/api/runtime/sessions/{sessionId}/plan` and `/api/runtime/sessions/{sessionId}/reflection`, which keeps the active plan and the latest reflection visible without introducing a separate workflow engine.
+- `GET /api/agent/tools` is the live registry seam for discovering the chapter-7 tools in the current runtime.
 - The LangChain4j agentic demo is a comparison seam that shows a framework-backed workflow without replacing the manual services.
 - The LangChain4j tool-calling companion demo is a separate comparison seam that exercises the framework-backed tool path without replacing the manual services.
 

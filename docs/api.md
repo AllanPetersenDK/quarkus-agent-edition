@@ -55,12 +55,17 @@ Covered in Swagger:
 - `POST /api/companion/langchain4j/agentic-demo` - LangChain4j agentic companion demo
 - `POST /api/companion/llm/completions` - chapter-02 companion direct chat simulation
 - `POST /api/companion/llm/async-batch` - chapter-02 companion async batch demo with bounded concurrency and per-prompt failure isolation
-- `POST /code-agent` - internal chapter demo for the deterministic code workflow
+- `POST /api/code-agent/run` - chapter-8 code-agent companion seam for the constrained workspace/code-generation flow
+- `GET /api/runtime/sessions/{sessionId}/workspace` - chapter-8 workspace inspection seam
+- `GET /api/runtime/sessions/{sessionId}/workspace/files` - chapter-8 workspace file listing seam
+- `GET /api/runtime/sessions/{sessionId}/generated-tools` - chapter-8 generated-tool registry seam
+- `POST /api/runtime/sessions/{sessionId}/generated-tools/invoke` - chapter-8 generated-tool invocation seam
 - `POST /multi-agent` - internal chapter demo for the coordinator/reviewer flow
 - `GET /workflow-demo` - internal deterministic workflow demo
 
-Chapter 7 planning and reflection are visible through the existing runtime/tool seams rather than a new workflow API: the runtime tool registry includes `create-tasks` and `reflection`, and chapter-7 runs now surface plan/reflection/replan markers in session trace entries.
-The runtime inspection seam now also exposes `GET /api/runtime/sessions/{sessionId}/plan` and `GET /api/runtime/sessions/{sessionId}/reflection` so the current chapter-7 plan and latest reflection/replan signal are visible without adding a separate workflow subsystem.
+Chapter 7 planning and reflection are visible through the existing runtime/tool seams rather than a new workflow API: the runtime tool registry includes `create-tasks` and `reflection`, `GET /api/agent/tools` now works in the live runtime, and chapter-7 runs surface plan/reflection/replan markers in session trace entries.
+The runtime inspection seam now also exposes `GET /api/runtime/sessions/{sessionId}/plan` and `GET /api/runtime/sessions/{sessionId}/reflection` so the current chapter-7 plan and latest reflection/replan signal are visible without adding a separate workflow subsystem. In the current runtime, those inspection seams are meaningfully populated for chapter-7 sessions instead of acting as thin placeholders.
+Chapter 8 follows the same companion pattern: the runtime exposes a small code-agent run seam, while workspace state and generated tools remain inspectable through session-scoped endpoints rather than a separate platform.
 
 Not covered in Swagger:
 
@@ -576,9 +581,9 @@ Book chapter: 2 companion/debug async batch seam for server-side concurrent dire
 
 ### Internal Chapter Demos
 
-`POST /code-agent`
+`POST /api/code-agent/run`
 
-Internal chapter demo for the deterministic code workflow.
+Book chapter: 8 companion seam for the deterministic workspace/code-agent workflow. The run writes workspace-local artifacts, registers a session-scoped generated tool, and records stable Chapter 8 trace markers.
 
 `POST /multi-agent`
 

@@ -9,6 +9,6 @@ class Chapter08SmokeTest {
     void chapter08DemosWork() {
         assertTrue(new WorkspaceSafetyDemo().run());
         assertTrue(new WorkspaceRoundTripDemo().run().contains("hello workspace"));
-        assertTrue(new CodeAgentDemo().run("Generate a file").contains("Demo code generation placeholder"));
+        assertTrue(new CodeAgentDemo().run("Generate a file").contains("Chapter 8 code generation placeholder"));
     }
 }

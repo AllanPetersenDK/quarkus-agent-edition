@@ -139,7 +139,7 @@ Chapter-5 path ingest now works the same way through the shared workspace/docume
 Chapter-5 now also has a bulk directory ingest seam, and the shared document-read layer covers the workspace-safe text and office document types used by chapter 5 and GAIA.
 `GET /api/rag/query` now returns `bestChunk` and compact `citations` alongside the full ranked chunk list, which makes it easier to see which source won retrieval.
 Chapter 6 now also exposes a small pause/resume seam for confirmation-gated tools at `POST /api/runtime/sessions/{sessionId}/resume`, and the `confirmation-demo` tool is a tiny approval-gated demo hook for exercising that flow in Swagger.
-- `POST /code-agent`
+- `POST /api/code-agent/run`
 - `POST /multi-agent`
 - `GET /workflow-demo`
 - MCP server: `http://localhost:8080/mcp`
@@ -191,6 +191,9 @@ Chapter 7 is now the active next track: planning and reflection build directly o
 manual agent core and the chapter 6 context/memory foundation. Chapter 6 remains the runtime base
 for request-time context optimization, session continuity, and structured long-term memory, while
 chapter 7 adds a small but visible task-plan and reflection cycle rather than a new workflow engine.
+In the current runtime, chapter 7 is no longer just a demo overlay: `create-tasks`, `reflection`,
+`/api/runtime/sessions/{sessionId}/plan`, `/api/runtime/sessions/{sessionId}/reflection`, and the
+chapter-7 trace markers are all Swagger-visible seams that can be inspected directly.
 The runtime inspection seam now also exposes the current chapter-7 plan and reflection state per
 session, so manual Swagger smoke-tests can inspect the active plan and the latest replan signal
 without turning the repo into a workflow platform.

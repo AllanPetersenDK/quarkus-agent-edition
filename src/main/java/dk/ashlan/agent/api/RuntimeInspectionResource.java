@@ -2,8 +2,16 @@ package dk.ashlan.agent.api;
 
 import dk.ashlan.agent.health.AgentReadinessHealthCheck;
 import dk.ashlan.agent.health.RuntimeLivenessHealthCheck;
+import dk.ashlan.agent.api.dto.CodeWorkspaceFilesResponse;
+import dk.ashlan.agent.api.dto.CodeWorkspaceInspectionResponse;
+import dk.ashlan.agent.api.dto.GeneratedWorkspaceToolInvokeRequest;
+import dk.ashlan.agent.api.dto.GeneratedWorkspaceToolInvokeResponse;
+import dk.ashlan.agent.api.dto.GeneratedWorkspaceToolResponse;
+import dk.ashlan.agent.api.dto.GeneratedWorkspaceToolsResponse;
 import dk.ashlan.agent.core.AgentStepResult;
 import dk.ashlan.agent.core.ToolConfirmation;
+import dk.ashlan.agent.code.CodeWorkspaceRegistry;
+import dk.ashlan.agent.code.CodeWorkspaceSession;
 import dk.ashlan.agent.planning.ExecutionPlan;
 import dk.ashlan.agent.planning.PlanStep;
 import dk.ashlan.agent.planning.Chapter7ReflectionState;
@@ -27,6 +35,7 @@ import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.validation.Valid;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -49,6 +58,7 @@ public class RuntimeInspectionResource {
     private final MemoryService memoryService;
     private final SessionTraceStore sessionTraceStore;
     private final MemoryAwareAgentOrchestrator memoryAwareAgentOrchestrator;
+    private final CodeWorkspaceRegistry codeWorkspaceRegistry;
 
     public RuntimeInspectionResource(
             @Readiness AgentReadinessHealthCheck readinessHealthCheck,
@@ -56,7 +66,8 @@ public class RuntimeInspectionResource {
             SessionManager sessionManager,
             MemoryService memoryService,
             SessionTraceStore sessionTraceStore,
-            MemoryAwareAgentOrchestrator memoryAwareAgentOrchestrator
+            MemoryAwareAgentOrchestrator memoryAwareAgentOrchestrator,
+            CodeWorkspaceRegistry codeWorkspaceRegistry
     ) {
         this.readinessHealthCheck = readinessHealthCheck;
         this.livenessHealthCheck = livenessHealthCheck;
@@ -64,6 +75,7 @@ public class RuntimeInspectionResource {
         this.memoryService = memoryService;
         this.sessionTraceStore = sessionTraceStore;
         this.memoryAwareAgentOrchestrator = memoryAwareAgentOrchestrator;
+        this.codeWorkspaceRegistry = codeWorkspaceRegistry;
     }
 
     @GET
@@ -254,6 +266,113 @@ public class RuntimeInspectionResource {
         } catch (IllegalStateException exception) {
             throw new BadRequestException(exception.getMessage());
         }
+    }
+
+    @GET
+    @Path("/sessions/{sessionId}/workspace")
+    @Operation(
+            summary = "Inspect a chapter-8 workspace",
+            description = "Book chapter: 8. Read-only workspace inspection seam backed by the session-scoped Chapter 8 workspace registry so the current workspace root, timestamps, and file count stay visible in Swagger without introducing a workflow platform."
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Current Chapter 8 workspace state for the requested session.",
+            content = @org.eclipse.microprofile.openapi.annotations.media.Content(schema = @Schema(implementation = CodeWorkspaceInspectionResponse.class))
+    )
+    public CodeWorkspaceInspectionResponse workspace(
+            @Parameter(description = "Session identifier used for the Chapter 8 workspace.", required = true)
+            @PathParam("sessionId") String sessionId
+    ) {
+        CodeWorkspaceSession session = codeWorkspaceRegistry.session(sessionId);
+        return new CodeWorkspaceInspectionResponse(
+                session.sessionId(),
+                session.workspaceId(),
+                session.workspaceRoot(),
+                session.createdAt(),
+                session.updatedAt(),
+                session.fileCount(),
+                session.generatedTools().size(),
+                session.lastRequest(),
+                session.traceMarkers()
+        );
+    }
+
+    @GET
+    @Path("/sessions/{sessionId}/workspace/files")
+    @Operation(
+            summary = "Inspect Chapter 8 workspace files",
+            description = "Book chapter: 8. Workspace file listing seam for the Chapter 8 companion runtime so the file round-trip behavior stays explicit and reviewable."
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Workspace-relative file listing for the requested session.",
+            content = @org.eclipse.microprofile.openapi.annotations.media.Content(schema = @Schema(implementation = CodeWorkspaceFilesResponse.class))
+    )
+    public CodeWorkspaceFilesResponse workspaceFiles(
+            @Parameter(description = "Session identifier used for the Chapter 8 workspace.", required = true)
+            @PathParam("sessionId") String sessionId
+    ) {
+        CodeWorkspaceSession session = codeWorkspaceRegistry.session(sessionId);
+        return new CodeWorkspaceFilesResponse(
+                session.sessionId(),
+                session.workspaceId(),
+                session.workspaceRoot(),
+                session.files(),
+                session.traceMarkers()
+        );
+    }
+
+    @GET
+    @Path("/sessions/{sessionId}/generated-tools")
+    @Operation(
+            summary = "Inspect Chapter 8 generated tools",
+            description = "Book chapter: 8. Read-only generated-tool registry seam for the session-scoped Chapter 8 companion runtime."
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Session-scoped generated tools for the requested session.",
+            content = @org.eclipse.microprofile.openapi.annotations.media.Content(schema = @Schema(implementation = GeneratedWorkspaceToolsResponse.class))
+    )
+    public GeneratedWorkspaceToolsResponse generatedTools(
+            @Parameter(description = "Session identifier used for the Chapter 8 workspace.", required = true)
+            @PathParam("sessionId") String sessionId
+    ) {
+        CodeWorkspaceSession session = codeWorkspaceRegistry.session(sessionId);
+        return new GeneratedWorkspaceToolsResponse(
+                session.sessionId(),
+                session.workspaceId(),
+                session.generatedTools().stream().map(GeneratedWorkspaceToolResponse::from).toList(),
+                session.traceMarkers()
+        );
+    }
+
+    @POST
+    @Path("/sessions/{sessionId}/generated-tools/invoke")
+    @Operation(
+            summary = "Invoke a Chapter 8 generated tool",
+            description = "Book chapter: 8. Direct invocation seam for the session-scoped generated tools created by the Chapter 8 companion runtime."
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Generated-tool invocation result.",
+            content = @org.eclipse.microprofile.openapi.annotations.media.Content(schema = @Schema(implementation = GeneratedWorkspaceToolInvokeResponse.class))
+    )
+    public GeneratedWorkspaceToolInvokeResponse generatedToolInvoke(
+            @Parameter(description = "Session identifier used for the Chapter 8 workspace.", required = true)
+            @PathParam("sessionId") String sessionId,
+            @Valid GeneratedWorkspaceToolInvokeRequest request
+    ) {
+        CodeWorkspaceSession session = codeWorkspaceRegistry.session(sessionId);
+        var result = session.invokeGeneratedTool(request.toolName(), request.arguments());
+        return new GeneratedWorkspaceToolInvokeResponse(
+                session.sessionId(),
+                session.workspaceId(),
+                request.toolName(),
+                result.success(),
+                result.output(),
+                result.data(),
+                session.traceMarkers()
+        );
     }
 
     public record RuntimeHealthOverviewResponse(

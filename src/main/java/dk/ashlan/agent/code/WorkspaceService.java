@@ -8,6 +8,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 @ApplicationScoped
 public class WorkspaceService {
@@ -41,11 +44,49 @@ public class WorkspaceService {
     public void write(String relativePath, String contents) {
         try {
             Path path = resolve(relativePath);
-            Files.createDirectories(path.getParent());
+            if (path.getParent() != null) {
+                Files.createDirectories(path.getParent());
+            }
             Files.writeString(path, contents, StandardCharsets.UTF_8);
         } catch (IOException exception) {
             throw new IllegalStateException("Unable to write file: " + relativePath, exception);
         }
+    }
+
+    public List<String> listFiles() {
+        return listFiles("", true, Integer.MAX_VALUE);
+    }
+
+    public List<String> listFiles(String relativePath, boolean recursive, int maxEntries) {
+        Path start = relativePath == null || relativePath.isBlank()
+                ? root
+                : resolve(relativePath);
+        if (!Files.exists(start, LinkOption.NOFOLLOW_LINKS)) {
+            return List.of();
+        }
+        int limit = Math.max(1, maxEntries);
+        try {
+            if (Files.isRegularFile(start, LinkOption.NOFOLLOW_LINKS)) {
+                return List.of(root.relativize(start).toString());
+            }
+            Stream<Path> stream = recursive ? Files.walk(start) : Files.list(start);
+            try (stream) {
+                List<String> files = new ArrayList<>();
+                stream.filter(path -> !path.equals(start))
+                        .filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
+                        .filter(path -> !Files.isSymbolicLink(path))
+                        .sorted()
+                        .limit(limit)
+                        .forEach(path -> files.add(root.relativize(path.toAbsolutePath().normalize()).toString()));
+                return files;
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to list files: " + relativePath, exception);
+        }
+    }
+
+    public long fileCount() {
+        return listFiles().size();
     }
 
     private Path initializeRoot(Path configuredRoot) {

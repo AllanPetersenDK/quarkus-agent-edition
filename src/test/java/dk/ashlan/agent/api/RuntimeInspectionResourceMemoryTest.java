@@ -8,6 +8,7 @@ import dk.ashlan.agent.memory.MemoryExtractionService;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
 import dk.ashlan.agent.memory.SessionTraceStore;
+import dk.ashlan.agent.code.CodeWorkspaceRegistry;
 import dk.ashlan.agent.tools.ToolRegistry;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +45,8 @@ class RuntimeInspectionResourceMemoryTest {
                         new dk.ashlan.agent.core.AgentOrchestrator(null, null, null, null, 1, "") {
                         },
                         memoryService
-                )
+                ),
+                new CodeWorkspaceRegistry("target/test-chapter8-workspaces")
         );
 
         RuntimeInspectionResource.MemoryInspectionResponse response = resource.memory("session-1", "PostgreSQL", 3);
