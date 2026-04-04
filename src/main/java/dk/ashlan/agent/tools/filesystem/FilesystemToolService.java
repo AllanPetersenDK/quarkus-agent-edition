@@ -152,39 +152,11 @@ public class FilesystemToolService {
     }
 
     public JsonToolResult readDocumentFile(String path) {
-        try {
-            Path resolved = resolveRequired(path);
-            if (!Files.exists(resolved)) {
-                return failure("read_document_file", "file does not exist: " + resolved, Map.of(
-                        "status", "error",
-                        "path", path,
-                        "resolvedPath", resolved.toString()
-                ));
-            }
-            String extension = extension(resolved);
-            if (isAudioLike(extension)) {
-                return transcribeAudio(resolved, path);
-            }
-            if (isTextLike(extension) || "pdf".equals(extension)) {
-                GaiaExtractedAttachment extracted = attachmentExtractionService.extract(resolved);
-                return extractedToResult("read_document_file", resolved, extracted, path);
-            }
-            return failure("read_document_file", "unsupported media type for extraction: " + extension, Map.of(
-                    "status", "unsupported",
-                    "path", path,
-                    "resolvedPath", resolved.toString(),
-                    "fileType", extension
-            ));
-        } catch (RuntimeException exception) {
-            return failure("read_document_file", "document read failed: " + exception.getMessage(), Map.of(
-                    "status", "error",
-                    "path", path == null ? "" : path
-            ));
-        }
+        return readDocumentFile("read_document_file", path);
     }
 
     public JsonToolResult readMediaFile(String path) {
-        return readDocumentFile(path);
+        return readDocumentFile("read_media_file", path);
     }
 
     public JsonToolResult inspectPath(String path) {
@@ -259,7 +231,39 @@ public class FilesystemToolService {
         return new JsonToolResult(toolName, extracted.status() == GaiaAttachmentStatus.TEXT_EXTRACTED, output, data);
     }
 
-    private JsonToolResult transcribeAudio(Path resolved, String originalPath) {
+    private JsonToolResult readDocumentFile(String toolName, String path) {
+        try {
+            Path resolved = resolveRequired(path);
+            if (!Files.exists(resolved)) {
+                return failure(toolName, "file does not exist: " + resolved, Map.of(
+                        "status", "error",
+                        "path", path,
+                        "resolvedPath", resolved.toString()
+                ));
+            }
+            String extension = extension(resolved);
+            if (isAudioLike(extension)) {
+                return transcribeAudio(toolName, resolved, path);
+            }
+            if (isTextLike(extension) || "pdf".equals(extension)) {
+                GaiaExtractedAttachment extracted = attachmentExtractionService.extract(resolved);
+                return extractedToResult(toolName, resolved, extracted, path);
+            }
+            return failure(toolName, "unsupported media type for extraction: " + extension, Map.of(
+                    "status", "unsupported",
+                    "path", path,
+                    "resolvedPath", resolved.toString(),
+                    "fileType", extension
+            ));
+        } catch (RuntimeException exception) {
+            return failure(toolName, "document read failed: " + exception.getMessage(), Map.of(
+                    "status", "error",
+                    "path", path == null ? "" : path
+            ));
+        }
+    }
+
+    private JsonToolResult transcribeAudio(String toolName, Path resolved, String originalPath) {
         try {
             String transcript = audioTranscriptionService.transcribe(resolved);
             String normalized = transcript == null ? "" : transcript.replaceAll("\\s+", " ").trim();
@@ -273,9 +277,9 @@ public class FilesystemToolService {
             data.put("text", normalized);
             data.put("traceEvents", List.of("attachment:audio-transcribed"));
             String output = "status=audio_transcribed\nresolvedPath=" + resolved + "\ntranscript:\n" + normalized;
-            return new JsonToolResult("read_media_file", true, output, data);
+            return new JsonToolResult(toolName, true, output, data);
         } catch (RuntimeException exception) {
-            return failure("read_media_file", "audio transcription failed: " + exception.getMessage(), Map.of(
+            return failure(toolName, "audio transcription failed: " + exception.getMessage(), Map.of(
                     "status", "AUDIO_TRANSCRIPTION_FAILED",
                     "path", originalPath,
                     "resolvedPath", resolved.toString(),
