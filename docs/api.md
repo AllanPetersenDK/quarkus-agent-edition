@@ -17,7 +17,7 @@ Configured properties:
 - `quarkus.swagger-ui.path=/swagger-ui`
 - `quarkus.smallrye-openapi.info-title=Quarkus Agent Edition API`
 - `quarkus.smallrye-openapi.info-version=0.1.0`
-- `quarkus.smallrye-openapi.info-description=Quarkus companion edition of Build an AI Agent from Scratch. Swagger documents the HTTP-exposed outer seams: manual agent runs, tool discovery, runtime health, RAG query and ingest, session and memory inspection, evaluation run and trace lookup, and the selected LangChain4j companion demos. Manual orchestration internals, selector logic, prompt builders, and low-level storage details remain Java-only unless a specific endpoint exposes them.`
+- `quarkus.smallrye-openapi.info-description=Quarkus companion edition of Build an AI Agent from Scratch. Swagger documents the HTTP-exposed outer seams: manual agent runs, tool discovery, runtime health, RAG query and ingest, session and memory inspection, evaluation run, GAIA validation/dev run, trace lookup, and the selected LangChain4j companion demos. Manual orchestration internals, selector logic, prompt builders, and low-level storage details remain Java-only unless a specific endpoint exposes them.`
 
 ## Swagger Coverage
 
@@ -38,7 +38,9 @@ Covered in Swagger:
 - `POST /api/rag/ingest` - chapter 5-oriented document ingest into the RAG stack
 - `GET /api/rag/query` - chapter 5-oriented RAG query and answer
 - `POST /admin/evaluations` - evaluation run
-- `POST /admin/evaluations/gaia` - GAIA starter validation run for Level 1 no-attachment cases
+- `POST /admin/evaluations/gaia/run` - GAIA validation/dev run with level filtering and attachment-aware context
+- `GET /admin/evaluations/gaia/{taskId}` - GAIA task lookup
+- `GET /admin/evaluations/gaia/runs/{runId}` - GAIA run lookup
 - `GET /admin/evaluations/{caseId}` - evaluation trace lookup
 - `POST /api/companion/langchain4j/run` - LangChain4j companion run
 - `POST /api/companion/langchain4j/agentic-demo` - LangChain4j agentic companion demo
@@ -226,9 +228,17 @@ The chapter-5 query flow now uses a small hybrid reranker and builds `answer` fr
 
 Internal admin seam that runs chapter evaluation cases and returns results plus metrics.
 
-`POST /admin/evaluations/gaia`
+`POST /admin/evaluations/gaia/run`
 
-Starter GAIA validation seam for Level 1 cases without attachments. The flow is intentionally narrow, validates the existing manual runtime agent only, and returns per-case debug detail plus an aggregate summary.
+GAIA validation/dev seam that loads a real GAIA validation snapshot from either a Hugging Face parquet URL or a local path. The flow resolves attachment presence into trace/context notes, applies deterministic scoring, and runs the existing manual runtime agent on a selectable subset.
+
+`GET /admin/evaluations/gaia/{taskId}`
+
+Read-only lookup for the most recent GAIA case result stored for a given task id.
+
+`GET /admin/evaluations/gaia/runs/{runId}`
+
+Read-only lookup for a stored GAIA run result.
 
 `GET /admin/evaluations/{caseId}`
 

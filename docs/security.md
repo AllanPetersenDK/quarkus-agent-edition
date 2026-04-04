@@ -12,6 +12,7 @@ The current security posture is a documented stance, not a live auth implementat
 | `POST /code-agent` | Code-agent production seam | Treat as internal/admin-only if exposed outside localhost |
 | `POST /multi-agent` | Multi-agent production seam | Treat as internal/admin-only if exposed outside localhost |
 | `POST /admin/evaluations` | Evaluation/admin seam | Treat as internal/admin-only if exposed outside localhost |
+| `POST /admin/evaluations/gaia/run` | GAIA validation/dev seam | Treat as internal/admin-only if exposed outside localhost |
 | `GET /workflow-demo` | Demo endpoint | Safe for local/demo use only |
 
 ## Why This Is The Current Stance

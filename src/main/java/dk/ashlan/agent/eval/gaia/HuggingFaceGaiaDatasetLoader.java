@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.apache.parquet.avro.AvroParquetReader;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.config.Config;
 
 import java.io.IOException;
 import java.net.URI;
@@ -22,23 +22,17 @@ import java.util.List;
 @ApplicationScoped
 public class HuggingFaceGaiaDatasetLoader implements GaiaDatasetLoader {
     private final ObjectMapper objectMapper;
-    private final String datasetUrl;
-    private final String token;
+    private final Config config;
 
     @Inject
-    public HuggingFaceGaiaDatasetLoader(
-            ObjectMapper objectMapper,
-            @ConfigProperty(name = "gaia.validation.dataset-url") String datasetUrl,
-            @ConfigProperty(name = "gaia.validation.hf-token", defaultValue = "") String token
-    ) {
+    public HuggingFaceGaiaDatasetLoader(ObjectMapper objectMapper, Config config) {
         this.objectMapper = objectMapper;
-        this.datasetUrl = datasetUrl;
-        this.token = token;
+        this.config = config;
     }
 
     @Override
     public List<GaiaValidationCase> load() {
-        String effectiveUrl = datasetUrl == null ? "" : datasetUrl.trim();
+        String effectiveUrl = configValue("gaia.validation.dataset-url").trim();
         if (effectiveUrl.isBlank()) {
             throw new IllegalStateException("GAIA dataset URL is required. Set gaia.validation.dataset-url or GAIA_DATASET_URL.");
         }
@@ -55,7 +49,7 @@ public class HuggingFaceGaiaDatasetLoader implements GaiaDatasetLoader {
 
     @Override
     public String datasetUrl() {
-        return datasetUrl;
+        return configValue("gaia.validation.dataset-url");
     }
 
     private String normalizeHuggingFaceUrl(String url) {
@@ -80,6 +74,7 @@ public class HuggingFaceGaiaDatasetLoader implements GaiaDatasetLoader {
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder(URI.create(url))
                     .GET()
                     .header("Accept", "application/json, application/x-ndjson, text/plain;q=0.9, */*;q=0.8");
+            String token = configValue("gaia.validation.hf-token");
             if (token != null && !token.isBlank()) {
                 requestBuilder.header("Authorization", "Bearer " + token.trim());
             }
@@ -107,6 +102,7 @@ public class HuggingFaceGaiaDatasetLoader implements GaiaDatasetLoader {
         }
         try {
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder(URI.create(url)).GET();
+            String token = configValue("gaia.validation.hf-token");
             if (token != null && !token.isBlank()) {
                 requestBuilder.header("Authorization", "Bearer " + token.trim());
             }
@@ -209,5 +205,9 @@ public class HuggingFaceGaiaDatasetLoader implements GaiaDatasetLoader {
             }
         }
         return "";
+    }
+
+    private String configValue(String name) {
+        return config.getOptionalValue(name, String.class).orElse("");
     }
 }

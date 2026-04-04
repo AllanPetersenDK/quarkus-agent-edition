@@ -110,6 +110,9 @@ mvn test
 - `POST /api/rag/ingest`
 - `GET /api/rag/query`
 - `POST /admin/evaluations`
+- `POST /admin/evaluations/gaia/run`
+- `GET /admin/evaluations/gaia/{taskId}`
+- `GET /admin/evaluations/gaia/runs/{runId}`
 - `GET /admin/evaluations/{caseId}`
 - `POST /api/companion/langchain4j/run`
 - `POST /api/companion/langchain4j/agentic-demo`
@@ -205,6 +208,7 @@ Covered in Swagger:
 - RAG query and document ingest
 - session and memory inspection
 - evaluation run and trace lookup
+- GAIA validation/dev run and per-task lookup
 - the selected LangChain4j companion run and agentic demo
 - internal chapter demos for code-agent, multi-agent, and workflow
 
@@ -235,7 +239,7 @@ Still internal:
 - Chapter demos still use in-memory RAG and memory helpers where that keeps the book mapping easier to follow.
 - H2 is the first persistence step, not the final production datastore.
 - Retrieval still uses simple cosine similarity over persisted rows rather than a dedicated vector index.
-- `code-agent`, `multi-agent`, `admin/evaluations`, runtime inspection, and RAG seams are production-style endpoints and are not protected by auth yet.
+- `code-agent`, `multi-agent`, `admin/evaluations`, GAIA validation, runtime inspection, and RAG seams are production-style endpoints and are not protected by auth yet.
 - Code generation and command execution are intentionally conservative placeholders.
 - The multi-agent router is deterministic and intentionally simple.
 

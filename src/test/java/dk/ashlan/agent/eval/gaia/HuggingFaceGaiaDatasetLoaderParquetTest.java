@@ -4,6 +4,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.parquet.avro.AvroParquetWriter;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -21,10 +22,12 @@ class HuggingFaceGaiaDatasetLoaderParquetTest {
         Path parquetFile = tempDir.resolve("metadata.level1.parquet");
         writeParquet(parquetFile);
 
+        var config = new SmallRyeConfigBuilder()
+                .withDefaultValue("gaia.validation.dataset-url", parquetFile.toString())
+                .build();
         HuggingFaceGaiaDatasetLoader loader = new HuggingFaceGaiaDatasetLoader(
                 new com.fasterxml.jackson.databind.ObjectMapper(),
-                parquetFile.toString(),
-                ""
+                config
         );
 
         List<GaiaValidationCase> cases = loader.load();

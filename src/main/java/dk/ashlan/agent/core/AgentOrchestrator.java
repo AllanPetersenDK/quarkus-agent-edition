@@ -87,9 +87,17 @@ public class AgentOrchestrator implements AgentRunner {
 
     @WithSpan("agent.run")
     public AgentRunResult run(String message, String sessionId) {
+        return run(message, sessionId, List.of());
+    }
+
+    public AgentRunResult run(String message, String sessionId, List<LlmMessage> supplementalMessages) {
         SessionState session = session(sessionId);
         List<LlmMessage> history = session.messages();
-        ExecutionContext context = new ExecutionContext(message, sessionId, history);
+        List<LlmMessage> initialMessages = new ArrayList<>(history);
+        if (supplementalMessages != null && !supplementalMessages.isEmpty()) {
+            initialMessages.addAll(supplementalMessages);
+        }
+        ExecutionContext context = new ExecutionContext(message, sessionId, initialMessages);
         session.addUserMessage(message);
         LlmRequestBuilder requestBuilder = new LlmRequestBuilder(systemPrompt, memoryService);
         List<String> trace = new ArrayList<>();
@@ -116,9 +124,17 @@ public class AgentOrchestrator implements AgentRunner {
     }
 
     public AgentStepResult step(String message, String sessionId) {
+        return step(message, sessionId, List.of());
+    }
+
+    public AgentStepResult step(String message, String sessionId, List<LlmMessage> supplementalMessages) {
         SessionState session = session(sessionId);
         List<LlmMessage> history = session.messages();
-        ExecutionContext context = new ExecutionContext(message, sessionId, history);
+        List<LlmMessage> initialMessages = new ArrayList<>(history);
+        if (supplementalMessages != null && !supplementalMessages.isEmpty()) {
+            initialMessages.addAll(supplementalMessages);
+        }
+        ExecutionContext context = new ExecutionContext(message, sessionId, initialMessages);
         session.addUserMessage(message);
         LlmRequestBuilder requestBuilder = new LlmRequestBuilder(systemPrompt, memoryService);
         return executeStep(context, requestBuilder, session, nextStepNumber(sessionId)).stepResult();
