@@ -43,7 +43,7 @@ This chapter maps the Python tool system into a generic Quarkus tool framework.
 - The internal `ToolRegistry`/`ToolExecutor` path remains the primary tool model.
 - `CompanionMcpTools` exposes only a tiny MCP-facing slice of the existing tool set so chapter 3 can be compared with a server-side protocol seam.
 - The filesystem tools are Chapter 5-style exploration helpers, but they still plug into the same generic registry/executor path and can be used by the manual agent loop without redesign.
-- Filesystem access is guarded by `agent.filesystem-root` and defaults to the repository workspace root (`.`), so zip extraction and file reads stay inside an explicit base path.
+- Filesystem access is guarded by the canonical `code.workspace-root` shared with the code workspace tools, so zip extraction and file reads stay inside the same explicit base path. Access is read-only and symlink hops are rejected.
 - `read_document_file` is the canonical attachment/document read tool, while `read_media_file` remains a compatibility alias so chapter 5 and GAIA share the same extraction foundation.
 
 ## Demo vs Production

@@ -4,15 +4,16 @@ import dk.ashlan.agent.eval.gaia.GaiaAttachmentExtractionService;
 import dk.ashlan.agent.eval.gaia.GaiaAttachmentStatus;
 import dk.ashlan.agent.eval.gaia.GaiaAudioTranscriptionService;
 import dk.ashlan.agent.eval.gaia.GaiaExtractedAttachment;
+import dk.ashlan.agent.code.WorkspaceService;
 import dk.ashlan.agent.tools.JsonToolResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -36,11 +37,11 @@ public class FilesystemToolService {
 
     @Inject
     public FilesystemToolService(
-            @ConfigProperty(name = "agent.filesystem-root", defaultValue = ".") String filesystemRoot,
+            WorkspaceService workspaceService,
             GaiaAttachmentExtractionService attachmentExtractionService,
             GaiaAudioTranscriptionService audioTranscriptionService
     ) {
-        this(Path.of(filesystemRoot), attachmentExtractionService, audioTranscriptionService);
+        this(workspaceService.root(), attachmentExtractionService, audioTranscriptionService);
     }
 
     public FilesystemToolService(
@@ -48,7 +49,7 @@ public class FilesystemToolService {
             GaiaAttachmentExtractionService attachmentExtractionService,
             GaiaAudioTranscriptionService audioTranscriptionService
     ) {
-        this.workspaceRoot = Objects.requireNonNull(workspaceRoot, "workspaceRoot").toAbsolutePath().normalize();
+        this.workspaceRoot = initializeRoot(Objects.requireNonNull(workspaceRoot, "workspaceRoot"));
         this.attachmentExtractionService = Objects.requireNonNull(attachmentExtractionService, "attachmentExtractionService");
         this.audioTranscriptionService = Objects.requireNonNull(audioTranscriptionService, "audioTranscriptionService");
     }
@@ -126,6 +127,9 @@ public class FilesystemToolService {
             List<Path> visiblePaths = truncated ? paths.subList(0, limit) : paths;
             List<Map<String, Object>> entries = new ArrayList<>();
             for (Path item : visiblePaths) {
+                if (Files.isSymbolicLink(item)) {
+                    throw new IllegalArgumentException("Symlink access is not allowed: " + relativeToRoot(item));
+                }
                 entries.add(entryData(relativeToRoot(item), Files.isDirectory(item) ? "folder" : "file", Files.isRegularFile(item) ? sizeOf(item) : null));
             }
             String output = "status=ok\nresolvedPath=" + target + "\nrecursive=" + recursive + "\nentries=" + entries.size() + "\npaths:\n" + formatEntries(entries, truncated);
@@ -353,6 +357,7 @@ public class FilesystemToolService {
         if (!candidate.startsWith(workspaceRoot)) {
             throw new IllegalArgumentException("Path traversal is not allowed: " + rawPath);
         }
+        rejectSymlinkHop(candidate, rawPath);
         return candidate;
     }
 
@@ -361,6 +366,7 @@ public class FilesystemToolService {
         if (!resolved.startsWith(destination)) {
             throw new IllegalArgumentException("Zip entry would escape destination: " + entryName);
         }
+        rejectSymlinkHop(resolved, entryName);
         return resolved;
     }
 
@@ -451,5 +457,28 @@ public class FilesystemToolService {
         merged.putIfAbsent("status", "error");
         merged.put("error", message);
         return new JsonToolResult(toolName, false, "status=error\nmessage=" + message, merged);
+    }
+
+    private Path initializeRoot(Path root) {
+        Path absoluteRoot = root.toAbsolutePath().normalize();
+        try {
+            if (Files.exists(absoluteRoot, LinkOption.NOFOLLOW_LINKS) && Files.isSymbolicLink(absoluteRoot)) {
+                throw new IllegalStateException("Workspace root symlink access is not allowed: " + absoluteRoot);
+            }
+            Files.createDirectories(absoluteRoot);
+            return absoluteRoot.toRealPath();
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to initialize workspace root: " + absoluteRoot, exception);
+        }
+    }
+
+    private void rejectSymlinkHop(Path resolved, String rawPath) {
+        Path cursor = workspaceRoot;
+        for (Path part : workspaceRoot.relativize(resolved)) {
+            cursor = cursor.resolve(part);
+            if (Files.exists(cursor, LinkOption.NOFOLLOW_LINKS) && Files.isSymbolicLink(cursor)) {
+                throw new IllegalArgumentException("Symlink access is not allowed: " + rawPath);
+            }
+        }
     }
 }

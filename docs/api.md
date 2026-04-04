@@ -192,7 +192,7 @@ Response body:
 `GET /api/agent/tools`
 
 Utility/discovery endpoint: this lists the runtime tool registry and does not execute tools.
-The registry now includes chapter-5-style filesystem tools for controlled workspace exploration: `inspect_path`, `unzip_file`, `list_files`, `read_file`, and `read_document_file`. `read_media_file` remains available as a compatibility alias.
+The registry now includes chapter-5-style filesystem tools for controlled workspace exploration: `inspect_path`, `unzip_file`, `list_files`, `read_file`, and `read_document_file`. `read_media_file` remains available as a compatibility alias. All filesystem access is read-only, bound to the shared workspace root model used by the code workspace tools, and rejects symlink access.
 
 ### Runtime Inspection
 
