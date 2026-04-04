@@ -6,7 +6,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface SessionStateStore {
-    Optional<List<LlmMessage>> loadMessages(String sessionId);
+    Optional<SessionStateSnapshot> load(String sessionId);
 
     void save(SessionState sessionState);
+
+    default Optional<List<LlmMessage>> loadMessages(String sessionId) {
+        return load(sessionId).map(SessionStateSnapshot::messages);
+    }
 }

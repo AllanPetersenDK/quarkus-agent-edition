@@ -8,8 +8,8 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - session state keeps multi-turn continuity
 - `beforeLlm` context optimization trims the active request projection
 - `after_run` is the canonical bridge into compact memory persistence
-- explicit memory search remains a tool, while auto-injection is a small runtime convenience
-- pause/resume for confirmation tools is an internal agent feature, not a callback trick
+- explicit memory search remains a tool, while `recall-memory` is the small explicit retrieval alias and auto-injection is a runtime convenience
+- pause/resume for confirmation tools is an internal agent feature, not a callback trick, and pending tool calls are persisted in session state
 
 ## Python Files
 
@@ -51,12 +51,13 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - Conversation history: the live `ExecutionContext` / session message stream that preserves the full run history.
 - Session state: the persisted multi-turn state tracked by `SessionManager` and the chapter-6 `Session` demos.
 - Short-term memory: `SlidingWindowStrategy`, `SummarizationStrategy`, and the `beforeLlm` context optimizer that project a smaller request without deleting the ground truth.
-- Long-term memory: `MemoryService`, `ConversationSearchTool`, and the cross-session demo managers.
+- Long-term memory: `MemoryService`, `ConversationSearchTool`, `RecallMemoryTool`, and the cross-session demo managers.
 - Bridge: `after_run` persists a compact memory signal after a run completes.
 
 ## Design Notes
 
 - Session continuity is now persisted through H2-backed session state, so restart-like reloads preserve messages.
+- Pending tool confirmations are part of that persisted session state, so pause/resume survives reloads too.
 - The no-arg memory session path now uses an explicit in-memory store instead of a null-based fallback, which keeps the dev/test path clear.
 - CDI runtime still resolves the JDBC-backed store, while the in-memory store is only the explicit default path for manual construction.
 - Cross-session memory is split from per-session state.
@@ -67,7 +68,7 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - `beforeLlm` now carries a small, deterministic context-optimization projection so the active request can shrink without deleting execution history.
 - `ToolDefinition.requiresConfirmation()` plus `PendingToolCall` and `ToolConfirmation` form the small pause/resume bridge for confirmation-gated tools.
 - `MemoryAwareAgentOrchestrator` remains as a thin chapter-6 façade, but the actual memory persistence hook is now callback-driven.
-- `ConversationSearchTool` is the explicit memory retrieval tool, while automatic memory injection stays a small convenience inside the request builder.
+- `ConversationSearchTool` and `RecallMemoryTool` are the explicit memory retrieval tools, while automatic memory injection stays a small convenience inside the request builder.
 
 ## Demo vs Production
 

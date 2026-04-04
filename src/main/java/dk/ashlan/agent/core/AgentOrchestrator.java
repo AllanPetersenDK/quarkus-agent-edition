@@ -121,32 +121,52 @@ public class AgentOrchestrator implements AgentRunner {
     }
 
     public AgentRunResult resume(String sessionId, ToolConfirmation confirmation) {
+        return resume(sessionId, confirmation == null ? List.of() : List.of(confirmation));
+    }
+
+    public AgentRunResult resume(String sessionId, List<ToolConfirmation> confirmations) {
         SessionState session = session(sessionId);
-        PendingToolCall pending = session.pendingToolCalls().stream().findFirst()
-                .orElseThrow(() -> new IllegalStateException("No pending tool confirmation for sessionId=" + sessionId));
-        ExecutionContext context = new ExecutionContext(pending.input(), sessionId, session.messages(), false);
+        List<PendingToolCall> pendingCalls = session.pendingToolCalls();
+        if (pendingCalls.isEmpty()) {
+            throw new IllegalStateException("No pending tool confirmation for sessionId=" + sessionId);
+        }
+        ExecutionContext context = new ExecutionContext(pendingCalls.get(0).input(), sessionId, session.messages(), false);
         session.clearPendingToolCalls();
 
-        LlmToolCall toolCall = pending.toolCall();
-        JsonToolResult toolResult = confirmation != null && confirmation.approved()
-                ? toolExecutor.execute(toolCall.toolName(), confirmation.arguments().isEmpty() ? toolCall.arguments() : confirmation.arguments())
-                : JsonToolResult.failure(toolCall.toolName(), confirmation == null ? "Tool confirmation missing." : confirmation.reason());
-        JsonToolResult adjustedResult = fireAfterTool(context, toolCall, toolResult, pending.stepNumber());
         List<String> resumeTrace = new ArrayList<>();
-        if (confirmation != null && confirmation.approved()) {
-            resumeTrace.add("pending_approved:" + toolCall.toolName());
-        } else {
-            String reason = confirmation == null ? "Tool confirmation missing." : confirmation.reason();
-            resumeTrace.add("pending_rejected:" + normalizeTrace(reason));
+        java.util.Map<String, ToolConfirmation> confirmationById = new java.util.LinkedHashMap<>();
+        if (confirmations != null) {
+            for (ToolConfirmation candidate : confirmations) {
+                if (candidate != null && candidate.toolCallId() != null && !candidate.toolCallId().isBlank()) {
+                    confirmationById.put(candidate.toolCallId(), candidate);
+                }
+            }
         }
-        if (toolCall.callId() == null || toolCall.callId().isBlank()) {
-            context.addToolMessage(toolCall.toolName(), adjustedResult.output());
-            session.addToolMessage(toolCall.toolName(), adjustedResult.output());
-        } else {
-            context.addToolMessage(toolCall.toolName(), toolCall.callId(), adjustedResult.output());
-            session.addToolMessage(toolCall.toolName(), toolCall.callId(), adjustedResult.output());
+
+        for (PendingToolCall pending : pendingCalls) {
+            LlmToolCall toolCall = pending.toolCall();
+            String toolCallId = toolCall.callId();
+            ToolConfirmation confirmation = toolCallId == null || toolCallId.isBlank() ? null : confirmationById.get(toolCallId);
+            boolean approved = confirmation != null && confirmation.approved();
+            String reason = confirmation == null ? "Tool call not approved." : confirmation.reason();
+            JsonToolResult toolResult = approved
+                    ? toolExecutor.execute(toolCall.toolName(), confirmation.arguments().isEmpty() ? toolCall.arguments() : confirmation.arguments())
+                    : JsonToolResult.failure(toolCall.toolName(), reason == null || reason.isBlank() ? "Tool call not approved." : reason);
+            JsonToolResult adjustedResult = fireAfterTool(context, toolCall, toolResult, pending.stepNumber());
+            if (approved) {
+                resumeTrace.add("pending_approved:" + toolCall.toolName() + ":" + normalizeTrace(toolCallId));
+            } else {
+                resumeTrace.add("pending_rejected:" + toolCall.toolName() + ":" + normalizeTrace(toolCallId) + ":" + normalizeTrace(reason));
+            }
+            if (toolCallId == null || toolCallId.isBlank()) {
+                context.addToolMessage(toolCall.toolName(), adjustedResult.output());
+                session.addToolMessage(toolCall.toolName(), adjustedResult.output());
+            } else {
+                context.addToolMessage(toolCall.toolName(), toolCallId, adjustedResult.output());
+                session.addToolMessage(toolCall.toolName(), toolCallId, adjustedResult.output());
+            }
         }
-        return continueRun(context, session, pending.stepNumber() + 1, resumeTrace);
+        return continueRun(context, session, pendingCalls.get(0).stepNumber() + 1, resumeTrace);
     }
 
     public AgentStepResult step(String message, String sessionId) {
@@ -179,8 +199,10 @@ public class AgentOrchestrator implements AgentRunner {
         while (iterations < maxIterations && !context.isFinalAnswer()) {
             StepExecution stepExecution = executeStep(context, requestBuilder, session, currentStep);
             trace.addAll(stepExecution.flatTrace());
-            if (stepExecution.pendingToolCall() != null) {
-                trace.add("pending_confirmation:" + stepExecution.pendingToolCall().toolCall().toolName());
+            if (!stepExecution.pendingToolCalls().isEmpty()) {
+                for (PendingToolCall pendingToolCall : stepExecution.pendingToolCalls()) {
+                    trace.add("pending_confirmation:" + pendingToolCall.toolCall().toolName());
+                }
                 AgentRunResult result = new AgentRunResult("", StopReason.PENDING_CONFIRMATION, Math.min(iterations + 1, maxIterations), trace);
                 recordAgentRunMetrics(StopReason.PENDING_CONFIRMATION, iterations, System.nanoTime() - startedAt);
                 fireAfterRun(context, result);
@@ -225,6 +247,7 @@ public class AgentOrchestrator implements AgentRunner {
         fireAfterLlm(context, optimizedMessages, completion, stepNumber);
         List<LlmToolCall> toolCalls = completion.toolCalls() == null ? List.of() : List.copyOf(completion.toolCalls());
         List<JsonToolResult> toolResults = new ArrayList<>();
+        List<PendingToolCall> pendingToolCalls = new ArrayList<>();
         if (!toolCalls.isEmpty()) {
             context.addAssistantToolCalls(toolCalls);
             session.addAssistantToolCalls(toolCalls);
@@ -240,21 +263,10 @@ public class AgentOrchestrator implements AgentRunner {
                     );
                     session.addPendingToolCall(pendingToolCall);
                     trace.add("pending_confirmation:" + toolCall.toolName());
+                    trace.add("pending_confirmation_id:" + normalizeTrace(toolCall.callId()));
                     traceEntries.add(new AgentTraceEntry("pending-confirmation", toolCall.toolName()));
-                    AgentStepResult stepResult = new AgentStepResult(
-                            context.getSessionId(),
-                            stepNumber,
-                            null,
-                            toolCalls,
-                            List.copyOf(toolResults),
-                            null,
-                            false,
-                            List.copyOf(traceEntries)
-                    );
-                    if (sessionTraceStore != null) {
-                        sessionTraceStore.append(stepResult);
-                    }
-                    return new StepExecution(stepResult, List.copyOf(trace), pendingToolCall);
+                    pendingToolCalls.add(pendingToolCall);
+                    continue;
                 }
                 if (!fireBeforeTool(context, toolCall, stepNumber)) {
                     JsonToolResult blocked = JsonToolResult.failure(toolCall.toolName(), "Tool blocked by callback: " + toolCall.toolName());
@@ -301,6 +313,12 @@ public class AgentOrchestrator implements AgentRunner {
             traceEntries.add(new AgentTraceEntry("assistant-message", completion.content()));
             isFinal = true;
         }
+        if (!pendingToolCalls.isEmpty()) {
+            assistantMessage = null;
+            finalAnswer = null;
+            isFinal = false;
+            context.setFinalAnswer("");
+        }
 
         AgentStepResult stepResult = new AgentStepResult(
                 context.getSessionId(),
@@ -315,7 +333,7 @@ public class AgentOrchestrator implements AgentRunner {
         if (sessionTraceStore != null) {
             sessionTraceStore.append(stepResult);
         }
-        return new StepExecution(stepResult, List.copyOf(trace), null);
+        return new StepExecution(stepResult, List.copyOf(trace), List.copyOf(pendingToolCalls));
     }
 
     private BeforeLlmContext fireBeforeLlm(ExecutionContext context, List<LlmMessage> messages, int stepNumber) {
@@ -430,6 +448,6 @@ public class AgentOrchestrator implements AgentRunner {
         return priority == null ? 0 : priority.value();
     }
 
-    private record StepExecution(AgentStepResult stepResult, List<String> flatTrace, PendingToolCall pendingToolCall) {
+    private record StepExecution(AgentStepResult stepResult, List<String> flatTrace, List<PendingToolCall> pendingToolCalls) {
     }
 }

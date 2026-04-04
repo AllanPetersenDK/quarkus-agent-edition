@@ -188,6 +188,8 @@ chapter-6 memory so the core loop stays simple while memory/persistence hooks re
 Chapter 6 is now the active next track: the repo has a small context-optimization seam, session
 continuity, explicit memory search, and a pause/resume bridge for confirmation-gated tools, while
 keeping chapter 5 as a separate companion story.
+Pending confirmations are persisted in session state, and a resume step can process multiple
+pending tool calls in one whitelist pass.
 That same seam also keeps `web-search` compression query-aware, while file and document tools still
 use straightforward truncation to keep context noise down.
 

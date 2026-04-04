@@ -1,10 +1,8 @@
 package dk.ashlan.agent.memory;
 
-import dk.ashlan.agent.llm.LlmMessage;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -27,7 +25,7 @@ public class SessionManager {
     }
 
     private SessionState loadSessionState(String sessionId) {
-        List<LlmMessage> messages = store.loadMessages(sessionId).orElse(List.of());
-        return new SessionState(sessionId, messages, store::save);
+        SessionStateSnapshot snapshot = store.load(sessionId).orElse(new SessionStateSnapshot(java.util.List.of(), java.util.List.of()));
+        return new SessionState(sessionId, snapshot.messages(), snapshot.pendingToolCalls(), store::save);
     }
 }

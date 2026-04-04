@@ -17,6 +17,8 @@ import java.util.Optional;
 
 @ApplicationScoped
 public class JdbcSessionStateStore implements SessionStateStore {
+    private static final TypeReference<SessionStateSnapshot> SNAPSHOT = new TypeReference<>() {
+    };
     private static final TypeReference<List<LlmMessage>> LIST_OF_MESSAGES = new TypeReference<>() {
     };
     private static final TypeReference<List<String>> LIST_OF_LEGACY_MESSAGES = new TypeReference<>() {
@@ -36,7 +38,7 @@ public class JdbcSessionStateStore implements SessionStateStore {
     }
 
     @Override
-    public Optional<List<LlmMessage>> loadMessages(String sessionId) {
+    public Optional<SessionStateSnapshot> load(String sessionId) {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
                      select messages_json
@@ -50,9 +52,9 @@ public class JdbcSessionStateStore implements SessionStateStore {
                 }
                 String json = resultSet.getString(1);
                 if (json == null || json.isBlank()) {
-                    return Optional.of(List.of());
+                    return Optional.of(new SessionStateSnapshot(List.of(), List.of()));
                 }
-                return Optional.of(readMessages(json));
+                return Optional.of(readSnapshot(json));
             }
         } catch (SQLException | IOException exception) {
             throw new IllegalStateException("Unable to load session state for " + sessionId, exception);
@@ -68,20 +70,27 @@ public class JdbcSessionStateStore implements SessionStateStore {
                      values (?, ?)
                      """)) {
             statement.setString(1, sessionState.sessionId());
-            statement.setString(2, objectMapper.writeValueAsString(sessionState.messages()));
+            statement.setString(2, objectMapper.writeValueAsString(new SessionStateSnapshot(sessionState.messages(), sessionState.pendingToolCalls())));
             statement.executeUpdate();
         } catch (SQLException | IOException exception) {
             throw new IllegalStateException("Unable to persist session state for " + sessionState.sessionId(), exception);
         }
     }
 
-    private List<LlmMessage> readMessages(String json) throws IOException {
+    private SessionStateSnapshot readSnapshot(String json) throws IOException {
         try {
-            return objectMapper.readValue(json, LIST_OF_MESSAGES);
+            return objectMapper.readValue(json, SNAPSHOT);
+        } catch (IOException exception) {
+            // fall through to legacy parsing
+        }
+        try {
+            List<LlmMessage> messages = objectMapper.readValue(json, LIST_OF_MESSAGES);
+            return new SessionStateSnapshot(messages, List.of());
         } catch (IOException exception) {
             try {
                 List<String> legacyMessages = objectMapper.readValue(json, LIST_OF_LEGACY_MESSAGES);
-                return legacyMessages.stream().map(LlmMessage::user).toList();
+                List<LlmMessage> messages = legacyMessages.stream().map(LlmMessage::user).toList();
+                return new SessionStateSnapshot(messages, List.of());
             } catch (IOException legacyException) {
                 throw exception;
             }

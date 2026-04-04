@@ -28,7 +28,8 @@ public class CoreMemoryUpsertTool extends AbstractTool {
         String sessionId = String.valueOf(arguments.getOrDefault("sessionId", "default"));
         String task = String.valueOf(arguments.getOrDefault("task", "memory"));
         String value = String.valueOf(arguments.getOrDefault("value", ""));
-        memoryService.remember(sessionId, task, value);
-        return "Stored memory for session " + sessionId;
+        return memoryService.remember(sessionId, task, value) == dk.ashlan.agent.memory.MemoryWriteDecision.ADD
+                ? "Stored memory for session " + sessionId
+                : "Skipped memory for session " + sessionId;
     }
 }

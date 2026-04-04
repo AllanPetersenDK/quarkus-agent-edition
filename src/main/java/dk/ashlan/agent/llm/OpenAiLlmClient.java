@@ -175,7 +175,7 @@ public class OpenAiLlmClient implements BaseLlmClient {
             case "clock" -> {
                 parameters.put("description", "No arguments required.");
             }
-            case "web-search", "wikipedia", "knowledge-base", "conversation-search" -> {
+            case "web-search", "wikipedia", "knowledge-base", "conversation-search", "recall-memory" -> {
                 properties.set("query", stringProperty("Search query."));
                 required.add("query");
             }

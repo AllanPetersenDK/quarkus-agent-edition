@@ -1,6 +1,5 @@
 package dk.ashlan.agent.memory;
 
-import dk.ashlan.agent.llm.LlmMessage;
 import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -12,15 +11,15 @@ import java.util.concurrent.ConcurrentHashMap;
 @DefaultBean
 @ApplicationScoped
 public class InMemorySessionStateStore implements SessionStateStore {
-    private final Map<String, List<LlmMessage>> sessions = new ConcurrentHashMap<>();
+    private final Map<String, SessionStateSnapshot> sessions = new ConcurrentHashMap<>();
 
     @Override
-    public Optional<List<LlmMessage>> loadMessages(String sessionId) {
-        return Optional.ofNullable(sessions.get(sessionId)).map(List::copyOf);
+    public Optional<SessionStateSnapshot> load(String sessionId) {
+        return Optional.ofNullable(sessions.get(sessionId));
     }
 
     @Override
     public void save(SessionState sessionState) {
-        sessions.put(sessionState.sessionId(), sessionState.messages());
+        sessions.put(sessionState.sessionId(), new SessionStateSnapshot(sessionState.messages(), sessionState.pendingToolCalls()));
     }
 }

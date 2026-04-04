@@ -18,10 +18,15 @@ public class SessionState {
         this(sessionId, List.of(), null);
     }
 
-    SessionState(String sessionId, List<LlmMessage> initialMessages, Consumer<SessionState> onChange) {
+    public SessionState(String sessionId, List<LlmMessage> initialMessages, List<PendingToolCall> initialPendingToolCalls, Consumer<SessionState> onChange) {
         this.sessionId = sessionId;
         this.onChange = onChange;
-        this.messages.addAll(initialMessages);
+        this.messages.addAll(initialMessages == null ? List.of() : initialMessages);
+        this.pendingToolCalls.addAll(initialPendingToolCalls == null ? List.of() : initialPendingToolCalls);
+    }
+
+    SessionState(String sessionId, List<LlmMessage> initialMessages, Consumer<SessionState> onChange) {
+        this(sessionId, initialMessages, List.of(), onChange);
     }
 
     public String sessionId() {
@@ -69,14 +74,27 @@ public class SessionState {
     }
 
     public void addPendingToolCall(PendingToolCall pendingToolCall) {
+        Consumer<SessionState> callback;
         synchronized (this) {
             pendingToolCalls.add(pendingToolCall);
+            callback = onChange;
+        }
+        if (callback != null) {
+            callback.accept(this);
         }
     }
 
     public void clearPendingToolCalls() {
+        Consumer<SessionState> callback;
         synchronized (this) {
+            if (pendingToolCalls.isEmpty()) {
+                return;
+            }
             pendingToolCalls.clear();
+            callback = onChange;
+        }
+        if (callback != null) {
+            callback.accept(this);
         }
     }
 

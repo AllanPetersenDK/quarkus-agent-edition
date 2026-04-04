@@ -4,6 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Cross-session memory service.
@@ -33,9 +34,16 @@ public class MemoryService {
         this(memoryStore, extractionService);
     }
 
-    public void remember(String sessionId, String task, String message) {
-        TaskMemory extracted = extractionService.extract(sessionId, task, message);
-        memoryStore.save(extracted);
+    public MemoryWriteDecision remember(String sessionId, String task, String message) {
+        MemoryExtractionResult extraction = extractionService.extract(sessionId, task, message);
+        if (extraction.decision() == MemoryWriteDecision.SKIP || extraction.memory() == null) {
+            return MemoryWriteDecision.SKIP;
+        }
+        if (isDuplicate(extraction.memory())) {
+            return MemoryWriteDecision.SKIP;
+        }
+        memoryStore.save(extraction.memory());
+        return MemoryWriteDecision.ADD;
     }
 
     public List<String> relevantMemories(String sessionId, String query) {
@@ -44,5 +52,18 @@ public class MemoryService {
 
     public List<TaskMemory> longTermMemories(String sessionId, String query, int limit) {
         return memoryStore.findRelevant(sessionId, query, limit);
+    }
+
+    private boolean isDuplicate(TaskMemory candidate) {
+        String normalizedCandidate = normalize(candidate.memory());
+        if (normalizedCandidate.isBlank()) {
+            return true;
+        }
+        return memoryStore.findRelevant(candidate.sessionId(), normalizedCandidate, 10).stream()
+                .anyMatch(existing -> normalize(existing.memory()).equals(normalizedCandidate));
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
     }
 }

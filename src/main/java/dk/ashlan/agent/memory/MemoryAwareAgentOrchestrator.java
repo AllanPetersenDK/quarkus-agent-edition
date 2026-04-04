@@ -5,6 +5,8 @@ import dk.ashlan.agent.core.AgentRunResult;
 import dk.ashlan.agent.core.ToolConfirmation;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.List;
+
 @ApplicationScoped
 public class MemoryAwareAgentOrchestrator {
     private final AgentOrchestrator orchestrator;
@@ -19,5 +21,9 @@ public class MemoryAwareAgentOrchestrator {
 
     public AgentRunResult resume(String sessionId, ToolConfirmation confirmation) {
         return orchestrator.resume(sessionId, confirmation);
+    }
+
+    public AgentRunResult resume(String sessionId, List<ToolConfirmation> confirmations) {
+        return orchestrator.resume(sessionId, confirmations);
     }
 }

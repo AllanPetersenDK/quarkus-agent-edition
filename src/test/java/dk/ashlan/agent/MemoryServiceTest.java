@@ -2,11 +2,13 @@ package dk.ashlan.agent;
 
 import dk.ashlan.agent.memory.InMemoryTaskMemoryStore;
 import dk.ashlan.agent.memory.MemoryExtractionService;
+import dk.ashlan.agent.memory.MemoryWriteDecision;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MemoryServiceTest {
     @Test
@@ -28,5 +30,15 @@ class MemoryServiceTest {
         memoryService.remember("session-1", "goal", "I also work with Java 21");
 
         assertTrue(memoryService.relevantMemories("session-1", "Copenhagen").get(0).contains("Copenhagen"));
+    }
+
+    @Test
+    void trivialNoiseIsSkippedAndDuplicateFactsAreNotStoredTwice() {
+        MemoryService memoryService = new MemoryService(new SessionManager(), new InMemoryTaskMemoryStore(), new MemoryExtractionService());
+
+        assertEquals(MemoryWriteDecision.SKIP, memoryService.remember("session-1", "goal", "hello"));
+        assertEquals(MemoryWriteDecision.ADD, memoryService.remember("session-1", "goal", "Remember that my favorite database is PostgreSQL."));
+        assertEquals(MemoryWriteDecision.SKIP, memoryService.remember("session-1", "goal", "Remember that my favorite database is PostgreSQL."));
+        assertTrue(memoryService.relevantMemories("session-1", "PostgreSQL").size() == 1);
     }
 }

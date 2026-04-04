@@ -1,6 +1,8 @@
 package dk.ashlan.agent.memory;
 
+import dk.ashlan.agent.core.PendingToolCall;
 import dk.ashlan.agent.llm.LlmMessage;
+import dk.ashlan.agent.llm.LlmToolCall;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -35,11 +37,42 @@ class SessionManagerPersistenceTest {
         SessionManager sessionManager = new SessionManager(store);
         sessionManager.session("session-1").addUserMessage("Hello");
         sessionManager.session("session-1").addAssistantMessage("Hi Ada");
+        sessionManager.session("session-1").addPendingToolCall(new PendingToolCall(
+                "session-1",
+                1,
+                "Hello",
+                new LlmToolCall("confirmable", java.util.Map.of("value", "approved"), "call-1"),
+                "Approve confirmable?"
+        ));
 
         SessionManager restarted = new SessionManager(store);
         assertEquals(2, restarted.session("session-1").messages().size());
         assertEquals("Hello", restarted.session("session-1").messages().get(0).content());
         assertEquals("Hi Ada", restarted.session("session-1").messages().get(1).content());
+        assertEquals(1, restarted.session("session-1").pendingToolCalls().size());
+        assertEquals("call-1", restarted.session("session-1").pendingToolCalls().get(0).toolCall().callId());
+    }
+
+    @Test
+    void clearedPendingToolCallsArePersistedAsCleared() throws Exception {
+        JdbcDataSource dataSource = dataSource();
+        createSchema(dataSource);
+        JdbcSessionStateStore store = new JdbcSessionStateStore(dataSource);
+
+        SessionManager sessionManager = new SessionManager(store);
+        SessionState session = sessionManager.session("session-clear");
+        session.addPendingToolCall(new PendingToolCall(
+                "session-clear",
+                1,
+                "Hello",
+                new LlmToolCall("confirmable", java.util.Map.of("value", "approved"), "call-1"),
+                "Approve confirmable?"
+        ));
+        assertEquals(1, session.pendingToolCalls().size());
+        session.clearPendingToolCalls();
+
+        SessionManager restarted = new SessionManager(store);
+        assertTrue(restarted.session("session-clear").pendingToolCalls().isEmpty());
     }
 
     @Test

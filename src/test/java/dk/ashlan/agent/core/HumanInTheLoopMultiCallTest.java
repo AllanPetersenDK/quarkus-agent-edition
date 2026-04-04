@@ -18,12 +18,11 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class HumanInTheLoopTest {
+class HumanInTheLoopMultiCallTest {
     @Test
-    void pendingToolCallsPauseTheRunUntilApproved() {
+    void multiplePendingCallsCanBeApprovedAndRejectedInOneResume() {
         AtomicInteger toolExecutions = new AtomicInteger();
         ToolRegistry toolRegistry = new ToolRegistry(List.of(new ConfirmableTool(toolExecutions)));
         SessionManager sessionManager = new SessionManager();
@@ -32,9 +31,20 @@ class HumanInTheLoopTest {
         AtomicInteger llmCalls = new AtomicInteger();
         LlmClient llmClient = (messages, registry, context) -> {
             if (llmCalls.getAndIncrement() == 0) {
-                return LlmCompletion.toolCalls(List.of(new LlmToolCall("confirmable", Map.of("value", "approved"), "call-1")));
+                return LlmCompletion.toolCalls(List.of(
+                        new LlmToolCall("confirmable", Map.of("value", "first"), "call-1"),
+                        new LlmToolCall("confirmable", Map.of("value", "second"), "call-2")
+                ));
             }
-            return LlmCompletion.answer("Tool approved and resumed.");
+            boolean sawApprovedResult = messages.stream().anyMatch(message ->
+                    "tool".equals(message.role()) && message.content() != null && message.content().contains("confirmed:second-updated")
+            );
+            boolean sawRejectedResult = messages.stream().anyMatch(message ->
+                    "tool".equals(message.role()) && message.content() != null && message.content().contains("Denied by user.")
+            );
+            return sawApprovedResult && sawRejectedResult
+                    ? LlmCompletion.answer("Processed approved and rejected pending tool calls.")
+                    : LlmCompletion.answer("Missing pending tool call results.");
         };
         AgentOrchestrator orchestrator = new AgentOrchestrator(
                 llmClient,
@@ -47,22 +57,27 @@ class HumanInTheLoopTest {
                 "system prompt"
         );
 
-        AgentRunResult pending = orchestrator.run("Please confirm the tool.", "hil-session");
-
+        AgentRunResult pending = orchestrator.run("Please confirm both tool calls.", "hil-multi");
         assertEquals(StopReason.PENDING_CONFIRMATION, pending.stopReason());
-        assertEquals(0, toolExecutions.get());
-        assertFalse(sessionManager.session("hil-session").pendingToolCalls().isEmpty());
+        assertEquals(2, sessionManager.session("hil-multi").pendingToolCalls().size());
 
-        AgentRunResult resumed = orchestrator.resume("hil-session", ToolConfirmation.approved("call-1", Map.of("value", "approved")));
+        AgentRunResult resumed = orchestrator.resume(
+                "hil-multi",
+                List.of(
+                        ToolConfirmation.approved("call-2", Map.of("value", "second-updated")),
+                        ToolConfirmation.rejected("call-1", "Denied by user.")
+                )
+        );
 
         assertEquals(StopReason.FINAL_ANSWER, resumed.stopReason());
-        assertEquals("Tool approved and resumed.", resumed.finalAnswer());
+        assertEquals("Processed approved and rejected pending tool calls.", resumed.finalAnswer());
         assertEquals(1, toolExecutions.get());
-        assertTrue(sessionManager.session("hil-session").pendingToolCalls().isEmpty());
+        assertTrue(resumed.trace().stream().anyMatch(entry -> entry.contains("pending_approved:confirmable:call-2")));
+        assertTrue(resumed.trace().stream().anyMatch(entry -> entry.contains("pending_rejected:confirmable:call-1")));
     }
 
     @Test
-    void rejectedToolCallsAreReturnedAsExplicitFailures() {
+    void missingApprovalsAreTreatedAsRejectedPendingCalls() {
         AtomicInteger toolExecutions = new AtomicInteger();
         ToolRegistry toolRegistry = new ToolRegistry(List.of(new ConfirmableTool(toolExecutions)));
         SessionManager sessionManager = new SessionManager();
@@ -71,14 +86,20 @@ class HumanInTheLoopTest {
         AtomicInteger llmCalls = new AtomicInteger();
         LlmClient llmClient = (messages, registry, context) -> {
             if (llmCalls.getAndIncrement() == 0) {
-                return LlmCompletion.toolCalls(List.of(new LlmToolCall("confirmable", Map.of("value", "approved"), "call-1")));
+                return LlmCompletion.toolCalls(List.of(
+                        new LlmToolCall("confirmable", Map.of("value", "alpha"), "call-1"),
+                        new LlmToolCall("confirmable", Map.of("value", "beta"), "call-2")
+                ));
             }
-            boolean rejected = messages.stream().anyMatch(message ->
-                    "tool".equals(message.role()) && message.content() != null && message.content().contains("Denied by user.")
+            boolean sawApprovedResult = messages.stream().anyMatch(message ->
+                    "tool".equals(message.role()) && message.content() != null && message.content().contains("confirmed:beta")
             );
-            return rejected
-                    ? LlmCompletion.answer("Tool was denied and the agent continued safely.")
-                    : LlmCompletion.answer("This should not execute.");
+            boolean sawImplicitRejection = messages.stream().anyMatch(message ->
+                    "tool".equals(message.role()) && message.content() != null && message.content().contains("Tool call not approved.")
+            );
+            return sawApprovedResult && sawImplicitRejection
+                    ? LlmCompletion.answer("Processed approved and implicitly rejected calls.")
+                    : LlmCompletion.answer("Missing implicit rejection.");
         };
         AgentOrchestrator orchestrator = new AgentOrchestrator(
                 llmClient,
@@ -91,15 +112,18 @@ class HumanInTheLoopTest {
                 "system prompt"
         );
 
-        AgentRunResult pending = orchestrator.run("Please confirm the tool.", "hil-reject");
+        AgentRunResult pending = orchestrator.run("Please confirm both tool calls.", "hil-multi-implicit");
         assertEquals(StopReason.PENDING_CONFIRMATION, pending.stopReason());
 
-        AgentRunResult resumed = orchestrator.resume("hil-reject", List.of(ToolConfirmation.rejected("call-1", "Denied by user.")));
+        AgentRunResult resumed = orchestrator.resume(
+                "hil-multi-implicit",
+                List.of(ToolConfirmation.approved("call-2", Map.of("value", "beta")))
+        );
 
         assertEquals(StopReason.FINAL_ANSWER, resumed.stopReason());
-        assertTrue(resumed.trace().stream().anyMatch(entry -> entry.contains("pending_rejected")));
-        assertTrue(resumed.trace().stream().anyMatch(entry -> entry.contains("Denied by user")));
-        assertEquals(0, toolExecutions.get());
+        assertEquals("Processed approved and implicitly rejected calls.", resumed.finalAnswer());
+        assertEquals(1, toolExecutions.get());
+        assertTrue(resumed.trace().stream().anyMatch(entry -> entry.contains("pending_rejected:confirmable:call-1")));
     }
 
     private static final class ConfirmableTool extends AbstractTool {
