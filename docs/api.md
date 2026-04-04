@@ -22,13 +22,14 @@ Configured properties:
 ## Swagger Coverage
 
 Swagger now documents the outer runtime and companion seams that are practical to exercise over HTTP.
+For chapters 2-4, keep the distinction clear: chapter 2 is the LLM layer, chapter 3 is the tool system, and chapter 4 is the manual agent loop. Swagger-visible runtime or companion seams should be read as overlays on those chapters, not as replacements for the book core.
 
 Covered in Swagger:
 
-- `POST /api/agent/run` - chapter-4 runtime/basic agent seam
-- `POST /api/agent/step` - chapter-4 ReAct step seam
-- `POST /api/agent/run/structured` - chapter-4 structured-output seam
-- `GET /api/agent/tools` - chapter 3/4 boundary seam for runtime tool discovery
+- `POST /api/agent/run` - chapter-4 manual-agent core seam
+- `POST /api/agent/step` - chapter-4 manual-loop inspection seam
+- `POST /api/agent/run/structured` - chapter-4 structured-output seam around the manual loop
+- `GET /api/agent/tools` - chapter-3 tool-system discovery seam
 - `GET /api/runtime/health` - combined readiness and liveness view
 - `GET /api/runtime/health/ready` - readiness snapshot
 - `GET /api/runtime/health/live` - liveness snapshot
@@ -69,7 +70,7 @@ Not covered in Swagger:
 
 `POST /api/agent/run`
 
-Runtime API: this is the main REST-exposed manual agent loop.
+Runtime API: this is the main REST-exposed manual agent loop and the chapter-4 core seam.
 Same-session calls now replay prior role-aware conversation history, so a session can remember user-provided facts across turns without relying on tool memory.
 
 Request body:
@@ -105,7 +106,7 @@ Field notes:
 
 `POST /api/agent/step`
 
-Chapter-4 ReAct step seam. This runs one manual think/act cycle and returns a structured view of that single step instead of the full loop.
+Chapter-4 inspection seam around the manual loop. This runs one think/act cycle and returns a structured view of that single step instead of the full loop.
 
 Request body:
 
@@ -150,7 +151,7 @@ Response body:
 
 `POST /api/agent/run/structured`
 
-Chapter-4 structured-output seam. This supports one controlled demo schema named `chapter4-answer` and returns a normalized structured answer plus the raw one-step agent result.
+Chapter-4 structured-output seam around the manual loop. This supports one controlled demo schema named `chapter4-answer` and returns a normalized structured answer plus the raw one-step agent result.
 
 Request body:
 
@@ -194,7 +195,7 @@ Response body:
 `GET /api/agent/tools`
 
 Utility/discovery endpoint: this lists the runtime tool registry and does not execute tools.
-The registry now includes chapter-5-style filesystem tools for controlled workspace exploration: `inspect_path`, `unzip_file`, `list_files`, `read_file`, and `read_document_file`. `read_media_file` remains available as a compatibility alias. All filesystem access is read-only, bound to the shared workspace root model used by the code workspace tools, and rejects symlink access.
+The registry is the chapter-3 tool-system seam. It now also includes chapter-5-style filesystem tools for controlled workspace exploration: `inspect_path`, `unzip_file`, `list_files`, `read_file`, and `read_document_file`. `read_media_file` remains available as a compatibility alias. All filesystem access is read-only, bound to the shared workspace root model used by the code workspace tools, and rejects symlink access.
 
 ### Runtime Inspection
 

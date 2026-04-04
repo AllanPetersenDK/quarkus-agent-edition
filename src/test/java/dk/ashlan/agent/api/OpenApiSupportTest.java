@@ -37,9 +37,9 @@ class OpenApiSupportTest {
 
     @Test
     void keyOperationsExposeChapterMappingInSwaggerText() throws Exception {
-        assertOperationContains(AgentResource.class, "runAgent", "Book chapter mapping: cross-cutting runtime seam");
-        assertOperationContains(AgentResource.class, "step", "Book chapter mapping: chapter 4 ReAct step seam");
-        assertOperationContains(AgentResource.class, "runStructured", "Book chapter mapping: chapter 4 structured-output seam");
+        assertOperationContains(AgentResource.class, "runAgent", "Book chapter mapping: chapter 4 manual-agent core seam");
+        assertOperationContains(AgentResource.class, "step", "Book chapter mapping: chapter 4 manual-loop inspection seam");
+        assertOperationContains(AgentResource.class, "runStructured", "Book chapter mapping: chapter 4 structured-output seam around the manual loop");
         assertOperationContains(ToolResource.class, "listTools", "Book chapter mapping: cross-cutting runtime seam");
         assertOperationContains(AdminEvaluationResource.class, "run", "Book chapter: 10");
         assertOperationContains(AdminEvaluationResource.class, "trace", "Book chapter: 10");

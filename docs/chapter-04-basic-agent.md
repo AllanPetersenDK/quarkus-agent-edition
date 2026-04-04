@@ -2,6 +2,7 @@
 
 This chapter maps the Python basic agent loop into the Quarkus core orchestration layer.
 It stays focused on the basic ReAct-style runtime: execution context, the agent loop, tool-calling flow, LLM communication, structured output, and the evaluation/benchmark seam.
+The book-core is the manual loop itself; callbacks, trace inspection, and memory bridging are runtime extensions that sit around the loop rather than redefining it.
 
 ## Python Files
 
@@ -34,7 +35,15 @@ It stays focused on the basic ReAct-style runtime: execution context, the agent 
 - Tool calls are represented as structured content and routed through the runtime tool layer.
 - The Quarkus version keeps the control flow visible rather than hiding it in a large framework.
 - Chapter-04 scope stops at the basic ReAct agent and its evaluation seam; later callback-heavy or session/memory-oriented patterns belong to later chapters.
+- Callbacks are a small runtime extension seam around the loop, not the loop itself.
 - The Swagger-visible `/api/agent/step`, `/api/agent/run/structured`, and `/api/runtime/sessions/{sessionId}/trace` endpoints are companion inspection seams for the chapter-4 runtime only; they do not broaden the chapter boundary into later memory, RAG, or workflow chapters.
+- Memory persistence now hangs off `after_run` as a bridge to chapter 6, which keeps chapter 4 focused on the manual loop while still allowing the runtime to extend cleanly.
+
+## Core / Extension / Companion
+
+- Core: the manual agent loop, tool calling, execution context, and structured output.
+- Runtime seam: callbacks, trace inspection, and session/memory visibility around the loop.
+- Companion extension: the runtime inspection endpoints and any future manual-agent embellishments that keep the loop observable but do not replace it.
 
 ## Demo vs Production
 

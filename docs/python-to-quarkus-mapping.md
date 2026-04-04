@@ -8,11 +8,16 @@ This document maps the Python reference zip from the book to the Quarkus compani
 - Adapted port: the Java class keeps the idea but reshapes it for Quarkus or Java.
 - Quarkus companion extension: the Java class has no direct Python equivalent in the zip and extends the reference implementation.
 
+For chapters 2-4, read direct and adapted ports as the book-core mapping first.
+Entries marked as companion extension or later consumer are Quarkus-specific additions around that core.
+
 ## Mode Model
 
 - Demo: deterministic, chapter-friendly stand-ins that keep the book flow readable.
 - Runtime default: the normal CDI-backed path that the companion app uses when run locally.
 - Production seam: the explicitly isolated integration boundary for external providers, storage, auth, or sandboxing.
+
+For chapters 2-4, runtime default means the normal companion implementation around the book core, not a replacement for it.
 
 ## `chapter_02_llm/`
 
@@ -35,6 +40,7 @@ This document maps the Python reference zip from the book to the Quarkus compani
 - `scratch_agents/agents/tool_calling_agent_ch4_callback.py` -> `src/main/java/dk/ashlan/agent/agents/ToolCallingAgentCh4Callback.java` - Adapted port
 - `scratch_agents/agents/tool_calling_agent_ch4_structured_output.py` -> `src/main/java/dk/ashlan/agent/agents/ToolCallingAgentCh4StructuredOutput.java` - Adapted port
 - `scratch_agents/agents/tool_calling_agent_ch6.py` -> `src/main/java/dk/ashlan/agent/agents/ToolCallingAgentCh6.java` - Adapted port
+- `scratch_agents/agents/*` -> `src/main/java/dk/ashlan/agent/core/callback/*` - Quarkus runtime extension for callbacks and after-run memory bridging
 
 ## `chapter_03_tool_use/`
 
@@ -49,6 +55,7 @@ This document maps the Python reference zip from the book to the Quarkus compani
 - `scratch_agents/tools/decorator.py` -> `src/main/java/dk/ashlan/agent/tools/ToolDecorator.java` - Adapted port
 - `scratch_agents/tools/*.py` -> `src/main/java/dk/ashlan/agent/tools/*` - Adapted port
 - `scratch_agents/tools/function_tool.py` -> `src/main/java/dk/ashlan/agent/tools/FunctionToolAdapter.java` - Adapted port
+- `src/main/java/dk/ashlan/agent/tools/filesystem/*` - Quarkus companion extension and later chapter-5-style consumer of the chapter-3 tool framework
 - `chapter_03_tool_use/*` -> `src/main/java/dk/ashlan/agent/chapters/chapter03/Chapter03Support.java` - Quarkus companion extension
 
 ## `chapter_04_basic_agent/`
@@ -64,6 +71,12 @@ This document maps the Python reference zip from the book to the Quarkus compani
 - `scratch_agents/types/*` -> `src/main/java/dk/ashlan/agent/types/*` - Adapted port
 - `scratch_agents/types/contents.py` -> `src/main/java/dk/ashlan/agent/types/ContentItem.java`, `MessageItem.java`, `ToolCallItem.java`, `ToolResultItem.java` - Adapted port
 - `scratch_agents/types/events.py` -> `src/main/java/dk/ashlan/agent/types/Event.java`, `EventType.java`, `ConversationEvent.java`, `MessageEvent.java`, `ToolCallEvent.java`, `ToolResultEvent.java`, `SystemEvent.java` - Adapted port
+
+## Chapter 2-4 Reading Rule
+
+- Chapter 2: request/response modeling and provider seams. Keep the LLM abstraction as the core and read framework-backed variants as comparison paths.
+- Chapter 3: generic tool abstraction, registry, executor, and adapters. Filesystem/document tools belong to the same framework, but they are later consumers rather than the chapter-3 learning core.
+- Chapter 4: manual agent loop, tool-calling flow, structured output, and inspection seams. Callback orchestration and memory bridging are runtime extensions layered onto that loop.
 
 ## `chapter_06_memory/`
 

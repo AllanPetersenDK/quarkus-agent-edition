@@ -12,6 +12,19 @@ reference implementation.
 - The Python zip structure maps naturally onto CDI beans, REST endpoints, and chapter demos.
 - The repo is built to be understandable, testable, and easy to extend.
 
+## Chapter 2-4 Reading Guide
+
+The manual agent spine in this repo stays close to the book in chapters 2-4:
+
+- Chapter 2 is the LLM layer: request/response modeling and provider seams.
+- Chapter 3 is the tool system: tool abstraction, registry, executor, and adapters.
+- Chapter 4 is the manual agent loop: execution context, tool calling, and structured output.
+
+Later runtime seams are documented as extensions rather than as part of that core learning path:
+
+- Companion or runtime seams add practical HTTP entry points, inspection, tracing, and comparison paths.
+- Chapter 5+ features such as RAG, filesystem exploration, and GAIA build on the core but are not the chapter-2-4 story itself.
+
 ## Project Structure
 
 - `src/main/java/dk/ashlan/agent/chapters/chapter02` Java demos mapped from `chapter_02_llm/`.
@@ -40,7 +53,7 @@ reference implementation.
 
 ## Mode Model
 
-The repo uses three explicit modes so the companion story stays honest:
+The repo uses three explicit modes so the companion story stays honest, especially around chapters 2-4:
 
 | Mode | Meaning | Examples |
 |---|---|---|
@@ -159,6 +172,7 @@ extracts book snippets and rewrites them with Quarkus-focused chapter content.
 
 The repository currently contains a working Quarkus companion implementation with deterministic demo
 components for the learning chapters. It compiles and the test suite is green in the current setup.
+Chapters 2-4 are the stable manual-agent core; later chapter content should be read as extensions on top of that core rather than as a replacement for it.
 `OpenAiLlmClient` is now a real HTTP integration seam for OpenAI Chat Completions, and tool-call
 round-tripping keeps provider `tool_call_id` metadata intact. The demo client still remains the
 default unless `openai.api-key` is configured. A LangChain4j-backed companion client, a LangChain4j

@@ -39,7 +39,7 @@ public class AgentResource {
     @Path("/run")
     @Operation(
             summary = "Run the manual agent loop",
-            description = "Book chapter mapping: cross-cutting runtime seam. REST-exposed manual agent loop that delegates to the manual AgentOrchestrator."
+            description = "Book chapter mapping: chapter 4 manual-agent core seam. REST-exposed manual agent loop that delegates to the manual AgentOrchestrator."
     )
     @RequestBody(
             description = "User message and optional session id for the runtime agent loop.",
@@ -61,7 +61,7 @@ public class AgentResource {
     @Path("/step")
     @Operation(
             summary = "Run one chapter-4 agent step",
-            description = "Book chapter mapping: chapter 4 ReAct step seam. Runs exactly one manual think/act cycle so the assistant message, tool calls, tool results, and step-local trace entries stay inspectable without exposing lower-level runtime internals."
+            description = "Book chapter mapping: chapter 4 manual-loop inspection seam. Runs exactly one think/act cycle so the assistant message, tool calls, tool results, and step-local trace entries stay inspectable without exposing lower-level runtime internals."
     )
     @RequestBody(
             description = "User message and optional session id for a single chapter-4 agent step.",
@@ -83,7 +83,7 @@ public class AgentResource {
     @Path("/run/structured")
     @Operation(
             summary = "Run the chapter-4 structured-output demo",
-            description = "Book chapter mapping: chapter 4 structured-output seam. Runs one manual step and returns a single supported demo schema (`chapter4-answer`) with validation status, while keeping the outer runtime architecture explicit."
+            description = "Book chapter mapping: chapter 4 structured-output seam around the manual loop. Runs one manual step and returns a single supported demo schema (`chapter4-answer`) with validation status, while keeping the outer runtime architecture explicit."
     )
     @RequestBody(
             description = "User message, optional session id, and controlled structured-output mode for the chapter-4 demo seam.",
