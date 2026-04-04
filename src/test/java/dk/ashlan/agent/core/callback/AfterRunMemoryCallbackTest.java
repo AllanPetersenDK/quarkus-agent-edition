@@ -107,10 +107,10 @@ class AfterRunMemoryCallbackTest {
                 List.of("iteration:1", "answer: Got it. Your favorite database is PostgreSQL, and you prefer concise answers.")
         );
         AgentRunResult nearDuplicate = new AgentRunResult(
-                "Understood. Your favorite database is PostgreSQL, and you prefer concise answers.",
+                "Got it. You like PostgreSQL best and prefer short answers.",
                 StopReason.FINAL_ANSWER,
                 2,
-                List.of("iteration:1", "answer: Understood. Your favorite database is PostgreSQL, and you prefer concise answers.")
+                List.of("iteration:1", "answer: Got it. You like PostgreSQL best and prefer short answers.")
         );
 
         callback.afterRun(new AfterRunContext(
@@ -121,7 +121,7 @@ class AfterRunMemoryCallbackTest {
         ));
         callback.afterRun(new AfterRunContext(
                 "session-2",
-                "Please remember that my favorite database is PostgreSQL and I prefer concise answers.",
+                "Please remember that I like PostgreSQL best and prefer short answers.",
                 nearDuplicate,
                 nearDuplicate.trace()
         ));

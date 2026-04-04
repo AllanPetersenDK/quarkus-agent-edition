@@ -3,6 +3,7 @@ package dk.ashlan.agent.memory;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public record TaskMemory(
@@ -15,6 +16,12 @@ public record TaskMemory(
         Boolean correct,
         String errorAnalysis
 ) {
+    private static final Set<String> TOKEN_STOPWORDS = Set.of(
+            "a", "an", "and", "are", "be", "best", "for", "from", "got", "have", "i", "in", "is",
+            "it", "like", "me", "my", "of", "on", "or", "please", "that", "the", "to", "up", "us",
+            "we", "what", "when", "where", "which", "who", "why", "with", "you", "your"
+    );
+
     public TaskMemory(String sessionId, String task, String memory) {
         this(sessionId, task, memory, null, null, null, null, null);
     }
@@ -74,6 +81,8 @@ public record TaskMemory(
             return "";
         }
         String normalized = value.trim().toLowerCase(Locale.ROOT);
+        normalized = normalized.replaceAll("\\blike\\s+best\\b", "favorite");
+        normalized = normalized.replaceAll("\\bshort\\s+answers?\\b", "concise answers");
         normalized = normalized.replace("=>", " ");
         normalized = normalized.replaceAll("[^\\p{IsAlphabetic}\\p{IsDigit}]+", " ");
         return normalized.replaceAll("\\s+", " ").trim();
@@ -86,6 +95,7 @@ public record TaskMemory(
         }
         return Arrays.stream(normalized.split(" "))
                 .filter(token -> token.length() >= 3)
+                .filter(token -> !TOKEN_STOPWORDS.contains(token))
                 .distinct()
                 .toList();
     }

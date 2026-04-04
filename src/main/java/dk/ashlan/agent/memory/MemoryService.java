@@ -15,6 +15,7 @@ import java.util.List;
 @ApplicationScoped
 public class MemoryService {
     private static final String EPHEMERAL_SESSION_PREFIX = "ephemeral-";
+    private static final double NEAR_DUPLICATE_OVERLAP_THRESHOLD = 0.75d;
     private final TaskMemoryStore memoryStore;
     private final MemoryExtractionService extractionService;
 
@@ -71,7 +72,7 @@ public class MemoryService {
         return memoryStore.findRelevant(candidate.sessionId(), candidateKey, 25).stream()
                 .anyMatch(existing -> existing != null
                         && (existing.structuredDedupKey().equals(candidateKey)
-                        || tokenOverlap(existing, candidate) >= 0.85d));
+                        || tokenOverlap(existing, candidate) >= NEAR_DUPLICATE_OVERLAP_THRESHOLD));
     }
 
     private double tokenOverlap(TaskMemory first, TaskMemory second) {
