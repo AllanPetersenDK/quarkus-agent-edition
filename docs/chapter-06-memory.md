@@ -41,6 +41,8 @@ This chapter maps the Python memory and session model into Java services and str
 - Strategy classes keep the architecture close to the Python reference.
 - `SessionState` is the mutable per-session core, while `dk.ashlan.agent.sessions.Session` is the companion runtime-facing session object.
 - The chapter demos are intentionally tiny and use seeded in-memory data so the memory behaviors remain easy to observe.
+- `AgentOrchestrator` now exposes a small callback seam, and the canonical runtime bridge into memory persistence lives in `after_run` instead of the core tool loop.
+- `MemoryAwareAgentOrchestrator` remains as a thin chapter-6 façade, but the actual memory persistence hook is now callback-driven.
 
 ## Demo vs Production
 

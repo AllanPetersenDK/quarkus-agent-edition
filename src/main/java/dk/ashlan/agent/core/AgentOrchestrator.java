@@ -9,6 +9,7 @@ import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
 import dk.ashlan.agent.memory.SessionState;
 import dk.ashlan.agent.memory.SessionTraceStore;
+import dk.ashlan.agent.core.callback.AgentCallback;
 import dk.ashlan.agent.tools.JsonToolResult;
 import dk.ashlan.agent.tools.ToolExecutor;
 import dk.ashlan.agent.tools.ToolRegistry;
@@ -21,6 +22,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +33,7 @@ public class AgentOrchestrator implements AgentRunner {
     private final ToolExecutor toolExecutor;
     private final MemoryService memoryService;
     private final SessionManager sessionManager;
+    private final List<AgentCallback> callbacks;
     private final int maxIterations;
     private final String systemPrompt;
     @Inject
@@ -45,11 +48,12 @@ public class AgentOrchestrator implements AgentRunner {
             ToolExecutor toolExecutor,
             MemoryService memoryService,
             SessionManager sessionManager,
+            Instance<AgentCallback> callbacks,
             @ConfigProperty(name = "agent.max-iterations") int maxIterations,
             @ConfigProperty(name = "agent.system-prompt") String systemPrompt,
             Config config
     ) {
-        this(selectClient(llmClients, config), toolRegistry, toolExecutor, memoryService, sessionManager, maxIterations, systemPrompt);
+        this(selectClient(llmClients, config), toolRegistry, toolExecutor, memoryService, sessionManager, resolveCallbacks(callbacks), maxIterations, systemPrompt);
     }
 
     public AgentOrchestrator(
@@ -60,7 +64,7 @@ public class AgentOrchestrator implements AgentRunner {
             int maxIterations,
             String systemPrompt
     ) {
-        this(llmClient, toolRegistry, toolExecutor, memoryService, null, maxIterations, systemPrompt);
+        this(llmClient, toolRegistry, toolExecutor, memoryService, null, List.of(), maxIterations, systemPrompt);
     }
 
     public AgentOrchestrator(
@@ -72,11 +76,25 @@ public class AgentOrchestrator implements AgentRunner {
             int maxIterations,
             String systemPrompt
     ) {
+        this(llmClient, toolRegistry, toolExecutor, memoryService, sessionManager, List.of(), maxIterations, systemPrompt);
+    }
+
+    public AgentOrchestrator(
+            LlmClient llmClient,
+            ToolRegistry toolRegistry,
+            ToolExecutor toolExecutor,
+            MemoryService memoryService,
+            SessionManager sessionManager,
+            List<AgentCallback> callbacks,
+            int maxIterations,
+            String systemPrompt
+    ) {
         this.llmClient = llmClient;
         this.toolRegistry = toolRegistry;
         this.toolExecutor = toolExecutor;
         this.memoryService = memoryService;
         this.sessionManager = sessionManager;
+        this.callbacks = callbacks == null ? List.of() : List.copyOf(sortCallbacks(callbacks));
         this.maxIterations = maxIterations;
         this.systemPrompt = systemPrompt;
     }
@@ -120,7 +138,9 @@ public class AgentOrchestrator implements AgentRunner {
         }
         StopReason stopReason = context.isFinalAnswer() ? StopReason.FINAL_ANSWER : StopReason.MAX_ITERATIONS;
         recordAgentRunMetrics(stopReason, iterations, System.nanoTime() - startedAt);
-        return new AgentRunResult(context.getFinalAnswer(), stopReason, Math.min(iterations + 1, maxIterations), trace);
+        AgentRunResult result = new AgentRunResult(context.getFinalAnswer(), stopReason, Math.min(iterations + 1, maxIterations), trace);
+        fireAfterRun(context, result);
+        return result;
     }
 
     public AgentStepResult step(String message, String sessionId) {
@@ -147,28 +167,44 @@ public class AgentOrchestrator implements AgentRunner {
         trace.add("iteration:" + stepNumber);
         traceEntries.add(new AgentTraceEntry("step", "iteration:" + stepNumber));
 
+        fireBeforeLlm(context, messages, stepNumber);
         LlmCompletion completion = llmClient.complete(messages, toolRegistry, context);
+        fireAfterLlm(context, messages, completion, stepNumber);
         List<LlmToolCall> toolCalls = completion.toolCalls() == null ? List.of() : List.copyOf(completion.toolCalls());
         List<JsonToolResult> toolResults = new ArrayList<>();
         if (!toolCalls.isEmpty()) {
             context.addAssistantToolCalls(toolCalls);
             session.addAssistantToolCalls(toolCalls);
             for (LlmToolCall toolCall : toolCalls) {
+                if (!fireBeforeTool(context, toolCall, stepNumber)) {
+                    JsonToolResult blocked = JsonToolResult.failure(toolCall.toolName(), "Tool blocked by callback: " + toolCall.toolName());
+                    JsonToolResult finalBlocked = fireAfterTool(context, toolCall, blocked, stepNumber);
+                    toolResults.add(finalBlocked);
+                    if (toolCall.callId() == null || toolCall.callId().isBlank()) {
+                        context.addToolMessage(toolCall.toolName(), finalBlocked.output());
+                        session.addToolMessage(toolCall.toolName(), finalBlocked.output());
+                    } else {
+                        context.addToolMessage(toolCall.toolName(), toolCall.callId(), finalBlocked.output());
+                        session.addToolMessage(toolCall.toolName(), toolCall.callId(), finalBlocked.output());
+                    }
+                    trace.add("tool:" + toolCall.toolName() + ":" + finalBlocked.output());
+                    traceEntries.add(new AgentTraceEntry("tool-call", toolCall.toolName()));
+                    traceEntries.add(new AgentTraceEntry("tool-result", finalBlocked.output()));
+                    continue;
+                }
                 JsonToolResult result = toolExecutor.execute(toolCall.toolName(), toolCall.arguments());
-                toolResults.add(result);
+                JsonToolResult adjustedResult = fireAfterTool(context, toolCall, result, stepNumber);
+                toolResults.add(adjustedResult);
                 if (toolCall.callId() == null || toolCall.callId().isBlank()) {
-                    context.addToolMessage(toolCall.toolName(), result.output());
-                    session.addToolMessage(toolCall.toolName(), result.output());
+                    context.addToolMessage(toolCall.toolName(), adjustedResult.output());
+                    session.addToolMessage(toolCall.toolName(), adjustedResult.output());
                 } else {
-                    context.addToolMessage(toolCall.toolName(), toolCall.callId(), result.output());
-                    session.addToolMessage(toolCall.toolName(), toolCall.callId(), result.output());
+                    context.addToolMessage(toolCall.toolName(), toolCall.callId(), adjustedResult.output());
+                    session.addToolMessage(toolCall.toolName(), toolCall.callId(), adjustedResult.output());
                 }
-                trace.add("tool:" + toolCall.toolName() + ":" + result.output());
+                trace.add("tool:" + toolCall.toolName() + ":" + adjustedResult.output());
                 traceEntries.add(new AgentTraceEntry("tool-call", toolCall.toolName()));
-                traceEntries.add(new AgentTraceEntry("tool-result", result.output()));
-                if (result.success() && memoryService != null) {
-                    memoryService.remember(context.getSessionId(), context.getInput(), result.output());
-                }
+                traceEntries.add(new AgentTraceEntry("tool-result", adjustedResult.output()));
             }
         }
 
@@ -202,6 +238,63 @@ public class AgentOrchestrator implements AgentRunner {
         return new StepExecution(stepResult, List.copyOf(trace));
     }
 
+    private void fireBeforeLlm(ExecutionContext context, List<LlmMessage> messages, int stepNumber) {
+        if (callbacks.isEmpty()) {
+            return;
+        }
+        BeforeLlmContext callbackContext = new BeforeLlmContext(context.getSessionId(), stepNumber, List.copyOf(messages));
+        for (AgentCallback callback : callbacks) {
+            callback.beforeLlm(callbackContext);
+        }
+    }
+
+    private void fireAfterLlm(ExecutionContext context, List<LlmMessage> messages, LlmCompletion completion, int stepNumber) {
+        if (callbacks.isEmpty()) {
+            return;
+        }
+        AfterLlmContext callbackContext = new AfterLlmContext(context.getSessionId(), stepNumber, List.copyOf(messages), completion);
+        for (AgentCallback callback : callbacks) {
+            callback.afterLlm(callbackContext);
+        }
+    }
+
+    private boolean fireBeforeTool(ExecutionContext context, LlmToolCall toolCall, int stepNumber) {
+        if (callbacks.isEmpty()) {
+            return true;
+        }
+        BeforeToolContext callbackContext = new BeforeToolContext(context.getSessionId(), stepNumber, toolCall);
+        for (AgentCallback callback : callbacks) {
+            if (!callback.beforeTool(callbackContext)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private JsonToolResult fireAfterTool(ExecutionContext context, LlmToolCall toolCall, JsonToolResult toolResult, int stepNumber) {
+        if (callbacks.isEmpty()) {
+            return toolResult;
+        }
+        JsonToolResult current = toolResult;
+        for (AgentCallback callback : callbacks) {
+            JsonToolResult adjusted = callback.afterTool(new AfterToolContext(context.getSessionId(), stepNumber, toolCall, current));
+            if (adjusted != null) {
+                current = adjusted;
+            }
+        }
+        return current;
+    }
+
+    private void fireAfterRun(ExecutionContext context, AgentRunResult result) {
+        if (callbacks.isEmpty()) {
+            return;
+        }
+        AfterRunContext callbackContext = new AfterRunContext(context.getSessionId(), context.getInput(), result);
+        for (AgentCallback callback : callbacks) {
+            callback.afterRun(callbackContext);
+        }
+    }
+
     private void recordAgentRunMetrics(StopReason stopReason, int iterations, long elapsedNanos) {
         if (meterRegistry == null) {
             return;
@@ -231,6 +324,29 @@ public class AgentOrchestrator implements AgentRunner {
             return new SessionState(sessionId);
         }
         return sessionManager.session(sessionId);
+    }
+
+    private static List<AgentCallback> resolveCallbacks(Instance<AgentCallback> callbacks) {
+        if (callbacks == null) {
+            return List.of();
+        }
+        List<AgentCallback> resolved = new ArrayList<>();
+        for (AgentCallback callback : callbacks) {
+            resolved.add(callback);
+        }
+        return sortCallbacks(resolved);
+    }
+
+    private static List<AgentCallback> sortCallbacks(List<AgentCallback> callbacks) {
+        return callbacks.stream()
+                .sorted(Comparator.comparingInt(AgentOrchestrator::priorityOf)
+                        .thenComparing(callback -> callback.getClass().getName()))
+                .toList();
+    }
+
+    private static int priorityOf(AgentCallback callback) {
+        jakarta.annotation.Priority priority = callback.getClass().getAnnotation(jakarta.annotation.Priority.class);
+        return priority == null ? 0 : priority.value();
     }
 
     private record StepExecution(AgentStepResult stepResult, List<String> flatTrace) {

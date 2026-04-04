@@ -167,6 +167,8 @@ also persists chunk text, metadata, and embeddings to H2 through `JdbcVectorStor
 demos still use explicit in-memory stores so the learning flow stays visible.
 Quarkus CDI resolves the JDBC-backed persistence beans in runtime; the in-memory stores are the
 explicit default/manual paths.
+`AgentOrchestrator` also has a small callback seam now, with `after_run` acting as the bridge into
+chapter-6 memory so the core loop stays simple while memory/persistence hooks remain extensible.
 
 To enable the real OpenAI integrations locally, set the standard environment variable:
 
