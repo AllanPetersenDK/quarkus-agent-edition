@@ -41,7 +41,10 @@ public class RecallMemoryTool extends AbstractTool {
 
     private String format(TaskMemory memory) {
         StringBuilder builder = new StringBuilder();
-        builder.append("Problem: ").append(firstNonBlank(memory.problem(), memory.task()));
+        builder.append("Problem: ").append(firstNonBlank(memory.task(), memory.problem()));
+        if (memory.taskSummary() != null && !memory.taskSummary().isBlank()) {
+            builder.append(" | Summary: ").append(memory.taskSummary());
+        }
         if (memory.approach() != null && !memory.approach().isBlank()) {
             builder.append(" | Approach: ").append(memory.approach());
         }

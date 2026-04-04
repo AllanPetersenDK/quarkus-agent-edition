@@ -4,7 +4,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Cross-session memory service.
@@ -55,15 +54,23 @@ public class MemoryService {
     }
 
     private boolean isDuplicate(TaskMemory candidate) {
-        String normalizedCandidate = normalize(candidate.memory());
-        if (normalizedCandidate.isBlank()) {
+        String candidateKey = candidate.dedupKey();
+        if (candidateKey.isBlank()) {
             return true;
         }
-        return memoryStore.findRelevant(candidate.sessionId(), normalizedCandidate, 10).stream()
-                .anyMatch(existing -> normalize(existing.memory()).equals(normalizedCandidate));
+        return memoryStore.findRelevant(candidate.sessionId(), candidate.dedupKey(), 10).stream()
+                .anyMatch(existing -> existing != null
+                        && (existing.dedupKey().equals(candidateKey)
+                        || tokenOverlap(existing, candidate) >= 0.9d));
     }
 
-    private String normalize(String value) {
-        return value == null ? "" : value.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+    private double tokenOverlap(TaskMemory first, TaskMemory second) {
+        List<String> firstTokens = first.dedupTokens();
+        List<String> secondTokens = second.dedupTokens();
+        if (firstTokens.isEmpty() || secondTokens.isEmpty()) {
+            return 0.0d;
+        }
+        long matches = secondTokens.stream().filter(firstTokens::contains).count();
+        return (double) matches / (double) Math.max(firstTokens.size(), secondTokens.size());
     }
 }

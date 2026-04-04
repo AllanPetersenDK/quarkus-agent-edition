@@ -27,7 +27,8 @@
 - The Python reference zip remains the source-of-truth for chapter progression and file-level mapping.
 - Quarkus-native modules are documented separately as companion extensions.
 - Chapter 2 is mature as the LLM foundation, chapter 3 is mature as the generic tool system, and chapter 4 is mature as the manual agent loop; later chapters should be read as extensions on top of that core rather than as part of the core loop itself.
-- Chapter 6 is now the next active memory track: context optimization, session continuity, persisted pause/resume, the small Swagger-visible resume seam, and compact structured after-run memory are the current development focus.
+- Chapter 6 is now the next active memory track: Pattern 1 request-time context optimization, Pattern 2 session continuity, and Pattern 3 structured long-term memory with ranked cross-session retrieval are the current development focus.
+- The memory story is companion/runtime-grade rather than a new platform: explicit retrieval tools and auto-injection coexist, and after-run persistence remains the canonical write bridge.
 - Runtime defaults now use H2-backed persistence for session state and RAG chunks, while the chapter demos still lean on deterministic in-memory stand-ins.
 - Demo, runtime default, and production seam are treated as separate modes in the companion docs so placeholder code is not confused with the normal runtime path.
 - The repo currently covers code, multi-agent, eval, MCP, and LangChain4j comparison seams, but it does not claim browser automation or a full auth story yet.

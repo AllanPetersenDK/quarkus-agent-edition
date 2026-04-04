@@ -4,11 +4,11 @@ This chapter maps the Python memory and session model into Java services and str
 
 The current Quarkus implementation now treats chapter 6 as the next active chapter track:
 
-- conversation history stays in the execution/session layer
-- session state keeps multi-turn continuity
-- `beforeLlm` context optimization trims the active request projection
+- Pattern 1 is request-time context optimization: `beforeLlm` trims the active request projection, but the full execution history stays intact
+- Pattern 2 is session continuity: `SessionManager` and `SessionState` keep multi-turn state separate from memory
+- Pattern 3 is long-term memory: compact problem-solving records are written after a run and retrieved across sessions with lightweight ranking
 - `after_run` is the canonical bridge into compact memory persistence
-- explicit memory search remains a tool, while `recall-memory` is the small explicit retrieval alias and auto-injection is a runtime convenience
+- explicit memory search remains a tool, while `conversation-search` and `recall-memory` are the visible retrieval seams and auto-injection is a runtime convenience
 - pause/resume for confirmation tools is an internal agent feature, not a callback trick, and pending tool calls are persisted in session state
 - `POST /api/runtime/sessions/{sessionId}/resume` is the small Swagger-visible pause/resume seam, and `confirmation-demo` is the tiny approval-gated demo tool used to exercise it
 - `POST /api/agent/run` also accepts `toolConfirmations` for the same chapter-6 resume bridge, so the book-style pause/resume demo can stay close to the manual agent surface
@@ -55,7 +55,7 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - Conversation history: the live `ExecutionContext` / session message stream that preserves the full run history.
 - Session state: the persisted multi-turn state tracked by `SessionManager` and the chapter-6 `Session` demos.
 - Short-term memory: `SlidingWindowStrategy`, `SummarizationStrategy`, and the `beforeLlm` context optimizer that project a smaller request without deleting the ground truth.
-- Long-term memory: `MemoryService`, `ConversationSearchTool`, `RecallMemoryTool`, and the cross-session demo managers.
+- Long-term memory: `MemoryService`, `ConversationSearchTool`, `RecallMemoryTool`, and the cross-session demo managers. Retrieval is ranked using the structured record fields, so the visible tool path feels more companion/runtime-grade than a raw string dump.
 - Bridge: `after_run` persists a compact memory signal after a run completes.
 
 ## Design Notes
@@ -64,7 +64,7 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - Pending tool confirmations are part of that persisted session state, so pause/resume survives reloads too.
 - The no-arg memory session path now uses an explicit in-memory store instead of a null-based fallback, which keeps the dev/test path clear.
 - CDI runtime still resolves the JDBC-backed store, while the in-memory store is only the explicit default path for manual construction.
-- Cross-session memory is split from per-session state.
+- Cross-session memory is split from per-session state, and retrieval does not depend on session continuity.
 - Strategy classes keep the architecture close to the Python reference.
 - `SessionState` is the mutable per-session core, while `dk.ashlan.agent.sessions.Session` is the companion runtime-facing session object.
 - The chapter demos are intentionally tiny and use seeded in-memory data so the memory behaviors remain easy to observe.
@@ -73,7 +73,7 @@ The current Quarkus implementation now treats chapter 6 as the next active chapt
 - `ToolDefinition.requiresConfirmation()` plus `PendingToolCall` and `ToolConfirmation` form the small pause/resume bridge for confirmation-gated tools.
 - `MemoryAwareAgentOrchestrator` remains as a thin chapter-6 façade, but the actual memory persistence hook is now callback-driven.
 - `ConversationSearchTool` and `RecallMemoryTool` are the explicit memory retrieval tools, while automatic memory injection stays a small convenience inside the request builder.
-- Long-term memory is stored as compact problem-solving records with `taskSummary`, `approach`, `finalAnswer`, and small correctness/error fields when they are available.
+- Long-term memory is stored as compact problem-solving records with `taskSummary`, `approach`, `finalAnswer`, and small correctness/error fields when they are available, and retrieval ranks those records using the structured fields rather than the raw memory string alone.
 - `ConfirmationDemoTool` is a chapter-6 demo tool only; it exists to make the pause/resume flow visible without turning approval gating into a broad runtime policy.
 
 ## Demo vs Production

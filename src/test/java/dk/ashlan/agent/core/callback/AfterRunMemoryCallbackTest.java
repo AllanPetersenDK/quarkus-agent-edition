@@ -43,8 +43,11 @@ class AfterRunMemoryCallbackTest {
 
         TaskMemory stored = memoryService.longTermMemories("session-1", "PostgreSQL", 1).get(0);
         assertTrue(stored.approach().contains("explicit"));
+        assertTrue(stored.task().contains("Remember that my favorite database is PostgreSQL."));
         assertTrue(stored.result().contains("PostgreSQL"));
         assertTrue(memoryService.relevantMemories("session-1", "PostgreSQL").stream()
-                .anyMatch(memory -> memory.contains("trace:")));
+                .anyMatch(memory -> memory.contains("PostgreSQL")));
+        assertTrue(memoryService.relevantMemories("session-1", "PostgreSQL").stream()
+                .noneMatch(memory -> memory.contains("trace:")));
     }
 }

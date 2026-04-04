@@ -23,66 +23,68 @@ public class MemoryExtractionService {
     private static final Pattern DANISH_WORK_PATTERN = Pattern.compile("(?i)\\bjeg arbejder som\\s+(.+?)(?:,|\\.|\\bog\\b|$)");
 
     public MemoryExtractionResult extract(String sessionId, String task, String message) {
-        String normalized = normalize(message);
-        if (normalized.isBlank()) {
+        String normalizedMessage = normalize(message);
+        String normalizedTask = normalize(task);
+        if (normalizedMessage.isBlank() && normalizedTask.isBlank()) {
             return MemoryExtractionResult.skip("blank");
         }
-        if (normalized.length() < 16 && NOISE.contains(normalized.toLowerCase(Locale.ROOT))) {
+        if (normalizedMessage.length() < 16 && NOISE.contains(normalizedMessage.toLowerCase(Locale.ROOT))) {
             return MemoryExtractionResult.skip("generic-noise");
         }
-        if (!SUMMARY_PATTERN.matcher(normalized).find()) {
-            if (DANISH_NAME_PATTERN.matcher(normalized).find() || DANISH_WORK_PATTERN.matcher(normalized).find()) {
-                return extractDanishProfile(sessionId, task, normalized);
+        if (!SUMMARY_PATTERN.matcher(normalizedMessage).find() && !SUMMARY_PATTERN.matcher(normalizedTask).find()) {
+            if (DANISH_NAME_PATTERN.matcher(normalizedMessage).find() || DANISH_WORK_PATTERN.matcher(normalizedMessage).find()) {
+                return extractDanishProfile(sessionId, task, normalizedMessage);
             }
             return MemoryExtractionResult.skip("no-memory-signal");
         }
 
-        String lowered = normalized.toLowerCase(Locale.ROOT);
-        if (lowered.contains("mit navn er ") || lowered.contains("jeg arbejder som ")) {
-            MemoryExtractionResult danishProfile = extractDanishProfile(sessionId, task, normalized);
+        String loweredMessage = normalizedMessage.toLowerCase(Locale.ROOT);
+        String loweredTask = normalizedTask.toLowerCase(Locale.ROOT);
+        if (containsMarker(loweredMessage, loweredTask, "mit navn er ") || containsMarker(loweredMessage, loweredTask, "jeg arbejder som ")) {
+            MemoryExtractionResult danishProfile = extractDanishProfile(sessionId, task, firstSource(normalizedMessage, normalizedTask, "mit navn er ", "jeg arbejder som "));
             if (danishProfile.decision() == MemoryWriteDecision.ADD) {
                 return danishProfile;
             }
         }
-        if (lowered.contains("my name is ")) {
-            String value = extractTail(normalized, lowered, "my name is ");
+        if (containsMarker(loweredMessage, loweredTask, "my name is ")) {
+            String value = stripTrace(extractTailFromEither(normalizedMessage, normalizedTask, "my name is "));
             return MemoryExtractionResult.add(structured(sessionId, task, "User name: " + value, "name", "name disclosure", value, null, null), "name");
         }
-        if (lowered.contains("i live in ")) {
-            String value = extractTail(normalized, lowered, "i live in ");
+        if (containsMarker(loweredMessage, loweredTask, "i live in ")) {
+            String value = stripTrace(extractTailFromEither(normalizedMessage, normalizedTask, "i live in "));
             return MemoryExtractionResult.add(structured(sessionId, task, "User location: " + value, "location", "location disclosure", value, null, null), "location");
         }
-        if (lowered.contains("remember that ")) {
-            String value = extractTail(normalized, lowered, "remember that ");
-            return MemoryExtractionResult.add(structured(sessionId, task, value, "remember", "explicit remember instruction", value, null, null), "remember");
+        if (containsMarker(loweredMessage, loweredTask, "remember that ")) {
+            String value = stripTrace(extractTailFromEither(normalizedMessage, normalizedTask, "remember that "));
+            return MemoryExtractionResult.add(structured(sessionId, task, "User memory signal: " + value, "remember", "explicit remember instruction", value, null, null), "remember");
         }
-        if (lowered.contains("my favorite ")) {
-            String value = extractTail(normalized, lowered, "my favorite ");
+        if (containsMarker(loweredMessage, loweredTask, "my favorite ")) {
+            String value = stripTrace(extractTailFromEither(normalizedMessage, normalizedTask, "my favorite "));
             return MemoryExtractionResult.add(structured(sessionId, task, "User preference: " + value, "preference", "preference disclosure", value, null, null), "preference");
         }
-        if (lowered.contains("i prefer ")) {
-            String value = extractTail(normalized, lowered, "i prefer ");
+        if (containsMarker(loweredMessage, loweredTask, "i prefer ")) {
+            String value = stripTrace(extractTailFromEither(normalizedMessage, normalizedTask, "i prefer "));
             return MemoryExtractionResult.add(structured(sessionId, task, "User preference: " + value, "preference", "preference disclosure", value, null, null), "preference");
         }
-        if (lowered.contains("i work with ")) {
-            String value = extractTail(normalized, lowered, "i work with ");
+        if (containsMarker(loweredMessage, loweredTask, "i work with ")) {
+            String value = stripTrace(extractTailFromEither(normalizedMessage, normalizedTask, "i work with "));
             return MemoryExtractionResult.add(structured(sessionId, task, "User work context: " + value, "work-context", "work context disclosure", value, null, null), "work-context");
         }
-        if (lowered.contains("i use ")) {
-            String value = extractTail(normalized, lowered, "i use ");
+        if (containsMarker(loweredMessage, loweredTask, "i use ")) {
+            String value = stripTrace(extractTailFromEither(normalizedMessage, normalizedTask, "i use "));
             return MemoryExtractionResult.add(structured(sessionId, task, "User tool preference: " + value, "tool-preference", "tool preference disclosure", value, null, null), "tool-preference");
         }
-        if (lowered.contains("i like ")) {
-            String value = extractTail(normalized, lowered, "i like ");
+        if (containsMarker(loweredMessage, loweredTask, "i like ")) {
+            String value = stripTrace(extractTailFromEither(normalizedMessage, normalizedTask, "i like "));
             return MemoryExtractionResult.add(structured(sessionId, task, "User interest: " + value, "interest", "interest disclosure", value, null, null), "interest");
         }
-        if (lowered.contains("i enjoy ")) {
-            String value = extractTail(normalized, lowered, "i enjoy ");
+        if (containsMarker(loweredMessage, loweredTask, "i enjoy ")) {
+            String value = stripTrace(extractTailFromEither(normalizedMessage, normalizedTask, "i enjoy "));
             return MemoryExtractionResult.add(structured(sessionId, task, "User interest: " + value, "interest", "interest disclosure", value, null, null), "interest");
         }
-        if (lowered.contains("the answer is ") || lowered.contains("the result is ")) {
-            String value = extractAnswer(normalized);
-            return MemoryExtractionResult.add(structured(sessionId, task, compactAnswer(normalized), "answer", "answer declaration", value, null, null), "answer");
+        if (loweredMessage.contains("the answer is ") || loweredMessage.contains("the result is ")) {
+            String value = extractAnswer(normalizedMessage);
+            return MemoryExtractionResult.add(structured(sessionId, task, compactAnswer(normalizedMessage), "answer", "answer declaration", value, null, null), "answer");
         }
         return MemoryExtractionResult.skip("unsupported-pattern");
     }
@@ -149,6 +151,46 @@ public class MemoryExtractionService {
             return "";
         }
         return message.substring(index + marker.length()).trim();
+    }
+
+    private String extractTailFromEither(String first, String second, String marker) {
+        String loweredFirst = first == null ? "" : first.toLowerCase(Locale.ROOT);
+        if (loweredFirst.contains(marker)) {
+            return extractTail(first, loweredFirst, marker);
+        }
+        String loweredSecond = second == null ? "" : second.toLowerCase(Locale.ROOT);
+        if (loweredSecond.contains(marker)) {
+            return extractTail(second, loweredSecond, marker);
+        }
+        return "";
+    }
+
+    private boolean containsMarker(String first, String second, String marker) {
+        return (first != null && first.contains(marker)) || (second != null && second.contains(marker));
+    }
+
+    private String firstSource(String first, String second, String... markers) {
+        for (String marker : markers) {
+            if (first != null && first.toLowerCase(Locale.ROOT).contains(marker)) {
+                return first;
+            }
+            if (second != null && second.toLowerCase(Locale.ROOT).contains(marker)) {
+                return second;
+            }
+        }
+        return first;
+    }
+
+    private String stripTrace(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        String normalized = value.trim();
+        int traceIndex = normalized.toLowerCase(Locale.ROOT).indexOf(" | trace:");
+        if (traceIndex >= 0) {
+            normalized = normalized.substring(0, traceIndex).trim();
+        }
+        return normalized;
     }
 
     private String compactAnswer(String message) {
