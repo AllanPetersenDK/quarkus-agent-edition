@@ -38,6 +38,18 @@ class OfficeDocumentReadTest {
         assertContains(service.readDocumentFile("docs/sample.ipynb"), "Hello from IPYNB");
     }
 
+    @Test
+    void corruptOfficeDocumentsFailWithClearExtractionStatus() throws Exception {
+        DocumentReadService service = service();
+        writePlainTextAs("docs/broken.docx", "not-a-docx");
+
+        DocumentReadResult result = service.readDocumentFile("docs/broken.docx");
+
+        assertEquals("TEXT_EXTRACTION_FAILED", result.status());
+        assertTrue(result.traceEvents().contains("attachment:text-extraction-failed"));
+        assertTrue(result.extractionNote().contains("failed"));
+    }
+
     private void assertContains(DocumentReadResult result, String expected) {
         assertEquals("TEXT_EXTRACTED", result.status());
         assertTrue(result.success());
@@ -104,6 +116,12 @@ class OfficeDocumentReadTest {
                   "nbformat_minor": 5
                 }
                 """.formatted(text));
+    }
+
+    private void writePlainTextAs(String relativePath, String text) throws Exception {
+        Path file = tempDir.resolve("workspace").resolve(relativePath);
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, text);
     }
 
     private GaiaAudioTranscriptionService audioTranscriptionService() {

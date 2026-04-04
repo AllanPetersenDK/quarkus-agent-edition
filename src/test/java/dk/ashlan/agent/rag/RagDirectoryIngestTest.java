@@ -4,9 +4,17 @@ import dk.ashlan.agent.code.WorkspaceService;
 import dk.ashlan.agent.document.DocumentReadService;
 import dk.ashlan.agent.eval.gaia.GaiaAttachmentExtractionService;
 import dk.ashlan.agent.eval.gaia.GaiaAudioTranscriptionService;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xslf.usermodel.XMLSlideShow;
+import org.apache.poi.xslf.usermodel.XSLFSlide;
+import org.apache.poi.xslf.usermodel.XSLFTextBox;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.awt.Rectangle;
+import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -57,6 +65,21 @@ class RagDirectoryIngestTest {
     }
 
     @Test
+    void directoryIngestProcessesOfficeAndNotebookDocuments() throws Exception {
+        RagService ragService = ragService();
+        writeDocx("docs/sample.docx", "DOCX mentions quarkus.");
+        writePptx("docs/sample.pptx", "PPTX mentions h2.");
+        writeXlsx("docs/sample.xlsx", "XLSX mentions postgres.");
+        writeNotebook("docs/sample.ipynb", "IPYNB mentions langchain4j.");
+
+        RagDirectoryIngestResult result = ragService.ingestDirectory("docs", null, false, 20);
+
+        assertEquals(4, result.ingestedCount());
+        assertTrue(result.results().stream().allMatch(item -> "INGESTED".equals(item.status())));
+        assertTrue(result.results().stream().allMatch(item -> item.sourceId().startsWith("docs/")));
+    }
+
+    @Test
     void directoryIngestRejectsTraversalClearly() throws Exception {
         RagService ragService = ragService();
 
@@ -83,6 +106,62 @@ class RagDirectoryIngestTest {
         Path file = tempDir.resolve("workspace").resolve(relativePath);
         Files.createDirectories(file.getParent());
         Files.writeString(file, contents);
+    }
+
+    private void writeDocx(String relativePath, String text) throws Exception {
+        Path file = tempDir.resolve("workspace").resolve(relativePath);
+        Files.createDirectories(file.getParent());
+        try (XWPFDocument document = new XWPFDocument()) {
+            document.createParagraph().createRun().setText(text);
+            try (FileOutputStream output = new FileOutputStream(file.toFile())) {
+                document.write(output);
+            }
+        }
+    }
+
+    private void writePptx(String relativePath, String text) throws Exception {
+        Path file = tempDir.resolve("workspace").resolve(relativePath);
+        Files.createDirectories(file.getParent());
+        try (XMLSlideShow slideshow = new XMLSlideShow()) {
+            XSLFSlide slide = slideshow.createSlide();
+            XSLFTextBox textBox = slide.createTextBox();
+            textBox.setAnchor(new Rectangle(50, 50, 400, 100));
+            textBox.setText(text);
+            try (FileOutputStream output = new FileOutputStream(file.toFile())) {
+                slideshow.write(output);
+            }
+        }
+    }
+
+    private void writeXlsx(String relativePath, String text) throws Exception {
+        Path file = tempDir.resolve("workspace").resolve(relativePath);
+        Files.createDirectories(file.getParent());
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            Row row = workbook.createSheet("Sheet1").createRow(0);
+            row.createCell(0).setCellValue(text);
+            try (FileOutputStream output = new FileOutputStream(file.toFile())) {
+                workbook.write(output);
+            }
+        }
+    }
+
+    private void writeNotebook(String relativePath, String text) throws Exception {
+        Path file = tempDir.resolve("workspace").resolve(relativePath);
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, """
+                {
+                  "cells": [
+                    {
+                      "cell_type": "markdown",
+                      "source": ["%s"],
+                      "metadata": {}
+                    }
+                  ],
+                  "metadata": {},
+                  "nbformat": 4,
+                  "nbformat_minor": 5
+                }
+                """.formatted(text));
     }
 
     private GaiaAudioTranscriptionService audioTranscriptionService() {

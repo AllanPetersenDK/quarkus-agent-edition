@@ -39,6 +39,8 @@ class RagIngestPathTest {
         writePdf("docs/sample.pdf", "PDF says quarkus.");
         writeDocx("docs/sample.docx", "DOCX says quarkus.");
         writePptx("docs/sample.pptx", "PPTX says quarkus.");
+        writeXlsx("docs/sample.xlsx", "XLSX says quarkus.");
+        writeNotebook("docs/sample.ipynb", "IPYNB says quarkus.");
 
         assertIngested(ragService.ingestPath("docs/sample.md", null), "docs/sample.md", "quarkus");
         assertIngested(ragService.ingestPath("docs/sample.csv", null), "docs/sample.csv", "quarkus");
@@ -46,6 +48,8 @@ class RagIngestPathTest {
         assertIngested(ragService.ingestPath("docs/sample.pdf", null), "docs/sample.pdf", "quarkus");
         assertIngested(ragService.ingestPath("docs/sample.docx", null), "docs/sample.docx", "quarkus");
         assertIngested(ragService.ingestPath("docs/sample.pptx", null), "docs/sample.pptx", "quarkus");
+        assertIngested(ragService.ingestPath("docs/sample.xlsx", null), "docs/sample.xlsx", "quarkus");
+        assertIngested(ragService.ingestPath("docs/sample.ipynb", null), "docs/sample.ipynb", "quarkus");
     }
 
     @Test
@@ -143,6 +147,37 @@ class RagIngestPathTest {
                 slideshow.write(output);
             }
         }
+    }
+
+    private void writeXlsx(String relativePath, String text) throws Exception {
+        Path file = tempDir.resolve("workspace").resolve(relativePath);
+        Files.createDirectories(file.getParent());
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            var sheet = workbook.createSheet("Sheet1");
+            sheet.createRow(0).createCell(0).setCellValue(text);
+            try (FileOutputStream output = new FileOutputStream(file.toFile())) {
+                workbook.write(output);
+            }
+        }
+    }
+
+    private void writeNotebook(String relativePath, String text) throws Exception {
+        Path file = tempDir.resolve("workspace").resolve(relativePath);
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, """
+                {
+                  "cells": [
+                    {
+                      "cell_type": "markdown",
+                      "source": ["%s"],
+                      "metadata": {}
+                    }
+                  ],
+                  "metadata": {},
+                  "nbformat": 4,
+                  "nbformat_minor": 5
+                }
+                """.formatted(text));
     }
 
     private GaiaAudioTranscriptionService audioTranscriptionService() {

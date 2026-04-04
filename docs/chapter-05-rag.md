@@ -35,6 +35,7 @@ The RAG module keeps the chapter mechanics visible without external infrastructu
 - Chunking now keeps a small overlap, uses more natural boundaries, and stores richer chunk metadata so retrieval/debugging is easier to follow.
 - Text-like documents now normalize through the shared document-read layer, which handles `txt`, `md`, `csv`, `tsv`, `json`, `html`, `xml`, `properties`, `log`, `ini`, `rst`, `toml`, and common source-like text files in the same read path. PDFs use the same extractor, while audio still goes through transcription when available.
 - Shared document-reading also covers `docx`, `pptx`, `xlsx`, and `ipynb`, so chapter-5 path ingest can reuse the same reading seam for office-style documents.
+- The query-aware `web-search` compression still lives in the callback layer, not in RAG, so chapter-5 keeps its retrieval logic separate from search-result trimming.
 - Path ingest returns structured status values instead of collapsing all read failures into a generic error, so security violations and unsupported directories stay visible in the companion seam.
 - The chapter-5 file exploration demo and GAIA attachment handling reuse the same text/PDF/audio extraction helpers, so document support stays consistent across chapter flows.
 - Fake embeddings are deterministic so tests can validate retrieval.
