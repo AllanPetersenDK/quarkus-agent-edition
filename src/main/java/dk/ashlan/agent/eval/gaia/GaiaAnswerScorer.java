@@ -4,20 +4,25 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
 @ApplicationScoped
 public class GaiaAnswerScorer {
+    private static final int SHORT_ENTITY_TOKEN_LIMIT = 4;
+
     public GaiaScoreResult score(List<String> expectedAnswers, String predictedAnswer) {
+        return score(null, expectedAnswers, predictedAnswer);
+    }
+
+    public GaiaScoreResult score(String prompt, List<String> expectedAnswers, String predictedAnswer) {
         String predictedNormalized = normalize(predictedAnswer);
         if (expectedAnswers == null || expectedAnswers.isEmpty()) {
             return new GaiaScoreResult(false, 0.0, "missing-expected-answer", "", predictedNormalized, null);
         }
         GaiaScoreResult best = null;
         for (String expected : expectedAnswers) {
-            GaiaScoreResult candidate = scoreOne(expected, predictedAnswer, predictedNormalized);
+            GaiaScoreResult candidate = scoreOne(prompt, expected, predictedAnswer, predictedNormalized);
             if (best == null || compare(candidate, best) > 0) {
                 best = candidate;
             }
@@ -26,7 +31,7 @@ public class GaiaAnswerScorer {
     }
 
     public GaiaScoreResult score(String expectedAnswer, String predictedAnswer) {
-        return score(expectedAnswer == null ? List.of() : List.of(expectedAnswer), predictedAnswer);
+        return score(null, expectedAnswer == null ? List.of() : List.of(expectedAnswer), predictedAnswer);
     }
 
     public boolean matches(String expectedAnswer, String predictedAnswer) {
@@ -50,7 +55,7 @@ public class GaiaAnswerScorer {
         return normalized;
     }
 
-    private GaiaScoreResult scoreOne(String expectedAnswer, String predictedRaw, String predictedNormalized) {
+    private GaiaScoreResult scoreOne(String prompt, String expectedAnswer, String predictedRaw, String predictedNormalized) {
         String expectedNormalized = normalize(expectedAnswer);
         BigDecimal expectedNumber = parseNumber(expectedNormalized);
         BigDecimal predictedNumber = parseNumber(predictedNormalized);
@@ -59,6 +64,15 @@ public class GaiaAnswerScorer {
         }
         if (expectedNormalized.equals(predictedNormalized)) {
             return new GaiaScoreResult(true, 1.0, "normalized-exact-match", expectedNormalized, predictedNormalized, expectedAnswer);
+        }
+        if (isEntityFocusedPrompt(prompt) && isShortEntity(expectedNormalized) && phraseContains(predictedNormalized, expectedNormalized)) {
+            if (containsCompetingEntitySignals(predictedRaw)) {
+                return new GaiaScoreResult(false, 0.18, "entity-list-penalty", expectedNormalized, predictedNormalized, expectedAnswer);
+            }
+            if (isLongEntityAnswer(expectedNormalized, predictedNormalized)) {
+                return new GaiaScoreResult(false, 0.42, "entity-buried-in-long-answer", expectedNormalized, predictedNormalized, expectedAnswer);
+            }
+            return new GaiaScoreResult(true, 0.95, "entity-only-answer", expectedNormalized, predictedNormalized, expectedAnswer);
         }
         if (isShortAnswer(expectedNormalized) && phraseContains(predictedNormalized, expectedNormalized)) {
             return new GaiaScoreResult(true, 0.92, "short-answer-match", expectedNormalized, predictedNormalized, expectedAnswer);
@@ -87,6 +101,89 @@ public class GaiaAnswerScorer {
             return false;
         }
         return value.split("\\s+").length <= 6;
+    }
+
+    private boolean isShortEntity(String value) {
+        if (!isShortAnswer(value)) {
+            return false;
+        }
+        return tokenCount(value) <= SHORT_ENTITY_TOKEN_LIMIT && parseNumber(value) == null;
+    }
+
+    private boolean isLongEntityAnswer(String expectedNormalized, String predictedNormalized) {
+        int expectedTokens = tokenCount(expectedNormalized);
+        int predictedTokens = tokenCount(predictedNormalized);
+        return predictedTokens >= Math.max(expectedTokens + 5, 8);
+    }
+
+    private int tokenCount(String value) {
+        if (value == null || value.isBlank()) {
+            return 0;
+        }
+        return value.split("\\s+").length;
+    }
+
+    private boolean isEntityFocusedPrompt(String prompt) {
+        if (prompt == null || prompt.isBlank()) {
+            return false;
+        }
+        String normalized = normalizePrompt(prompt);
+        return containsAny(normalized,
+                "which species",
+                "what species",
+                "which bird",
+                "which company",
+                "which source",
+                "which text",
+                "which person",
+                "which animal",
+                "which name",
+                "which type",
+                "which video",
+                "which book",
+                "which movie",
+                "which film",
+                "who is",
+                "what name",
+                "what animal",
+                "what bird",
+                "what company");
+    }
+
+    private boolean containsCompetingEntitySignals(String rawPredicted) {
+        if (rawPredicted == null || rawPredicted.isBlank()) {
+            return false;
+        }
+        String normalized = normalizePrompt(rawPredicted);
+        return containsAny(normalized,
+                " and ",
+                " or ",
+                " include ",
+                " includes ",
+                " including ",
+                " such as ",
+                " for example ",
+                " among others ",
+                " as well as ");
+    }
+
+    private String normalizePrompt(String value) {
+        return value.toLowerCase(Locale.ROOT)
+                .replaceAll("[^\\p{IsAlphabetic}\\p{IsDigit}\\s]+", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+
+    private boolean containsAny(String value, String... patterns) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        for (String pattern : patterns) {
+            if (pattern != null && !pattern.isBlank() && value.contains(pattern)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean phraseContains(String haystack, String needle) {

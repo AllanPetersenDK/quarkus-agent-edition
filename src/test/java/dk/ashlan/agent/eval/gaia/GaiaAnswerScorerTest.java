@@ -45,4 +45,44 @@ class GaiaAnswerScorerTest {
         assertTrue(pluralMatch.passed());
         assertEquals("H2", supported.matchedExpected());
     }
+
+    @Test
+    void entityFocusedPromptRejectsCompetingListAnswers() {
+        GaiaAnswerScorer scorer = new GaiaAnswerScorer();
+
+        GaiaScoreResult exactEntity = scorer.score(
+                "Which species does the video show?",
+                List.of("Rockhopper penguin"),
+                "Rockhopper penguin"
+        );
+        GaiaScoreResult compactEntity = scorer.score(
+                "Which species does the video show?",
+                List.of("Rockhopper penguin"),
+                "The answer is Rockhopper penguin."
+        );
+        GaiaScoreResult competingList = scorer.score(
+                "Which species does the video show?",
+                List.of("Rockhopper penguin"),
+                "The bird species include the rockhopper penguin and the kakapo."
+        );
+
+        assertTrue(exactEntity.passed());
+        assertTrue(compactEntity.passed());
+        assertFalse(competingList.passed());
+        assertEquals("entity-list-penalty", competingList.reason());
+    }
+
+    @Test
+    void definitionPromptStillAllowsShortExplanatoryAnswers() {
+        GaiaAnswerScorer scorer = new GaiaAnswerScorer();
+
+        GaiaScoreResult score = scorer.score(
+                "What is PostgreSQL?",
+                List.of("PostgreSQL"),
+                "PostgreSQL is an open-source relational database."
+        );
+
+        assertTrue(score.passed());
+        assertEquals("short-answer-match", score.reason());
+    }
 }

@@ -106,7 +106,7 @@ public class GaiaValidationRunner {
         AgentRunResult output = supplementalMessages.isEmpty()
                 ? agentOrchestrator.run(evalCase.prompt(), sessionId)
                 : agentOrchestrator.run(evalCase.prompt(), sessionId, supplementalMessages);
-        GaiaScoreResult score = scorer.score(evalCase.expectedAnswers(), output.finalAnswer());
+        GaiaScoreResult score = scorer.score(evalCase.prompt(), evalCase.expectedAnswers(), output.finalAnswer());
         List<String> trace = new ArrayList<>(output.trace());
         trace.add("taskId:" + evalCase.taskId());
         trace.add("question:" + evalCase.prompt());

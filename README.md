@@ -231,6 +231,7 @@ If you want to prepare the snapshot without starting dev mode, run `scripts/setu
 GAIA also uses the live `web-search` runtime tool for current web/video lookup questions, and common audio attachments such as `mp3`, `wav`, and `m4a` are transcribed when `OPENAI_API_KEY` is configured.
 Set `GAIA_AUDIO_TRANSCRIPTION_MODEL` if you want to override the default `gpt-4o-mini-transcribe` audio model.
 GAIA now also extracts plain text from text-like attachments and PDFs (`txt`, `md`, `csv`, `json`, `html`, `xml`, `pdf`) and injects the extracted text into the validation context. Unsupported types stay explicit, and OCR/vision are still out of scope.
+For short entity-style answers, GAIA scoring is now stricter about long compound responses that mention the expected entity together with competing alternatives.
 
 Example GAIA run body:
 
