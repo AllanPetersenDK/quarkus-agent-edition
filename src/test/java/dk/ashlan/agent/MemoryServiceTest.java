@@ -123,4 +123,17 @@ class MemoryServiceTest {
         assertEquals(1, memoryService.longTermMemories("session-3", "PostgreSQL", 5).size());
         assertTrue(memoryService.longTermMemories("session-3", "PostgreSQL", 1).get(0).result().contains("PostgreSQL"));
     }
+
+    @Test
+    void ephemeralSessionsDoNotReadOrWriteLongTermMemoryButExplicitDefaultStillWorks() {
+        MemoryService memoryService = new MemoryService(new SessionManager(), new InMemoryTaskMemoryStore(), new MemoryExtractionService());
+
+        assertEquals(MemoryWriteDecision.SKIP, memoryService.remember("ephemeral-123", "goal", "Remember that my favorite database is PostgreSQL."));
+        assertTrue(memoryService.relevantMemories("ephemeral-123", "PostgreSQL").isEmpty());
+        assertTrue(memoryService.longTermMemories("ephemeral-123", "PostgreSQL", 3).isEmpty());
+
+        assertEquals(MemoryWriteDecision.ADD, memoryService.remember("default", "goal", "Remember that my favorite database is PostgreSQL."));
+        assertTrue(memoryService.longTermMemories("default", "PostgreSQL", 1).stream()
+                .anyMatch(memory -> memory.result().contains("PostgreSQL")));
+    }
 }

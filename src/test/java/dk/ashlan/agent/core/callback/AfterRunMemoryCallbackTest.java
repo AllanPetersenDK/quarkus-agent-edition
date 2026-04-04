@@ -51,4 +51,30 @@ class AfterRunMemoryCallbackTest {
         assertTrue(memoryService.relevantMemories("session-1", "25 * 4").stream()
                 .noneMatch(memory -> memory.contains("trace:")));
     }
+
+    @Test
+    void ephemeralSessionsDoNotPersistRunSignals() {
+        MemoryService memoryService = new MemoryService(
+                new SessionManager(),
+                new InMemoryTaskMemoryStore(),
+                new MemoryExtractionService()
+        );
+        AfterRunMemoryCallback callback = new AfterRunMemoryCallback(memoryService);
+        AgentRunResult result = new AgentRunResult(
+                "25 * 4 = 100",
+                StopReason.FINAL_ANSWER,
+                2,
+                List.of("iteration:1", "answer: 25 * 4 = 100")
+        );
+
+        callback.afterRun(new AfterRunContext(
+                "ephemeral-123",
+                "What is 25 * 4?",
+                result,
+                result.trace()
+        ));
+
+        assertTrue(memoryService.longTermMemories("ephemeral-123", "25 * 4", 1).isEmpty());
+        assertTrue(memoryService.relevantMemories("ephemeral-123", "25 * 4").isEmpty());
+    }
 }

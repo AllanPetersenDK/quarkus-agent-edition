@@ -154,12 +154,14 @@ class AgentResourceSeamsTest {
         resource.runAgent(new AgentRunRequest("What is my name?", null));
         resource.runAgent(new AgentRunRequest("Remember this.", "chapter6-explicit"));
         resource.runAgent(new AgentRunRequest("What did I ask you to remember?", "chapter6-explicit"));
+        resource.runAgent(new AgentRunRequest("Remember this too.", "default"));
 
-        assertEquals(4, observedSessions.size());
+        assertEquals(5, observedSessions.size());
         assertFalse(observedSessions.get(0).equals(observedSessions.get(1)));
         assertFalse(observedSessions.get(0).isBlank());
         assertFalse(observedSessions.get(1).isBlank());
         assertEquals("chapter6-explicit", observedSessions.get(2));
         assertEquals("chapter6-explicit", observedSessions.get(3));
+        assertEquals("default", observedSessions.get(4));
     }
 }

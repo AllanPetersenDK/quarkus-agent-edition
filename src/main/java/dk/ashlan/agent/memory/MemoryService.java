@@ -14,6 +14,7 @@ import java.util.List;
  */
 @ApplicationScoped
 public class MemoryService {
+    private static final String EPHEMERAL_SESSION_PREFIX = "ephemeral-";
     private final TaskMemoryStore memoryStore;
     private final MemoryExtractionService extractionService;
 
@@ -34,6 +35,9 @@ public class MemoryService {
     }
 
     public MemoryWriteDecision remember(String sessionId, String task, String message) {
+        if (isEphemeralSession(sessionId)) {
+            return MemoryWriteDecision.SKIP;
+        }
         MemoryExtractionResult extraction = extractionService.extract(sessionId, task, message);
         if (extraction.decision() == MemoryWriteDecision.SKIP || extraction.memory() == null) {
             return MemoryWriteDecision.SKIP;
@@ -46,10 +50,16 @@ public class MemoryService {
     }
 
     public List<String> relevantMemories(String sessionId, String query) {
+        if (isEphemeralSession(sessionId)) {
+            return List.of();
+        }
         return memoryStore.findRelevant(sessionId, query, 3).stream().map(TaskMemory::memory).toList();
     }
 
     public List<TaskMemory> longTermMemories(String sessionId, String query, int limit) {
+        if (isEphemeralSession(sessionId)) {
+            return List.of();
+        }
         return memoryStore.findRelevant(sessionId, query, limit);
     }
 
@@ -72,5 +82,9 @@ public class MemoryService {
         }
         long matches = secondTokens.stream().filter(firstTokens::contains).count();
         return (double) matches / (double) Math.max(firstTokens.size(), secondTokens.size());
+    }
+
+    private boolean isEphemeralSession(String sessionId) {
+        return sessionId == null || sessionId.isBlank() || sessionId.startsWith(EPHEMERAL_SESSION_PREFIX);
     }
 }

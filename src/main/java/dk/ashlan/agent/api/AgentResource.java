@@ -141,7 +141,7 @@ public class AgentResource {
         if (hasConfirmations) {
             return sessionId;
         }
-        if (sessionId == null || sessionId.isBlank() || "default".equals(sessionId)) {
+        if (sessionId == null || sessionId.isBlank()) {
             return "ephemeral-" + UUID.randomUUID();
         }
         return sessionId;

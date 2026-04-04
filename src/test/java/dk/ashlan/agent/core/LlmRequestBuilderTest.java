@@ -43,4 +43,19 @@ class LlmRequestBuilderTest {
         assertTrue(messages.get(1).content().contains("PostgreSQL"));
         assertEquals("user", messages.get(messages.size() - 1).role());
     }
+
+    @Test
+    void buildDoesNotAutoInjectMemoryForEphemeralRuns() {
+        MemoryService memoryService = new MemoryService(new SessionManager(), new InMemoryTaskMemoryStore(), new MemoryExtractionService());
+        memoryService.remember("session-1", "goal", "Remember that my favorite database is PostgreSQL.");
+
+        LlmRequestBuilder builder = new LlmRequestBuilder("You are a chapter 06 demo agent.", memoryService);
+        List<LlmMessage> messages = builder.build(new ExecutionContext("Tell me about PostgreSQL", "ephemeral-123"));
+
+        assertEquals("system", messages.get(0).role());
+        assertEquals("user", messages.get(messages.size() - 1).role());
+        assertTrue(messages.stream().noneMatch(message -> "system".equals(message.role())
+                && message.content() != null
+                && message.content().contains("Memory:")));
+    }
 }

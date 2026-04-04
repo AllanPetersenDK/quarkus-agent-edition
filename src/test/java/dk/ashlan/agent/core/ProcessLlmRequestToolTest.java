@@ -33,4 +33,19 @@ class ProcessLlmRequestToolTest {
         assertTrue(messages.get(1).content().contains("PostgreSQL"));
         assertFalse(registry.definitions().containsKey("process_llm_request"));
     }
+
+    @Test
+    void doesNotInjectMemoryForEphemeralRuns() {
+        MemoryService memoryService = new MemoryService(new SessionManager(), new InMemoryTaskMemoryStore(), new MemoryExtractionService());
+        memoryService.remember("session-1", "goal", "Remember that my favorite database is PostgreSQL.");
+
+        ProcessLlmRequestTool processLlmRequestTool = new ProcessLlmRequestTool(memoryService);
+        LlmRequestBuilder builder = new LlmRequestBuilder("You are helpful.", memoryService, processLlmRequestTool);
+        List<LlmMessage> messages = builder.build(new ExecutionContext("Tell me about PostgreSQL", "ephemeral-123"));
+
+        assertEquals("system", messages.get(0).role());
+        assertFalse(messages.stream().anyMatch(message -> "system".equals(message.role())
+                && message.content() != null
+                && message.content().contains("Memory:")));
+    }
 }

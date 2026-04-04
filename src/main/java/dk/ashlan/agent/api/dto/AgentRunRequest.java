@@ -15,9 +15,8 @@ public record AgentRunRequest(
         )
         String message,
         @Schema(
-                description = "Conversation session identifier used for memory lookup.",
-                defaultValue = "default",
-                examples = {"default"}
+                description = "Conversation session identifier used for memory lookup. Leave blank for an anonymous ephemeral run.",
+                nullable = true
         )
         String sessionId,
         @Schema(
@@ -31,9 +30,6 @@ public record AgentRunRequest(
     }
 
     public AgentRunRequest {
-        if (sessionId == null || sessionId.isBlank()) {
-            sessionId = "default";
-        }
         toolConfirmations = toolConfirmations == null ? List.of() : List.copyOf(toolConfirmations);
     }
 

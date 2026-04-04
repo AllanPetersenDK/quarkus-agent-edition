@@ -12,9 +12,8 @@ public record AgentStructuredRunRequest(
         )
         String message,
         @Schema(
-                description = "Conversation session identifier used for the runtime step and trace seams.",
-                defaultValue = "default",
-                examples = {"default"}
+                description = "Conversation session identifier used for the runtime step and trace seams. Leave blank for an anonymous ephemeral run.",
+                nullable = true
         )
         String sessionId,
         @Schema(
@@ -25,9 +24,6 @@ public record AgentStructuredRunRequest(
         String mode
 ) {
     public AgentStructuredRunRequest {
-        if (sessionId == null || sessionId.isBlank()) {
-            sessionId = "default";
-        }
         if (mode == null || mode.isBlank()) {
             mode = "chapter4-answer";
         }
