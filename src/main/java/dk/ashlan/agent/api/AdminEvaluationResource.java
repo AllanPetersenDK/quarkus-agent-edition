@@ -6,6 +6,10 @@ import dk.ashlan.agent.eval.EvalCase;
 import dk.ashlan.agent.eval.EvalResult;
 import dk.ashlan.agent.eval.EvaluationRunner;
 import dk.ashlan.agent.eval.RunMetrics;
+import dk.ashlan.agent.eval.RuntimeRunRecorder;
+import dk.ashlan.agent.eval.Chapter10EvalRunRequest;
+import dk.ashlan.agent.eval.Chapter10EvalRunResult;
+import dk.ashlan.agent.eval.Chapter10EvaluationService;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.NotFoundException;
@@ -33,10 +37,14 @@ import java.util.concurrent.TimeUnit;
 public class AdminEvaluationResource {
     private final EvaluationRunner evaluationRunner;
     private final AgentTraceService traceService;
+    private final RuntimeRunRecorder runRecorder;
+    private final Chapter10EvaluationService chapter10EvaluationService;
 
-    public AdminEvaluationResource(EvaluationRunner evaluationRunner, AgentTraceService traceService) {
+    public AdminEvaluationResource(EvaluationRunner evaluationRunner, AgentTraceService traceService, RuntimeRunRecorder runRecorder, Chapter10EvaluationService chapter10EvaluationService) {
         this.evaluationRunner = evaluationRunner;
         this.traceService = traceService;
+        this.runRecorder = runRecorder;
+        this.chapter10EvaluationService = chapter10EvaluationService;
     }
 
     @POST
@@ -55,11 +63,34 @@ public class AdminEvaluationResource {
             content = @Content(schema = @Schema(implementation = Map.class))
     )
     public Map<String, Object> run(List<EvalCase> cases) {
-        long startedAt = System.nanoTime();
+        String runId = runRecorder.nextRunId();
+        java.time.Instant startedAt = java.time.Instant.now();
+        long startedNanos = System.nanoTime();
         List<EvalResult> results = evaluationRunner.run(cases);
-        long durationMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
+        long durationMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
         RunMetrics metrics = evaluationRunner.metrics(results, durationMillis);
-        return Map.of("results", results, "metrics", metrics);
+        runRecorder.recordLegacyEvaluationRun(runId, "legacy-admin-evaluation", results, metrics, startedAt, java.time.Instant.now());
+        return Map.of("runId", runId, "results", results, "metrics", metrics, "signals", List.of("cases:" + metrics.total(), "passed:" + metrics.passed(), "failed:" + metrics.failed(), "durationMs:" + metrics.durationMillis()));
+    }
+
+    @POST
+    @Path("/runs")
+    @Operation(
+            summary = "Run chapter-10 evaluation cases",
+            description = "Book chapter: 10. Lightweight case-based evaluation seam for manual, product, code, and multi-agent lanes, with inspection surfaced through the shared runtime run history."
+    )
+    @RequestBody(
+            description = "Chapter-10 evaluation cases to execute.",
+            required = true,
+            content = @Content(schema = @Schema(implementation = Chapter10EvalRunRequest.class))
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Chapter-10 evaluation run result.",
+            content = @Content(schema = @Schema(implementation = Chapter10EvalRunResult.class))
+    )
+    public Chapter10EvalRunResult runChapter10(Chapter10EvalRunRequest request) {
+        return chapter10EvaluationService.run(request);
     }
 
     @GET

@@ -128,6 +128,7 @@ mvn test
 - `POST /api/rag/ingest/path`
 - `GET /api/rag/query`
 - `POST /admin/evaluations`
+- `POST /admin/evaluations/runs`
 - `POST /admin/evaluations/gaia/run`
 - `GET /admin/evaluations/gaia/{taskId}`
 - `GET /admin/evaluations/gaia/runs/{runId}`
@@ -146,10 +147,15 @@ Chapter 6 now also exposes a small pause/resume seam for confirmation-gated tool
 - `POST /multi-agent`
 - `GET /multi-agent/history`
 - `GET /multi-agent/history/{runId}`
+- `GET /api/runtime/runs`
+- `GET /api/runtime/runs/{runId}`
+- `POST /admin/evaluations/runs`
 - `GET /workflow-demo`
 - MCP server: `http://localhost:8080/mcp`
 
 The recommended product lane is `POST /api/v1/assistants/query`: a small document/knowledge assistant built on the mature RAG, memory, planning, reflection, and observability capabilities. Chapter demo endpoints remain available for the book companion story, but they are not the primary product surface.
+Chapter 10 now adds a shared runtime run-history seam at `GET /api/runtime/runs` and `GET /api/runtime/runs/{runId}`, plus a case-based evaluation seam at `POST /admin/evaluations/runs`, so manual, product, code, multi-agent, evaluation, and GAIA runs can be replayed after execution without relying on the original live response body.
+The chapter-10 history layer is intentionally small and human-readable: run id, lane, input summary, timing, outcome, trace summary, quality signals, and failure or approval details are enough to replay the important parts of a run without creating a heavyweight monitoring backend.
 
 See [`docs/api.md`](docs/api.md) for the Swagger coverage boundary and the exact split between REST-exposed outer seams and internal chapter mechanics.
 See [`docs/fault-tolerance.md`](docs/fault-tolerance.md) for the current resilience policy on provider calls.

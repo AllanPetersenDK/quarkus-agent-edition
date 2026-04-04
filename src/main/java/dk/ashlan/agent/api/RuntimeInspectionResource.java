@@ -24,6 +24,8 @@ import dk.ashlan.agent.memory.TaskMemory;
 import dk.ashlan.agent.api.dto.AgentStepResponse;
 import dk.ashlan.agent.api.dto.AgentRunResponse;
 import dk.ashlan.agent.api.dto.RuntimeSessionTraceResponse;
+import dk.ashlan.agent.eval.RuntimeRunHistoryStore;
+import dk.ashlan.agent.eval.RuntimeRunRecord;
 import dk.ashlan.agent.llm.LlmMessage;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -39,6 +41,7 @@ import jakarta.validation.Valid;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
@@ -59,6 +62,7 @@ public class RuntimeInspectionResource {
     private final SessionTraceStore sessionTraceStore;
     private final MemoryAwareAgentOrchestrator memoryAwareAgentOrchestrator;
     private final CodeWorkspaceRegistry codeWorkspaceRegistry;
+    private final RuntimeRunHistoryStore runHistoryStore;
 
     public RuntimeInspectionResource(
             @Readiness AgentReadinessHealthCheck readinessHealthCheck,
@@ -67,7 +71,8 @@ public class RuntimeInspectionResource {
             MemoryService memoryService,
             SessionTraceStore sessionTraceStore,
             MemoryAwareAgentOrchestrator memoryAwareAgentOrchestrator,
-            CodeWorkspaceRegistry codeWorkspaceRegistry
+            CodeWorkspaceRegistry codeWorkspaceRegistry,
+            RuntimeRunHistoryStore runHistoryStore
     ) {
         this.readinessHealthCheck = readinessHealthCheck;
         this.livenessHealthCheck = livenessHealthCheck;
@@ -76,6 +81,7 @@ public class RuntimeInspectionResource {
         this.sessionTraceStore = sessionTraceStore;
         this.memoryAwareAgentOrchestrator = memoryAwareAgentOrchestrator;
         this.codeWorkspaceRegistry = codeWorkspaceRegistry;
+        this.runHistoryStore = runHistoryStore;
     }
 
     @GET
@@ -240,6 +246,46 @@ public class RuntimeInspectionResource {
             throw new NotFoundException("No runtime trace found for sessionId=" + sessionId);
         }
         return RuntimeSessionTraceResponse.from(sessionId, steps);
+    }
+
+    @GET
+    @Path("/runs")
+    @Operation(
+            summary = "List runtime runs",
+            description = "Book chapter: 10. Read-only chapter-10 run-history seam that makes manual, product, code-agent, multi-agent, evaluation, and GAIA runs inspectable without the original response body."
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Chapter-10 runtime run history.",
+            content = @org.eclipse.microprofile.openapi.annotations.media.Content(schema = @Schema(implementation = RuntimeRunRecord.class, type = SchemaType.ARRAY))
+    )
+    public List<RuntimeRunRecord> runs(
+            @Parameter(description = "Optional lane filter such as manual, product, code, multi-agent, evaluation, or gaia.")
+            @QueryParam("lane") String lane,
+            @Parameter(description = "Maximum number of records to return.")
+            @QueryParam("limit") @DefaultValue("50") int limit
+    ) {
+        return runHistoryStore.list(lane, limit);
+    }
+
+    @GET
+    @Path("/runs/{runId}")
+    @Operation(
+            summary = "Inspect a runtime run",
+            description = "Book chapter: 10. Read-only chapter-10 lookup for a single recorded run across the manual, product, code-agent, multi-agent, evaluation, and GAIA lanes."
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Stored runtime run.",
+            content = @org.eclipse.microprofile.openapi.annotations.media.Content(schema = @Schema(implementation = RuntimeRunRecord.class))
+    )
+    @APIResponse(responseCode = "404", description = "No runtime run exists for the requested run id.")
+    public RuntimeRunRecord run(
+            @Parameter(description = "Runtime run identifier.", required = true)
+            @PathParam("runId") String runId
+    ) {
+        return runHistoryStore.find(runId)
+                .orElseThrow(() -> new NotFoundException("No runtime run found for runId=" + runId));
     }
 
     @POST

@@ -2,6 +2,7 @@
 
 This repository exposes a Swagger-visible surface for selected outer runtime and companion seams.
 It does not turn the from-scratch orchestration internals into HTTP endpoints.
+Chapter 10 adds a shared run-history and lightweight evaluation seam so the important lanes can be inspected after execution without turning the repo into a monitoring platform.
 
 ## OpenAPI And Swagger UI
 
@@ -17,7 +18,7 @@ Configured properties:
 - `quarkus.swagger-ui.path=/swagger-ui`
 - `quarkus.smallrye-openapi.info-title=Quarkus Agent Edition API`
 - `quarkus.smallrye-openapi.info-version=0.1.0`
-- `quarkus.smallrye-openapi.info-description=Quarkus companion edition of Build an AI Agent from Scratch. Swagger documents the HTTP-exposed outer seams: manual agent runs, tool discovery, runtime health, RAG query and ingest, session and memory inspection, evaluation run, GAIA validation/dev run, trace lookup, and the selected LangChain4j companion demos. Manual orchestration internals, selector logic, prompt builders, and low-level storage details remain Java-only unless a specific endpoint exposes them.`
+- `quarkus.smallrye-openapi.info-description=Quarkus companion edition of Build an AI Agent from Scratch. Swagger documents the HTTP-exposed outer seams: manual agent runs, tool discovery, runtime health, RAG query and ingest, session and memory inspection, shared runtime run history, evaluation run, GAIA validation/dev run, trace lookup, and the selected LangChain4j companion demos. Manual orchestration internals, selector logic, prompt builders, and low-level storage details remain Java-only unless a specific endpoint exposes them.`
 
 ## Swagger Coverage
 
@@ -47,6 +48,7 @@ Covered in Swagger:
 - `POST /api/rag/ingest/directory` - chapter 5-oriented bulk directory ingest through the shared document-read layer
 - `GET /api/rag/query` - chapter 5-oriented RAG query and answer
 - `POST /admin/evaluations` - evaluation run
+- `POST /admin/evaluations/runs` - chapter-10 case-based evaluation run
 - `POST /admin/evaluations/gaia/run` - GAIA validation/dev run with level filtering and attachment-aware context
 - `GET /admin/evaluations/gaia/{taskId}` - GAIA task lookup
 - `GET /admin/evaluations/gaia/runs/{runId}` - GAIA run lookup
@@ -64,12 +66,15 @@ Covered in Swagger:
 - `GET /multi-agent/history` - chapter-9 run history lookup seam
 - `GET /multi-agent/history/{runId}` - chapter-9 single-run inspection seam
 - `POST /api/v1/assistants/query` - first product-lane document/knowledge assistant seam
+- `GET /api/runtime/runs` - shared chapter-10 runtime run-history seam
+- `GET /api/runtime/runs/{runId}` - shared chapter-10 single-run inspection seam
 - `GET /workflow-demo` - internal deterministic workflow demo
 
 Chapter 7 planning and reflection are visible through the existing runtime/tool seams rather than a new workflow API: the runtime tool registry includes `create-tasks` and `reflection`, `GET /api/agent/tools` now works in the live runtime, and chapter-7 runs surface plan/reflection/replan markers in session trace entries.
 The runtime inspection seam now also exposes `GET /api/runtime/sessions/{sessionId}/plan` and `GET /api/runtime/sessions/{sessionId}/reflection` so the current chapter-7 plan and latest reflection/replan signal are visible without adding a separate workflow subsystem. In the current runtime, those inspection seams are meaningfully populated for chapter-7 sessions instead of acting as thin placeholders.
 Chapter 8 follows the same companion pattern: the runtime exposes a small code-agent run seam, while workspace state and generated tools remain inspectable through session-scoped endpoints rather than a separate platform.
 The first product lane follows the same “small seam first” rule: `POST /api/v1/assistants/query` delegates to RAG, memory, planning, reflection, and session state, while keeping the chapter demo endpoints available as companion surfaces rather than the recommended product path.
+The shared chapter-10 run history ties the manual runtime lane, the product lane, the code-agent lane, the multi-agent lane, the GAIA lane, and the evaluation lane together. The visible records stay intentionally compact and human-readable: run id, lane, input summary, timing, status, outcome, trace summary, tool usage, quality signals, and the key approval or failure details.
 
 Not covered in Swagger:
 
@@ -101,6 +106,42 @@ Product responses expose:
 - product-lane signals for inspection
 
 The chapter demo endpoints remain useful for book-aligned exploration, but they are not the recommended product path.
+Product runs are also recorded in the shared chapter-10 run history so a query can be replayed or explained later through the same inspection seam as the other runtime lanes.
+
+## Chapter 10 Run History And Evaluation
+
+Chapter 10 is the shared observability and evaluation layer for the important runtime lanes.
+It stays lightweight on purpose: the goal is to replay and explain runs, not to create a full monitoring platform.
+
+Covered chapter-10 seams:
+
+- `GET /api/runtime/runs`
+- `GET /api/runtime/runs/{runId}`
+- `POST /admin/evaluations/runs`
+
+The run-history records are small by design and typically include:
+
+- run id
+- lane and run type
+- session, conversation, or case reference when relevant
+- input summary and timing
+- status, outcome category, and human-readable outcome
+- trace summary and selected trace excerpts
+- tool usage and quality signals
+- source, citation, retrieval, tool, and planning counts when relevant
+- approval or rejection details when relevant
+- failure reason and error category when relevant
+
+The case-based evaluation seam returns:
+
+- evaluation run id and summary
+- total, passed, and failed counts
+- average score
+- per-case pass or fail results
+- explanations and failure reasons
+- observed signals and selected trace excerpts
+
+Manual runtime runs, product runs, code-agent runs, multi-agent runs, evaluation runs, and GAIA runs all write into the same history layer so manual Swagger smoke-tests can inspect them after the fact.
 
 ## Endpoint Notes
 

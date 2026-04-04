@@ -12,6 +12,7 @@ import dk.ashlan.agent.memory.MemoryExtractionService;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
 import dk.ashlan.agent.code.CodeWorkspaceRegistry;
+import dk.ashlan.agent.eval.RuntimeRunHistoryStore;
 import dk.ashlan.agent.planning.Chapter7ReflectionState;
 import dk.ashlan.agent.planning.CreateTasksTool;
 import dk.ashlan.agent.planning.ReflectionTool;
@@ -107,7 +108,8 @@ class RuntimeInspectionResourceChapter7Test {
                 memoryService,
                 new InMemorySessionTraceStore(),
                 new MemoryAwareAgentOrchestrator(agentOrchestrator, memoryService),
-                new CodeWorkspaceRegistry("target/test-chapter8-workspaces")
+                new CodeWorkspaceRegistry("target/test-chapter8-workspaces"),
+                new RuntimeRunHistoryStore()
         );
         return new RuntimeHarness(resource, new MemoryAwareAgentOrchestrator(agentOrchestrator, memoryService), sessionManager);
     }

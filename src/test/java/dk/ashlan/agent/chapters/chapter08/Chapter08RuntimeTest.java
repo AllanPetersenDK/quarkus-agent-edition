@@ -23,6 +23,7 @@ import dk.ashlan.agent.memory.MemoryAwareAgentOrchestrator;
 import dk.ashlan.agent.memory.MemoryExtractionService;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
+import dk.ashlan.agent.eval.RuntimeRunHistoryStore;
 import dk.ashlan.agent.tools.ToolRegistry;
 import org.junit.jupiter.api.Test;
 
@@ -64,7 +65,8 @@ class Chapter08RuntimeTest {
                         },
                         memoryService
                 ),
-                registry
+                registry,
+                new RuntimeRunHistoryStore()
         );
 
         CodeWorkspaceInspectionResponse emptyWorkspace = runtimeResource.workspace("chapter8-demo");

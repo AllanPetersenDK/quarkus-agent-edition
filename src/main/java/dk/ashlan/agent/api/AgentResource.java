@@ -10,6 +10,7 @@ import dk.ashlan.agent.core.AgentRunResult;
 import dk.ashlan.agent.core.AgentStepResult;
 import dk.ashlan.agent.core.ToolConfirmation;
 import dk.ashlan.agent.core.StructuredOutputAgentOrchestrator;
+import dk.ashlan.agent.eval.RuntimeRunRecorder;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -25,6 +26,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
+import java.time.Instant;
 import java.util.UUID;
 
 @Path("/api/agent")
@@ -33,10 +35,16 @@ import java.util.UUID;
 @Tag(name = "Runtime API", description = "REST-exposed runtime seam for the manual agent loop and tool registry.")
 public class AgentResource {
     private final AgentOrchestrator orchestrator;
+    private final RuntimeRunRecorder runRecorder;
     private final StructuredOutputAgentOrchestrator structuredOutputOrchestrator = new StructuredOutputAgentOrchestrator();
 
     public AgentResource(AgentOrchestrator orchestrator) {
+        this(orchestrator, null);
+    }
+
+    public AgentResource(AgentOrchestrator orchestrator, RuntimeRunRecorder runRecorder) {
         this.orchestrator = orchestrator;
+        this.runRecorder = runRecorder;
     }
 
     @POST
@@ -57,6 +65,7 @@ public class AgentResource {
     )
     @APIResponse(responseCode = "400", description = "Invalid request payload.")
     public AgentRunResponse runAgent(@Valid AgentRunRequest input) {
+        Instant startedAt = Instant.now();
         List<ToolConfirmation> confirmations = input.toolConfirmations() == null ? List.of() : input.toolConfirmations();
         if (!confirmations.isEmpty() && (input.sessionId() == null || input.sessionId().isBlank())) {
             throw new BadRequestException("sessionId is required when toolConfirmations are supplied");
@@ -65,7 +74,11 @@ public class AgentResource {
         AgentRunResult result = confirmations.isEmpty()
                 ? orchestrator.run(input.message(), sessionId)
                 : orchestrator.resume(sessionId, confirmations);
-        return AgentRunResponse.from(result);
+        AgentRunResponse response = AgentRunResponse.from(result);
+        if (runRecorder != null) {
+            runRecorder.recordManualRun(sessionId, input.message(), result, startedAt, Instant.now());
+        }
+        return response;
     }
 
     @POST
@@ -86,8 +99,13 @@ public class AgentResource {
     )
     @APIResponse(responseCode = "400", description = "Invalid request payload.")
     public AgentStepResponse step(@Valid AgentRunRequest input) {
+        Instant startedAt = Instant.now();
         AgentStepResult result = orchestrator.step(input.message(), effectiveSessionId(input, input.toolConfirmations()));
-        return AgentStepResponse.from(result);
+        AgentStepResponse response = AgentStepResponse.from(result);
+        if (runRecorder != null) {
+            runRecorder.recordManualStep(response.sessionId(), input.message(), response, startedAt, Instant.now());
+        }
+        return response;
     }
 
     @POST
@@ -108,6 +126,7 @@ public class AgentResource {
     )
     @APIResponse(responseCode = "400", description = "Invalid request payload or unsupported structured-output mode.")
     public AgentStructuredRunResponse runStructured(@Valid AgentStructuredRunRequest input) {
+        Instant startedAt = Instant.now();
         if (!"chapter4-answer".equals(input.mode())) {
             throw new BadRequestException("Unsupported structured-output mode: " + input.mode());
         }
@@ -121,7 +140,7 @@ public class AgentResource {
                         : AgentStructuredRunResponse.StructuredOutputValidationStatus.VALIDATED;
         AgentStructuredRunResponse.StructuredAnswerResponse structuredResult =
                 normalizedAnswer.isBlank() ? null : new AgentStructuredRunResponse.StructuredAnswerResponse(normalizedAnswer);
-        return new AgentStructuredRunResponse(
+        AgentStructuredRunResponse response = new AgentStructuredRunResponse(
                 step.sessionId(),
                 input.mode(),
                 validationStatus,
@@ -129,6 +148,10 @@ public class AgentResource {
                 AgentStepResponse.from(step),
                 step.isFinal() ? dk.ashlan.agent.core.StopReason.FINAL_ANSWER : null
         );
+        if (runRecorder != null) {
+            runRecorder.recordManualStructured(step.sessionId(), input.message(), AgentStepResponse.from(step), startedAt, Instant.now());
+        }
+        return response;
     }
 
     private String effectiveSessionId(AgentRunRequest input, List<ToolConfirmation> confirmations) {

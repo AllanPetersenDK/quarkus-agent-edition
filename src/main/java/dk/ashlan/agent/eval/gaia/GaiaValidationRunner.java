@@ -2,6 +2,7 @@ package dk.ashlan.agent.eval.gaia;
 
 import dk.ashlan.agent.core.AgentOrchestrator;
 import dk.ashlan.agent.core.AgentRunResult;
+import dk.ashlan.agent.eval.RuntimeRunRecorder;
 import dk.ashlan.agent.llm.LlmMessage;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.time.Instant;
 
 @ApplicationScoped
 public class GaiaValidationRunner {
@@ -26,11 +28,33 @@ public class GaiaValidationRunner {
     private final GaiaAnswerPostProcessor answerPostProcessor;
     private final GaiaAttachmentResolver attachmentResolver;
     private final GaiaEvaluationStore evaluationStore;
+    private final RuntimeRunRecorder runRecorder;
     private final Config config;
     private final int defaultLimit;
     private final int defaultLevel;
     private final String defaultConfig;
     private final String defaultSplit;
+
+    public GaiaValidationRunner(
+            AgentOrchestrator agentOrchestrator,
+            GaiaDatasetService datasetService,
+            GaiaEvalCaseMapper caseMapper,
+            GaiaAnswerScorer scorer,
+            GaiaAttachmentResolver attachmentResolver,
+            GaiaEvaluationStore evaluationStore,
+            Config config
+    ) {
+        this(
+                agentOrchestrator,
+                datasetService,
+                caseMapper,
+                scorer,
+                attachmentResolver,
+                evaluationStore,
+                config,
+                null
+        );
+    }
 
     @Inject
     public GaiaValidationRunner(
@@ -40,7 +64,8 @@ public class GaiaValidationRunner {
             GaiaAnswerScorer scorer,
             GaiaAttachmentResolver attachmentResolver,
             GaiaEvaluationStore evaluationStore,
-            Config config
+            Config config,
+            RuntimeRunRecorder runRecorder
     ) {
         this.agentOrchestrator = agentOrchestrator;
         this.datasetService = datasetService;
@@ -51,6 +76,7 @@ public class GaiaValidationRunner {
         this.answerPostProcessor = new GaiaAnswerPostProcessor(scorer);
         this.attachmentResolver = attachmentResolver;
         this.evaluationStore = evaluationStore;
+        this.runRecorder = runRecorder;
         this.config = config;
         this.defaultLimit = config.getOptionalValue("gaia.validation.default-limit", Integer.class).orElse(10);
         this.defaultLevel = config.getOptionalValue("gaia.validation.default-level", Integer.class).orElse(1);
@@ -73,7 +99,8 @@ public class GaiaValidationRunner {
         GaiaDatasetSelection selection = new GaiaDatasetSelection(datasetUrl, localPath, configName, split, effectiveLevel, effectiveLimit, failFast);
         List<GaiaExample> loaded = datasetService.load(selection);
         String runId = UUID.randomUUID().toString();
-        long startedAt = System.nanoTime();
+        Instant startedAt = Instant.now();
+        long startedNanos = System.nanoTime();
         List<GaiaCaseResult> results = new ArrayList<>();
         for (GaiaExample example : loaded) {
             GaiaCaseResult caseResult = runCase(runId, example);
@@ -82,9 +109,13 @@ public class GaiaValidationRunner {
                 break;
             }
         }
-        long durationMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
+        long durationMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
+        Instant endedAt = Instant.now();
         GaiaRunResult runResult = summarize(runId, selection, results, durationMillis);
         evaluationStore.save(runResult);
+        if (runRecorder != null) {
+            runRecorder.recordGaiaRun(runResult.runId(), runResult, startedAt, endedAt);
+        }
         return runResult;
     }
 

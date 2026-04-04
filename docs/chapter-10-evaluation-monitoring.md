@@ -1,44 +1,59 @@
-# Chapter 10 - Evaluation and Monitoring
+# Chapter 10 Evaluation And Monitoring
 
-## Chapter Goal
+Chapter 10 is the shared observability and evaluation layer for the runtime lanes in this repo.
+It stays deliberately small: the goal is to make important runs replayable and explainable after execution, not to introduce a full monitoring platform.
 
-Add evaluation loops, trace capture, and metrics so the system can be measured.
+## What Chapter 10 Covers
 
-## Quarkus Translation
+- manual runtime runs
+- product assistant runs
+- code-agent runs
+- multi-agent runs
+- evaluation runs
+- GAIA runs
 
-The edition keeps evaluation and trace capture in dedicated services instead of mixing them into the main agent flow.
+## Shared Run History
 
-## Central Classes
+The shared run history is exposed through Swagger-visible inspection seams:
 
-- `dk.ashlan.agent.eval.EvalCase`
-- `dk.ashlan.agent.eval.EvalResult`
-- `dk.ashlan.agent.eval.EvaluationRunner`
-- `dk.ashlan.agent.eval.AgentTrace`
-- `dk.ashlan.agent.eval.AgentTraceService`
-- `dk.ashlan.agent.eval.RunMetrics`
-- `dk.ashlan.agent.chapters.chapter10.Chapter10Support`
-- `dk.ashlan.agent.chapters.chapter10.EvaluationRunDemo`
-- `dk.ashlan.agent.chapters.chapter10.TraceDemo`
-- `dk.ashlan.agent.chapters.chapter10.MetricsDemo`
+- `GET /api/runtime/runs`
+- `GET /api/runtime/runs/{runId}`
 
-## Design Choices
+Each run record is compact and human-readable. Typical fields include:
 
-- Evaluation runs on a list of cases.
-- Traces are recorded per case.
-- Metrics are modeled explicitly so later observability work has a clean target.
-- The companion demo measures real wall-clock duration for the evaluation run instead of relying on a synthetic constant.
-- The admin evaluation endpoint now uses the same real elapsed-time pattern, so chapter demo and runtime API stay aligned.
-- A dedicated GAIA validation/dev seam is available for selected validation cases. It loads GAIA parquet snapshots from either a Hugging Face URL or a local path, resolves attachment presence into trace/context notes, extracts plain text from text-like attachments and PDFs, transcribes common audio attachments when OpenAI audio transcription is configured, and uses deterministic scoring for validation.
-- GAIA scoring is intentionally stricter for short entity-style answers, so long compound answers that mention the expected entity alongside competing alternatives no longer pass as easily.
-- GAIA also applies a small single-entity question policy and conservative post-processing during validation so questions that clearly expect one named entity are nudged toward a single precise answer instead of a broad list.
-- The chapter-5 file exploration demo reuses the same attachment/document extraction helpers, so text/PDF/audio support stays aligned between chapter flows and GAIA validation.
-- The GAIA loader can read Hugging Face parquet validation files directly, so `GAIA_DATASET_URL` may point at `metadata.level1.parquet` or a broader dataset root. `GAIA_LOCAL_PATH` defaults to `target/gaia-data` for workspace-local snapshots, and `GAIA_DEFAULT_CONFIG`, `GAIA_DEFAULT_SPLIT`, and `GAIA_DEFAULT_LEVEL` provide the selection fallbacks.
-- `scripts/run-dev.sh` automatically prepares the workspace-local GAIA snapshot on first use when `GAIA_DATASET_URL` is not set, so local validation/dev can start from the repo root without a separate manual download step.
-- OCR and multimodal vision are intentionally not part of this phase; unsupported attachment types remain explicit in trace/debug output.
+- `runId`
+- `lane`
+- `runType`
+- `sessionId`, `conversationId`, or `caseId` when relevant
+- `objective` or query summary
+- `startTime`, `endTime`, and `durationMs`
+- `status` and `outcomeCategory`
+- `traceSummary`
+- `selectedTraceEntries`
+- `toolUsageSummary`
+- `qualitySignals`
+- source, citation, retrieval, tool, and plan counts when relevant
+- approval or rejection details when relevant
+- failure reason and error category when relevant
 
-## Demo vs Production
+## Lightweight Evaluation
 
-- Demo: in-memory results and traces.
-- Runtime default: local evaluation runner with explicit duration measurement.
-- GAIA validation/dev flow: dataset-backed validation cases with attachment-aware discovery/context, deterministic scoring, and per-case trace/debug lookup.
-- Production placeholders: Micrometer, OpenTelemetry, durable evaluation storage, and admin/auth protection if the endpoint is exposed outside the companion app.
+Chapter 10 also adds a lightweight case-based evaluation seam:
+
+- `POST /admin/evaluations/runs`
+
+The evaluation response is designed for manual inspection and contains:
+
+- evaluation run id and summary
+- total, passed, and failed counts
+- average score
+- per-case results
+- explanations and failure reasons
+- observed signals and selected trace excerpts
+
+## Design Rules
+
+- Chapter 10 builds on the existing runtime lanes instead of replacing them.
+- The history layer is shared across manual, product, code, multi-agent, evaluation, and GAIA runs.
+- Responses are intentionally compact and replay-friendly.
+- The implementation stays lightweight and repo-nær on purpose.

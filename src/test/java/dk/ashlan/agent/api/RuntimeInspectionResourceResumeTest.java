@@ -13,6 +13,7 @@ import dk.ashlan.agent.memory.MemoryExtractionService;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
 import dk.ashlan.agent.code.CodeWorkspaceRegistry;
+import dk.ashlan.agent.eval.RuntimeRunHistoryStore;
 import dk.ashlan.agent.tools.ToolRegistry;
 import org.junit.jupiter.api.Test;
 
@@ -50,7 +51,8 @@ class RuntimeInspectionResourceResumeTest {
                 new MemoryService(new SessionManager(), new InMemoryTaskMemoryStore(), new MemoryExtractionService()),
                 new InMemorySessionTraceStore(),
                 memoryAwareAgentOrchestrator,
-                new CodeWorkspaceRegistry("target/test-chapter8-workspaces")
+                new CodeWorkspaceRegistry("target/test-chapter8-workspaces"),
+                new RuntimeRunHistoryStore()
         );
 
         RuntimeInspectionResource.ResumeSessionRequest request = new RuntimeInspectionResource.ResumeSessionRequest(

@@ -42,6 +42,7 @@ class OpenApiSupportTest {
         assertOperationContains(AgentResource.class, "runStructured", "Book chapter mapping: chapter 4 structured-output seam around the manual loop");
         assertOperationContains(ToolResource.class, "listTools", "Book chapter mapping: cross-cutting runtime seam");
         assertOperationContains(AdminEvaluationResource.class, "run", "Book chapter: 10");
+        assertOperationContains(AdminEvaluationResource.class, "runChapter10", "Book chapter: 10");
         assertOperationContains(AdminEvaluationResource.class, "trace", "Book chapter: 10");
         assertOperationContains(GaiaEvaluationResource.class, "run", "Book chapter: 10");
         assertOperationContains(GaiaEvaluationResource.class, "task", "Book chapter: 10");
@@ -64,6 +65,8 @@ class OpenApiSupportTest {
         assertOperationContains(RuntimeInspectionResource.class, "memory", "Book chapter: 6");
         assertOperationContains(RuntimeInspectionResource.class, "trace", "Book chapter mapping: chapter 4 runtime trace inspection seam");
         assertOperationContains(RuntimeInspectionResource.class, "resume", "Book chapter: 6");
+        assertOperationContains(RuntimeInspectionResource.class, "runs", "Book chapter: 10");
+        assertOperationContains(RuntimeInspectionResource.class, "run", "Book chapter: 10");
         assertOperationContains(dk.ashlan.agent.product.api.ProductAssistantResource.class, "query", "Product lane v1");
         assertOperationContains(RagResource.class, "ingest", "Book chapter: 5");
         assertOperationContains(RagResource.class, "ingestPath", "Book chapter: 5");

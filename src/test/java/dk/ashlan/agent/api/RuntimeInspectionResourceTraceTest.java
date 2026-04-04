@@ -11,6 +11,7 @@ import dk.ashlan.agent.memory.MemoryExtractionService;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
 import dk.ashlan.agent.code.CodeWorkspaceRegistry;
+import dk.ashlan.agent.eval.RuntimeRunHistoryStore;
 import dk.ashlan.agent.tools.CalculatorTool;
 import dk.ashlan.agent.tools.ToolRegistry;
 import dk.ashlan.agent.llm.LlmToolCall;
@@ -46,7 +47,8 @@ class RuntimeInspectionResourceTraceTest {
                         },
                         new MemoryService(new SessionManager(), new InMemoryTaskMemoryStore(), new MemoryExtractionService())
                 ),
-                new CodeWorkspaceRegistry("target/test-chapter8-workspaces")
+                new CodeWorkspaceRegistry("target/test-chapter8-workspaces"),
+                new RuntimeRunHistoryStore()
         );
 
         assertThrows(NotFoundException.class, () -> resource.trace("missing-session"));

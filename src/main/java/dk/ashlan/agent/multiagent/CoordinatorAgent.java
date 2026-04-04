@@ -1,5 +1,6 @@
 package dk.ashlan.agent.multiagent;
 
+import dk.ashlan.agent.eval.RuntimeRunRecorder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -11,19 +12,26 @@ public class CoordinatorAgent {
     private final AgentRouter router;
     private final ReviewerAgent reviewerAgent;
     private final Chapter9RunHistoryStore historyStore;
+    private final RuntimeRunRecorder runRecorder;
 
     public CoordinatorAgent(AgentRouter router, ReviewerAgent reviewerAgent) {
-        this(router, reviewerAgent, new Chapter9RunHistoryStore());
+        this(router, reviewerAgent, new Chapter9RunHistoryStore(), null);
+    }
+
+    public CoordinatorAgent(AgentRouter router, ReviewerAgent reviewerAgent, Chapter9RunHistoryStore historyStore) {
+        this(router, reviewerAgent, historyStore, null);
     }
 
     @Inject
-    public CoordinatorAgent(AgentRouter router, ReviewerAgent reviewerAgent, Chapter9RunHistoryStore historyStore) {
+    public CoordinatorAgent(AgentRouter router, ReviewerAgent reviewerAgent, Chapter9RunHistoryStore historyStore, RuntimeRunRecorder runRecorder) {
         this.router = router;
         this.reviewerAgent = reviewerAgent;
         this.historyStore = historyStore;
+        this.runRecorder = runRecorder;
     }
 
     public AgentTaskResult run(String objective) {
+        Instant startedAt = Instant.now();
         String runId = historyStore.nextRunId();
         AgentTask task = new AgentTask(runId, objective, objective);
         RoutingDecision decision = router.routeDecision(task);
@@ -52,7 +60,11 @@ public class CoordinatorAgent {
                 coordinatorSummary,
                 traceEntries
         );
-        return historyStore.record(run);
+        AgentTaskResult recorded = historyStore.record(run);
+        if (runRecorder != null) {
+            runRecorder.recordMultiAgentRun(runId, objective, recorded, startedAt, Instant.now());
+        }
+        return recorded;
     }
 
     public List<AgentTaskResult> history() {

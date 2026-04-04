@@ -13,11 +13,14 @@ import dk.ashlan.agent.product.model.ProductAssistantQueryResponse;
 import dk.ashlan.agent.product.model.ProductPlanResponse;
 import dk.ashlan.agent.product.model.ProductReflectionResponse;
 import dk.ashlan.agent.product.model.ProductSourceResponse;
+import dk.ashlan.agent.eval.RuntimeRunRecorder;
+import dk.ashlan.agent.eval.RuntimeRunRecord;
 import dk.ashlan.agent.rag.RagService;
 import dk.ashlan.agent.rag.RetrievalResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -30,6 +33,7 @@ public class ProductAssistantService {
     private final SessionManager sessionManager;
     private final PlannerService plannerService;
     private final ReflectionService reflectionService;
+    private final RuntimeRunRecorder runRecorder;
 
     @Inject
     public ProductAssistantService(
@@ -37,22 +41,36 @@ public class ProductAssistantService {
             MemoryService memoryService,
             SessionManager sessionManager,
             PlannerService plannerService,
-            ReflectionService reflectionService
+            ReflectionService reflectionService,
+            RuntimeRunRecorder runRecorder
     ) {
         this.ragService = ragService;
         this.memoryService = memoryService;
         this.sessionManager = sessionManager;
         this.plannerService = plannerService;
         this.reflectionService = reflectionService;
+        this.runRecorder = runRecorder;
+    }
+
+    public ProductAssistantService(
+            RagService ragService,
+            MemoryService memoryService,
+            SessionManager sessionManager,
+            PlannerService plannerService,
+            ReflectionService reflectionService
+    ) {
+        this(ragService, memoryService, sessionManager, plannerService, reflectionService, null);
     }
 
     public ProductAssistantQueryResponse query(ProductAssistantQueryRequest request) {
+        Instant startedAt = Instant.now();
         String query = request.query() == null ? "" : request.query().trim();
         if (query.isBlank()) {
             throw new IllegalArgumentException("query is required");
         }
         String conversationId = normalizeConversationId(request.conversationId());
         int topK = request.topK() == null || request.topK() <= 0 ? DEFAULT_TOP_K : request.topK();
+        String runId = runRecorder == null ? "product-" + UUID.randomUUID() : runRecorder.nextRunId();
 
         SessionState session = sessionManager.session(conversationId);
         session.addUserMessage(query);
@@ -84,7 +102,8 @@ public class ProductAssistantService {
         signals.add("memory-write:" + memoryWriteDecision.name().toLowerCase());
         signals.add("conversation:stored");
 
-        return new ProductAssistantQueryResponse(
+        ProductAssistantQueryResponse response = new ProductAssistantQueryResponse(
+                runId,
                 conversationId,
                 session.size(),
                 query,
@@ -95,6 +114,10 @@ public class ProductAssistantService {
                 new ProductReflectionResponse(reflection.accepted(), reflection.feedback()),
                 List.copyOf(signals)
         );
+        if (runRecorder != null) {
+            runRecorder.recordProductRun(runId, conversationId, query, response, startedAt, Instant.now());
+        }
+        return response;
     }
 
     private String normalizeConversationId(String conversationId) {

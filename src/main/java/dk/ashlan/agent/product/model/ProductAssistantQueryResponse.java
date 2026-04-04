@@ -5,6 +5,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import java.util.List;
 
 public record ProductAssistantQueryResponse(
+        @Schema(description = "Chapter-10 runtime run identifier for the product assistant query.")
+        String runId,
         @Schema(description = "Conversation identifier used to scope session and memory continuity.")
         String conversationId,
         @Schema(description = "Number of messages currently stored for the conversation.")

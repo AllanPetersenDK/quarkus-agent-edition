@@ -24,6 +24,8 @@ It delegates to the mature runtime capabilities already in the repo:
 - reflection for a small quality gate
 - observability-friendly metadata for inspection
 
+Product runs are also written into the shared chapter-10 run history so the product lane can be replayed and explained after execution through the same inspection seam as the other runtime lanes.
+
 ## Design Rules
 
 - Product code lives in `dk.ashlan.agent.product`.

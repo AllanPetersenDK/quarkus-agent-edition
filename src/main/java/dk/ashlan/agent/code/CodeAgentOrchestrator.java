@@ -1,6 +1,10 @@
 package dk.ashlan.agent.code;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import dk.ashlan.agent.eval.RuntimeRunRecorder;
+
+import java.time.Instant;
 
 @ApplicationScoped
 public class CodeAgentOrchestrator {
@@ -9,7 +13,9 @@ public class CodeAgentOrchestrator {
     private final FileWriteTool fileWriteTool;
     private final CodeGenerationTool codeGenerationTool;
     private final TestExecutionTool testExecutionTool;
+    private final RuntimeRunRecorder runRecorder;
 
+    @Inject
     public CodeAgentOrchestrator(
             CodeWorkspaceRegistry workspaceRegistry,
             FileReadTool fileReadTool,
@@ -17,11 +23,23 @@ public class CodeAgentOrchestrator {
             CodeGenerationTool codeGenerationTool,
             TestExecutionTool testExecutionTool
     ) {
+        this(workspaceRegistry, fileReadTool, fileWriteTool, codeGenerationTool, testExecutionTool, null);
+    }
+
+    public CodeAgentOrchestrator(
+            CodeWorkspaceRegistry workspaceRegistry,
+            FileReadTool fileReadTool,
+            FileWriteTool fileWriteTool,
+            CodeGenerationTool codeGenerationTool,
+            TestExecutionTool testExecutionTool,
+            RuntimeRunRecorder runRecorder
+    ) {
         this.workspaceRegistry = workspaceRegistry;
         this.fileReadTool = fileReadTool;
         this.fileWriteTool = fileWriteTool;
         this.codeGenerationTool = codeGenerationTool;
         this.testExecutionTool = testExecutionTool;
+        this.runRecorder = runRecorder;
     }
 
     public String run(String request) {
@@ -29,6 +47,7 @@ public class CodeAgentOrchestrator {
     }
 
     public CodeAgentRunResult run(String sessionId, String request) {
+        Instant startedAt = Instant.now();
         CodeWorkspaceSession session = workspaceRegistry.session(sessionId);
         String runId = session.beginRun(request);
         String generated = codeGenerationTool.generate(request);
@@ -66,7 +85,7 @@ public class CodeAgentOrchestrator {
                 session.readFile("generated/response.txt")
         );
         session.recordFinalTrace("chapter8-run-complete:" + runId + ":generated/response.txt", response);
-        return new CodeAgentRunResult(
+        CodeAgentRunResult result = new CodeAgentRunResult(
                 session.sessionId(),
                 session.workspaceId(),
                 runId,
@@ -80,6 +99,10 @@ public class CodeAgentOrchestrator {
                 session.generatedTools(),
                 session.traceMarkers()
         );
+        if (runRecorder != null) {
+            runRecorder.recordCodeRun(runId, sessionId, request, result, startedAt, Instant.now());
+        }
+        return result;
     }
 
     public CommandResult runTests() {
