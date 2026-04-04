@@ -3,6 +3,7 @@ package dk.ashlan.agent.rag;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
 public class DocumentIngestionService {
@@ -17,7 +18,11 @@ public class DocumentIngestionService {
     }
 
     public List<DocumentChunk> ingest(String sourceId, String text) {
-        List<DocumentChunk> chunks = chunker.chunk(sourceId, text, 400);
+        return ingest(sourceId, text, Map.of());
+    }
+
+    public List<DocumentChunk> ingest(String sourceId, String text, Map<String, String> documentMetadata) {
+        List<DocumentChunk> chunks = chunker.chunk(sourceId, text, 400, documentMetadata);
         chunks.forEach(chunk -> vectorStore.add(chunk, embeddingClient.embed(chunk.text())));
         return chunks;
     }

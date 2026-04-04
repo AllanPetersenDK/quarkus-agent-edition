@@ -1,6 +1,7 @@
 package dk.ashlan.agent.api;
 
 import dk.ashlan.agent.rag.DocumentChunk;
+import dk.ashlan.agent.rag.RagDirectoryIngestResult;
 import dk.ashlan.agent.rag.RagService;
 import dk.ashlan.agent.rag.RetrievalResult;
 import dk.ashlan.agent.rag.RagService.RagPathIngestResult;
@@ -24,6 +25,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
+import java.util.Map;
 
 @Path("/api/rag")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -79,6 +81,29 @@ public class RagResource {
     public RagIngestPathResponse ingestPath(@Valid RagIngestPathRequest request) {
         RagPathIngestResult result = ragService.ingestPath(request.path(), request.sourceId());
         return RagIngestPathResponse.from(result);
+    }
+
+    @POST
+    @Path("/ingest/directory")
+    @Operation(
+            summary = "Ingest a workspace directory into RAG",
+            description = "Book chapter: 5. Bulk ingest companion seam that walks a workspace directory, reads supported files through the shared document layer, and ingests the successful documents into RAG."
+    )
+    @RequestBody(
+            description = "Workspace directory and options for bulk ingest.",
+            required = true,
+            content = @Content(schema = @Schema(implementation = RagDirectoryIngestRequest.class))
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Directory ingest summary with per-file results.",
+            content = @Content(schema = @Schema(implementation = RagDirectoryIngestResult.class))
+    )
+    @APIResponse(responseCode = "400", description = "Missing or blank path.")
+    public RagDirectoryIngestResult ingestDirectory(@Valid RagDirectoryIngestRequest request) {
+        boolean recursive = request.recursive() != null && request.recursive();
+        int maxFiles = request.maxFiles() == null ? 20 : request.maxFiles();
+        return ragService.ingestDirectory(request.path(), request.sourceIdPrefix(), recursive, maxFiles);
     }
 
     @GET
@@ -137,6 +162,19 @@ public class RagResource {
             String path,
             @Schema(description = "Optional source identifier to use for the ingested document.", examples = {"sample-pdf"})
             String sourceId
+    ) {
+    }
+
+    public record RagDirectoryIngestRequest(
+            @NotBlank
+            @Schema(description = "Workspace-relative path to a directory containing documents.", required = true, examples = {"docs/chapter5/samples"})
+            String path,
+            @Schema(description = "Optional source id prefix to prepend to each ingested file.", examples = {"samples"})
+            String sourceIdPrefix,
+            @Schema(description = "Whether to recurse into subdirectories. Defaults to false.")
+            Boolean recursive,
+            @Schema(description = "Maximum number of directory entries to inspect. Defaults to 20.")
+            Integer maxFiles
     ) {
     }
 
@@ -213,16 +251,18 @@ public class RagResource {
             int chunkIndex,
             @Schema(description = "Chunk text returned by the RAG flow.")
             String text,
+            @Schema(description = "Chunk metadata returned by ingest/query flows.")
+            Map<String, String> metadata,
             @Schema(description = "Similarity score for query responses. Null for ingest responses.")
             Double similarity
     ) {
         static RagChunkResponse fromIngest(DocumentChunk chunk) {
-            return new RagChunkResponse(chunk.sourceId(), chunk.chunkIndex(), chunk.text(), null);
+            return new RagChunkResponse(chunk.sourceId(), chunk.chunkIndex(), chunk.text(), chunk.metadata(), null);
         }
 
         static RagChunkResponse fromQuery(RetrievalResult result) {
             DocumentChunk chunk = result.chunk();
-            return new RagChunkResponse(chunk.sourceId(), chunk.chunkIndex(), chunk.text(), result.similarity());
+            return new RagChunkResponse(chunk.sourceId(), chunk.chunkIndex(), chunk.text(), chunk.metadata(), result.similarity());
         }
     }
 }

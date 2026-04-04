@@ -8,6 +8,7 @@ import dk.ashlan.agent.rag.FakeEmbeddingClient;
 import dk.ashlan.agent.rag.InMemoryVectorStore;
 import dk.ashlan.agent.rag.RagService;
 import dk.ashlan.agent.rag.Retriever;
+import dk.ashlan.agent.rag.RetrievalResult;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -33,7 +34,11 @@ class RagServiceTest {
 
         assertFalse(chunks.isEmpty());
 
-        assertEquals("chapter5-test", ragService.retrieve("Which text mentions PostgreSQL?", 1).get(0).chunk().sourceId());
+        RetrievalResult result = ragService.retrieve("Which text mentions PostgreSQL?", 1).get(0);
+        assertEquals("chapter5-test", result.chunk().sourceId());
+        assertEquals("chapter5-test", result.chunk().metadata().get("sourceId"));
+        assertEquals("chapter5-test", result.chunk().metadata().get("source"));
+        assertEquals("0", result.chunk().metadata().get("chunkIndex"));
     }
 
     @Test

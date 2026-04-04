@@ -33,6 +33,7 @@ final class HybridRetrievalScorer {
         double cosineScore = clamp(result.similarity());
         double lexicalScore = lexicalOverlap(analysis.meaningfulTokens(), RagTextUtils.tokenize(result.chunk().text()));
         double entityScore = entityMatchScore(analysis, result.chunk().text());
+        double phraseScore = RagTextUtils.containsNormalizedPhrase(result.chunk().text(), analysis.normalizedQuery()) ? 0.8 : 0.0;
         double intentBonus = 0.0;
         if (analysis.sourceAwareQuery() && entityScore > 0.0) {
             intentBonus += 0.05;
@@ -43,7 +44,7 @@ final class HybridRetrievalScorer {
         if (analysis.mentionsStyleQuery() && entityScore > 0.0) {
             intentBonus += 0.02;
         }
-        return cosineScore * 0.35 + lexicalScore * 0.25 + entityScore * 0.35 + intentBonus;
+        return cosineScore * 0.10 + lexicalScore * 0.10 + entityScore * 0.20 + phraseScore + intentBonus;
     }
 
     private double lexicalOverlap(List<String> queryTokens, List<String> chunkTokens) {

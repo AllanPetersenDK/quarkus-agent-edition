@@ -122,6 +122,7 @@ mvn test
 
 For local GAIA validation, `./scripts/run-dev.sh` will auto-download the workspace snapshot into `target/gaia-data` on first start when `GAIA_DATASET_URL` is not set.
 Chapter-5 path ingest now works the same way through the shared workspace/document read layer, so you can point the RAG companion seam at a workspace file path instead of copying text into a raw ingest request.
+Chapter-5 now also has a bulk directory ingest seam, and the shared document-read layer covers the workspace-safe text and office document types used by chapter 5 and GAIA.
 - `POST /code-agent`
 - `POST /multi-agent`
 - `GET /workflow-demo`
@@ -203,6 +204,7 @@ Demo and fake components are intentionally marked and include:
 - `TestExecutionTool`
 - `WorkspaceService` and the filesystem tools share the canonical `code.workspace-root`, which defaults to `target/workspace` for safe local runs.
 - GAIA validation/dev defaults to `target/gaia-data`, so a downloaded GAIA snapshot can live inside the workspace without any machine-specific absolute path.
+- Shared document-reading now also covers `docx`, `pptx`, `xlsx`, and `ipynb` through the same workspace-bound extraction seam.
 - Micrometer timers/counters are enabled for agent runs and tool execution.
 - SmallRye Fault Tolerance backs the OpenAI retry policy, and the provider call is wrapped in a local timeout boundary.
 

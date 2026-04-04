@@ -45,6 +45,7 @@ This chapter maps the Python tool system into a generic Quarkus tool framework.
 - The filesystem tools are Chapter 5-style exploration helpers, but they still plug into the same generic registry/executor path and can be used by the manual agent loop without redesign.
 - Filesystem access is guarded by the canonical `code.workspace-root` shared with the code workspace tools, so zip extraction and file reads stay inside the same explicit base path. Access is read-only and symlink hops are rejected.
 - `read_document_file` is the canonical attachment/document read tool, while `read_media_file` remains a compatibility alias so chapter 5 and GAIA share the same extraction foundation.
+- The shared document-read layer now also covers common office-style documents (`docx`, `pptx`, `xlsx`, `ipynb`) through the same workspace-bound seam, so chapter 5 can reuse the same extraction path for more practical document workflows.
 
 ## Demo vs Production
 

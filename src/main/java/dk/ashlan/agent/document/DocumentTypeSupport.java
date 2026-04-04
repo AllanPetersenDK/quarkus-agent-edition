@@ -30,6 +30,13 @@ public final class DocumentTypeSupport {
             "sql"
     );
 
+    private static final Set<String> OFFICE_LIKE_EXTENSIONS = Set.of(
+            "docx",
+            "pptx",
+            "xlsx",
+            "ipynb"
+    );
+
     private static final Set<String> AUDIO_LIKE_EXTENSIONS = Set.of(
             "mp3",
             "wav",
@@ -69,6 +76,17 @@ public final class DocumentTypeSupport {
 
     public static boolean isAudioLike(String extension) {
         return AUDIO_LIKE_EXTENSIONS.contains(normalize(extension));
+    }
+
+    public static boolean isOfficeLike(String extension) {
+        return OFFICE_LIKE_EXTENSIONS.contains(normalize(extension));
+    }
+
+    public static boolean isReadableDocument(String extension) {
+        String normalized = normalize(extension);
+        return isTextLike(normalized)
+                || isOfficeLike(normalized)
+                || "pdf".equals(normalized);
     }
 
     public static boolean isSupportedTextDocument(String extension) {

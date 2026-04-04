@@ -37,6 +37,7 @@ Covered in Swagger:
 - `GET /api/runtime/sessions/{sessionId}/trace` - chapter-4 runtime trace inspection seam
 - `POST /api/rag/ingest` - chapter 5-oriented document ingest into the RAG stack
 - `POST /api/rag/ingest/path` - chapter 5-oriented workspace path ingest through the shared document-read layer
+- `POST /api/rag/ingest/directory` - chapter 5-oriented bulk directory ingest through the shared document-read layer
 - `GET /api/rag/query` - chapter 5-oriented RAG query and answer
 - `POST /admin/evaluations` - evaluation run
 - `POST /admin/evaluations/gaia/run` - GAIA validation/dev run with level filtering and attachment-aware context
@@ -234,6 +235,24 @@ Example request body:
 ```
 
 The shared document-read layer now covers text-like files such as `txt`, `md`, `csv`, `tsv`, `json`, `html`, `xml`, `properties`, `log`, `ini`, `rst`, `toml`, and common source-like text files, plus PDFs and supported audio through the same normalization seam used by GAIA and the filesystem tools.
+It also covers office-style documents such as `docx`, `pptx`, `xlsx`, and `ipynb`, so path ingest can reuse the same extraction seam for more realistic chapter-5 documents.
+
+`POST /api/rag/ingest/directory`
+
+Swagger-visible chapter-5 companion seam for bulk ingesting a workspace directory. The endpoint resolves the directory against the canonical workspace root, reads each candidate through the shared document layer, and ingests only the documents that were actually read successfully. Unsupported files are reported explicitly in the response instead of stopping the whole batch.
+
+Example request body:
+
+```json
+{
+  "path": "docs/chapter5/samples",
+  "sourceIdPrefix": "samples",
+  "recursive": false,
+  "maxFiles": 20
+}
+```
+
+Per-file results report `INGESTED`, `SKIPPED_UNSUPPORTED`, `SKIPPED_DIRECTORY`, `READ_FAILED`, `SECURITY_VIOLATION`, `INVALID_PATH`, or `RESOLUTION_FAILED`, so bulk ingest stays easy to debug while remaining workspace-safe.
 
 `GET /api/rag/query`
 

@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static dk.ashlan.agent.document.DocumentTypeSupport.isAudioLike;
-import static dk.ashlan.agent.document.DocumentTypeSupport.isTextLike;
+import static dk.ashlan.agent.document.DocumentTypeSupport.isReadableDocument;
 
 @ApplicationScoped
 public class GaiaAttachmentResolver {
@@ -43,7 +43,7 @@ public class GaiaAttachmentResolver {
                 return new GaiaAttachment(fileName, filePath, resolved.toString(), GaiaAttachmentStatus.MISSING, "attachment file is missing: " + resolved, List.of("attachment:missing"));
             }
             String extension = dk.ashlan.agent.document.DocumentTypeSupport.extension(resolved);
-            if (isTextLike(extension) || "pdf".equalsIgnoreCase(extension)) {
+            if (isReadableDocument(extension)) {
                 GaiaExtractedAttachment extracted = attachmentExtractionService.extract(resolved);
                 return buildExtractedAttachment(fileName, filePath, resolved, extracted);
             }
@@ -81,7 +81,7 @@ public class GaiaAttachmentResolver {
 
         String resolved = resolveRemote(baseSource, cleanedPath);
         String extension = dk.ashlan.agent.document.DocumentTypeSupport.extension(cleanedPath);
-        if (isTextLike(extension)) {
+        if (isReadableDocument(extension)) {
             return new GaiaAttachment(
                     fileName,
                     filePath,

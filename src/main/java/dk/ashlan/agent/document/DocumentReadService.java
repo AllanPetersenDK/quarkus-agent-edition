@@ -56,6 +56,14 @@ public class DocumentReadService {
         return readFromRawPath(rawPath, false);
     }
 
+    public Path resolvePath(String rawPath) {
+        return workspaceService.resolve(rawPath);
+    }
+
+    public Path workspaceRoot() {
+        return workspaceService.root();
+    }
+
     private DocumentReadResult readFromRawPath(String rawPath, boolean textOnly) {
         try {
             return readDocumentInternal(workspaceService.resolve(rawPath), rawPath, textOnly);
@@ -82,7 +90,7 @@ public class DocumentReadService {
                 return failure("UNSUPPORTED_TYPE", safePath, originalPath, "unsupported text type: " + extension, List.of("document:unsupported-type"));
             }
 
-            if (DocumentTypeSupport.isTextLike(extension) || "pdf".equals(extension)) {
+            if (DocumentTypeSupport.isReadableDocument(extension)) {
                 GaiaExtractedAttachment extracted = attachmentExtractionService.extract(safePath);
                 return mapExtracted(safePath, originalPath, extracted);
             }
