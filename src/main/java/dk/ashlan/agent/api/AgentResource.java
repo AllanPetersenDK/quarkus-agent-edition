@@ -25,6 +25,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
+import java.util.UUID;
 
 @Path("/api/agent")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -57,9 +58,10 @@ public class AgentResource {
     @APIResponse(responseCode = "400", description = "Invalid request payload.")
     public AgentRunResponse runAgent(@Valid AgentRunRequest input) {
         List<ToolConfirmation> confirmations = input.toolConfirmations() == null ? List.of() : input.toolConfirmations();
+        String sessionId = effectiveSessionId(input, confirmations);
         AgentRunResult result = confirmations.isEmpty()
-                ? orchestrator.run(input.message(), input.sessionId())
-                : orchestrator.resume(input.sessionId(), confirmations);
+                ? orchestrator.run(input.message(), sessionId)
+                : orchestrator.resume(sessionId, confirmations);
         return AgentRunResponse.from(result);
     }
 
@@ -81,7 +83,7 @@ public class AgentResource {
     )
     @APIResponse(responseCode = "400", description = "Invalid request payload.")
     public AgentStepResponse step(@Valid AgentRunRequest input) {
-        AgentStepResult result = orchestrator.step(input.message(), input.sessionId());
+        AgentStepResult result = orchestrator.step(input.message(), effectiveSessionId(input, input.toolConfirmations()));
         return AgentStepResponse.from(result);
     }
 
@@ -107,7 +109,7 @@ public class AgentResource {
             throw new BadRequestException("Unsupported structured-output mode: " + input.mode());
         }
 
-        AgentStepResult step = orchestrator.step(input.message(), input.sessionId());
+        AgentStepResult step = orchestrator.step(input.message(), effectiveSessionId(input.sessionId(), input.message()));
         String rawAnswer = step.assistantMessage() != null ? step.assistantMessage() : step.finalAnswer();
         String normalizedAnswer = structuredOutputOrchestrator.normalize(rawAnswer);
         AgentStructuredRunResponse.StructuredOutputValidationStatus validationStatus =
@@ -124,5 +126,24 @@ public class AgentResource {
                 AgentStepResponse.from(step),
                 step.isFinal() ? dk.ashlan.agent.core.StopReason.FINAL_ANSWER : null
         );
+    }
+
+    private String effectiveSessionId(AgentRunRequest input, List<ToolConfirmation> confirmations) {
+        return effectiveSessionId(input.sessionId(), input.message(), confirmations);
+    }
+
+    private String effectiveSessionId(String sessionId, String message) {
+        return effectiveSessionId(sessionId, message, List.of());
+    }
+
+    private String effectiveSessionId(String sessionId, String message, List<ToolConfirmation> confirmations) {
+        boolean hasConfirmations = confirmations != null && !confirmations.isEmpty();
+        if (hasConfirmations) {
+            return sessionId;
+        }
+        if (sessionId == null || sessionId.isBlank() || "default".equals(sessionId)) {
+            return "ephemeral-" + UUID.randomUUID();
+        }
+        return sessionId;
     }
 }

@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -130,5 +131,35 @@ class AgentResourceSeamsTest {
         assertEquals(StopReason.FINAL_ANSWER, response.stopReason());
         assertEquals(1, response.iterations());
         assertEquals("pending_approved:delete-file:call-1", response.trace().get(0));
+    }
+
+    @Test
+    void noSessionRunsUseEphemeralIsolationWhileExplicitSessionsPassThrough() {
+        List<String> observedSessions = new ArrayList<>();
+        AgentOrchestrator orchestrator = new AgentOrchestrator(null, null, null, null, 1, "") {
+            @Override
+            public AgentRunResult run(String message, String sessionId) {
+                observedSessions.add(sessionId);
+                return new AgentRunResult(
+                        "ok:" + sessionId,
+                        StopReason.FINAL_ANSWER,
+                        1,
+                        List.of("session:" + sessionId)
+                );
+            }
+        };
+        AgentResource resource = new AgentResource(orchestrator);
+
+        resource.runAgent(new AgentRunRequest("My name is Alice.", null));
+        resource.runAgent(new AgentRunRequest("What is my name?", null));
+        resource.runAgent(new AgentRunRequest("Remember this.", "chapter6-explicit"));
+        resource.runAgent(new AgentRunRequest("What did I ask you to remember?", "chapter6-explicit"));
+
+        assertEquals(4, observedSessions.size());
+        assertFalse(observedSessions.get(0).equals(observedSessions.get(1)));
+        assertFalse(observedSessions.get(0).isBlank());
+        assertFalse(observedSessions.get(1).isBlank());
+        assertEquals("chapter6-explicit", observedSessions.get(2));
+        assertEquals("chapter6-explicit", observedSessions.get(3));
     }
 }

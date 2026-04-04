@@ -4,16 +4,23 @@ import dk.ashlan.agent.memory.InMemoryTaskMemoryStore;
 import dk.ashlan.agent.memory.MemoryExtractionService;
 import dk.ashlan.agent.memory.MemoryWriteDecision;
 import dk.ashlan.agent.memory.MemoryService;
+import dk.ashlan.agent.memory.JdbcTaskMemoryStore;
 import dk.ashlan.agent.memory.SessionManager;
 import dk.ashlan.agent.memory.TaskMemory;
+import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MemoryServiceTest {
+    @TempDir
+    Path tempDir;
+
     @Test
     void rememberDoesNotMutateSessionState() {
         SessionManager sessionManager = new SessionManager();
@@ -98,5 +105,22 @@ class MemoryServiceTest {
         assertTrue(stored.memory().contains("User name: Alice"));
         assertTrue(stored.summary().contains("danish-profile"));
         assertTrue(stored.result().contains("Alice"));
+    }
+
+    @Test
+    void longAfterRunSignalsAreDeduplicatedWithoutCrashingJdbcPersistence() {
+        JdbcDataSource dataSource = new JdbcDataSource();
+        dataSource.setURL("jdbc:h2:file:" + tempDir.resolve("memory-service-long-signal").toAbsolutePath() + ";AUTO_SERVER=FALSE;DB_CLOSE_ON_EXIT=FALSE");
+        dataSource.setUser("sa");
+        dataSource.setPassword("sa");
+
+        MemoryService memoryService = new MemoryService(new SessionManager(), new JdbcTaskMemoryStore(dataSource), new MemoryExtractionService());
+        String baseSignal = "Remember that my favorite database is PostgreSQL and I prefer concise answers. " + "trace ".repeat(120);
+        String nearDuplicateSignal = "Please remember that my favorite database is PostgreSQL and I prefer concise answers. " + "trace ".repeat(110);
+
+        assertEquals(MemoryWriteDecision.ADD, memoryService.remember("session-1", "after-run", baseSignal));
+        assertEquals(MemoryWriteDecision.SKIP, memoryService.remember("session-2", "after-run", nearDuplicateSignal));
+        assertEquals(1, memoryService.longTermMemories("session-3", "PostgreSQL", 5).size());
+        assertTrue(memoryService.longTermMemories("session-3", "PostgreSQL", 1).get(0).result().contains("PostgreSQL"));
     }
 }

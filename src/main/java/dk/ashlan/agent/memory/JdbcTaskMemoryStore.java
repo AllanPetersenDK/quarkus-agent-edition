@@ -7,6 +7,9 @@ import jakarta.inject.Inject;
 
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,6 +22,8 @@ import java.util.List;
 public class JdbcTaskMemoryStore implements TaskMemoryStore {
     private static final TypeReference<double[]> VECTOR_TYPE = new TypeReference<>() {
     };
+    private static final int DEDUP_KEY_PREFIX_LENGTH = 96;
+    private static final int DEDUP_KEY_HASH_LENGTH = 32;
 
     private final DataSource dataSource;
     private final ObjectMapper objectMapper;
@@ -55,7 +60,7 @@ public class JdbcTaskMemoryStore implements TaskMemoryStore {
                      ) key(dedup_key)
                      values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                      """)) {
-            statement.setString(1, taskMemory.structuredDedupKey());
+            statement.setString(1, compactDedupKey(taskMemory));
             statement.setString(2, taskMemory.sessionId());
             statement.setString(3, taskMemory.task());
             statement.setString(4, taskMemory.memory());
@@ -140,6 +145,32 @@ public class JdbcTaskMemoryStore implements TaskMemoryStore {
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new IllegalStateException("Unable to initialize task_memory schema", exception);
+        }
+    }
+
+    private String compactDedupKey(TaskMemory taskMemory) {
+        String structuredKey = taskMemory == null ? "" : taskMemory.structuredDedupKey();
+        if (structuredKey == null || structuredKey.isBlank()) {
+            return "";
+        }
+        String normalized = TaskMemoryRanking.normalize(structuredKey);
+        String prefix = normalized.length() <= DEDUP_KEY_PREFIX_LENGTH
+                ? normalized
+                : normalized.substring(0, DEDUP_KEY_PREFIX_LENGTH).trim();
+        return prefix + "::" + sha256Hex(structuredKey).substring(0, DEDUP_KEY_HASH_LENGTH);
+    }
+
+    private String sha256Hex(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+            StringBuilder output = new StringBuilder(hash.length * 2);
+            for (byte current : hash) {
+                output.append(String.format("%02x", current));
+            }
+            return output.toString();
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("Unable to compute task memory dedup key hash", exception);
         }
     }
 
