@@ -5,9 +5,10 @@ import dk.ashlan.agent.memory.InMemoryTaskMemoryStore;
 import dk.ashlan.agent.memory.InMemorySessionStateStore;
 import dk.ashlan.agent.memory.MemoryExtractionService;
 import dk.ashlan.agent.memory.MemoryService;
-import dk.ashlan.agent.memory.SessionManager;
 import dk.ashlan.agent.memory.SlidingWindowStrategy;
 import dk.ashlan.agent.memory.SummarizationStrategy;
+import dk.ashlan.agent.memory.SessionManager;
+import dk.ashlan.agent.llm.LlmMessage;
 import dk.ashlan.agent.sessions.InMemorySessionManager;
 import dk.ashlan.agent.sessions.TaskCrossSessionManager;
 import dk.ashlan.agent.sessions.UserCrossSessionManager;
@@ -27,7 +28,7 @@ final class Chapter06Support {
     }
 
     static MemoryService memoryService() {
-        return new MemoryService(memorySessions(), new InMemoryTaskMemoryStore(), new MemoryExtractionService());
+        return new MemoryService(new InMemoryTaskMemoryStore(), new MemoryExtractionService());
     }
 
     static CoreMemoryStrategy coreMemoryStrategy() {
@@ -40,6 +41,14 @@ final class Chapter06Support {
 
     static SummarizationStrategy summarizationStrategy() {
         return new SummarizationStrategy();
+    }
+
+    static List<LlmMessage> slidingWindowConversation(List<LlmMessage> messages, int windowSize) {
+        return slidingWindowStrategy().trimConversation(messages, windowSize);
+    }
+
+    static String summarizeConversation(List<LlmMessage> messages) {
+        return summarizationStrategy().summarizeConversation(messages);
     }
 
     static TaskCrossSessionManager taskCrossSessionManager() {

@@ -9,6 +9,8 @@ import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AfterRunMemoryCallbackTest {
@@ -24,16 +26,21 @@ class AfterRunMemoryCallbackTest {
                 "Your favorite database is PostgreSQL.",
                 StopReason.FINAL_ANSWER,
                 2,
-                java.util.List.of("trace")
+                List.of(
+                        "iteration:1",
+                        "tool:web-search:[compacted tool output; originalChars=2048] result",
+                        "answer: Your favorite database is PostgreSQL."
+                )
         );
 
         callback.afterRun(new AfterRunContext(
                 "session-1",
                 "Remember that my favorite database is PostgreSQL.",
-                result
+                result,
+                result.trace()
         ));
 
         assertTrue(memoryService.relevantMemories("session-1", "PostgreSQL").stream()
-                .anyMatch(memory -> memory.contains("PostgreSQL")));
+                .anyMatch(memory -> memory.contains("trace:")));
     }
 }

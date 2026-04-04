@@ -117,30 +117,36 @@ public class AgentOrchestrator implements AgentRunner {
         }
         ExecutionContext context = new ExecutionContext(message, sessionId, initialMessages);
         session.addUserMessage(message);
-        LlmRequestBuilder requestBuilder = new LlmRequestBuilder(systemPrompt, memoryService);
-        List<String> trace = new ArrayList<>();
-        int iterations = 0;
-        int stepNumber = nextStepNumber(sessionId);
-        long startedAt = System.nanoTime();
+        return continueRun(context, session, nextStepNumber(sessionId), List.of());
+    }
 
-        while (iterations < maxIterations && !context.isFinalAnswer()) {
-            StepExecution stepExecution = executeStep(context, requestBuilder, session, stepNumber);
-            trace.addAll(stepExecution.flatTrace());
-            stepNumber++;
-            if (context.isFinalAnswer()) {
-                break;
-            }
-            iterations++;
-        }
+    public AgentRunResult resume(String sessionId, ToolConfirmation confirmation) {
+        SessionState session = session(sessionId);
+        PendingToolCall pending = session.pendingToolCalls().stream().findFirst()
+                .orElseThrow(() -> new IllegalStateException("No pending tool confirmation for sessionId=" + sessionId));
+        ExecutionContext context = new ExecutionContext(pending.input(), sessionId, session.messages(), false);
+        session.clearPendingToolCalls();
 
-        if (!context.isFinalAnswer()) {
-            context.setFinalAnswer("");
+        LlmToolCall toolCall = pending.toolCall();
+        JsonToolResult toolResult = confirmation != null && confirmation.approved()
+                ? toolExecutor.execute(toolCall.toolName(), confirmation.arguments().isEmpty() ? toolCall.arguments() : confirmation.arguments())
+                : JsonToolResult.failure(toolCall.toolName(), confirmation == null ? "Tool confirmation missing." : confirmation.reason());
+        JsonToolResult adjustedResult = fireAfterTool(context, toolCall, toolResult, pending.stepNumber());
+        List<String> resumeTrace = new ArrayList<>();
+        if (confirmation != null && confirmation.approved()) {
+            resumeTrace.add("pending_approved:" + toolCall.toolName());
+        } else {
+            String reason = confirmation == null ? "Tool confirmation missing." : confirmation.reason();
+            resumeTrace.add("pending_rejected:" + normalizeTrace(reason));
         }
-        StopReason stopReason = context.isFinalAnswer() ? StopReason.FINAL_ANSWER : StopReason.MAX_ITERATIONS;
-        recordAgentRunMetrics(stopReason, iterations, System.nanoTime() - startedAt);
-        AgentRunResult result = new AgentRunResult(context.getFinalAnswer(), stopReason, Math.min(iterations + 1, maxIterations), trace);
-        fireAfterRun(context, result);
-        return result;
+        if (toolCall.callId() == null || toolCall.callId().isBlank()) {
+            context.addToolMessage(toolCall.toolName(), adjustedResult.output());
+            session.addToolMessage(toolCall.toolName(), adjustedResult.output());
+        } else {
+            context.addToolMessage(toolCall.toolName(), toolCall.callId(), adjustedResult.output());
+            session.addToolMessage(toolCall.toolName(), toolCall.callId(), adjustedResult.output());
+        }
+        return continueRun(context, session, pending.stepNumber() + 1, resumeTrace);
     }
 
     public AgentStepResult step(String message, String sessionId) {
@@ -160,6 +166,47 @@ public class AgentOrchestrator implements AgentRunner {
         return executeStep(context, requestBuilder, session, nextStepNumber(sessionId)).stepResult();
     }
 
+    private AgentRunResult continueRun(ExecutionContext context, SessionState session, int stepNumber, List<String> initialTrace) {
+        LlmRequestBuilder requestBuilder = new LlmRequestBuilder(systemPrompt, memoryService);
+        List<String> trace = new ArrayList<>();
+        if (initialTrace != null && !initialTrace.isEmpty()) {
+            trace.addAll(initialTrace);
+        }
+        int iterations = 0;
+        long startedAt = System.nanoTime();
+        int currentStep = stepNumber;
+
+        while (iterations < maxIterations && !context.isFinalAnswer()) {
+            StepExecution stepExecution = executeStep(context, requestBuilder, session, currentStep);
+            trace.addAll(stepExecution.flatTrace());
+            if (stepExecution.pendingToolCall() != null) {
+                trace.add("pending_confirmation:" + stepExecution.pendingToolCall().toolCall().toolName());
+                AgentRunResult result = new AgentRunResult("", StopReason.PENDING_CONFIRMATION, Math.min(iterations + 1, maxIterations), trace);
+                recordAgentRunMetrics(StopReason.PENDING_CONFIRMATION, iterations, System.nanoTime() - startedAt);
+                fireAfterRun(context, result);
+                return result;
+            }
+            currentStep++;
+            if (context.isFinalAnswer()) {
+                break;
+            }
+            iterations++;
+        }
+
+        if (!context.isFinalAnswer()) {
+            context.setFinalAnswer("");
+        }
+        StopReason stopReason = context.isFinalAnswer() ? StopReason.FINAL_ANSWER : StopReason.MAX_ITERATIONS;
+        recordAgentRunMetrics(stopReason, iterations, System.nanoTime() - startedAt);
+        AgentRunResult result = new AgentRunResult(context.getFinalAnswer(), stopReason, Math.min(iterations + 1, maxIterations), trace);
+        fireAfterRun(context, result);
+        return result;
+    }
+
+    private String normalizeTrace(String value) {
+        return value == null ? "" : value.trim().replaceAll("\\s+", " ");
+    }
+
     private StepExecution executeStep(ExecutionContext context, LlmRequestBuilder requestBuilder, SessionState session, int stepNumber) {
         List<String> trace = new ArrayList<>();
         List<AgentTraceEntry> traceEntries = new ArrayList<>();
@@ -167,15 +214,48 @@ public class AgentOrchestrator implements AgentRunner {
         trace.add("iteration:" + stepNumber);
         traceEntries.add(new AgentTraceEntry("step", "iteration:" + stepNumber));
 
-        fireBeforeLlm(context, messages, stepNumber);
-        LlmCompletion completion = llmClient.complete(messages, toolRegistry, context);
-        fireAfterLlm(context, messages, completion, stepNumber);
+        BeforeLlmContext beforeLlmContext = fireBeforeLlm(context, messages, stepNumber);
+        List<dk.ashlan.agent.llm.LlmMessage> optimizedMessages = beforeLlmContext.projectedMessages()
+                .orElse(beforeLlmContext.messages());
+        beforeLlmContext.optimizationSummary().ifPresent(summary -> {
+            trace.add("context:" + summary);
+            traceEntries.add(new AgentTraceEntry("context", summary));
+        });
+        LlmCompletion completion = llmClient.complete(optimizedMessages, toolRegistry, context);
+        fireAfterLlm(context, optimizedMessages, completion, stepNumber);
         List<LlmToolCall> toolCalls = completion.toolCalls() == null ? List.of() : List.copyOf(completion.toolCalls());
         List<JsonToolResult> toolResults = new ArrayList<>();
         if (!toolCalls.isEmpty()) {
             context.addAssistantToolCalls(toolCalls);
             session.addAssistantToolCalls(toolCalls);
             for (LlmToolCall toolCall : toolCalls) {
+                dk.ashlan.agent.tools.Tool tool = toolRegistry.find(toolCall.toolName());
+                if (tool != null && tool.definition() != null && tool.definition().requiresConfirmation()) {
+                    PendingToolCall pendingToolCall = new PendingToolCall(
+                            context.getSessionId(),
+                            stepNumber,
+                            context.getInput(),
+                            toolCall,
+                            tool.definition().confirmationMessageTemplate()
+                    );
+                    session.addPendingToolCall(pendingToolCall);
+                    trace.add("pending_confirmation:" + toolCall.toolName());
+                    traceEntries.add(new AgentTraceEntry("pending-confirmation", toolCall.toolName()));
+                    AgentStepResult stepResult = new AgentStepResult(
+                            context.getSessionId(),
+                            stepNumber,
+                            null,
+                            toolCalls,
+                            List.copyOf(toolResults),
+                            null,
+                            false,
+                            List.copyOf(traceEntries)
+                    );
+                    if (sessionTraceStore != null) {
+                        sessionTraceStore.append(stepResult);
+                    }
+                    return new StepExecution(stepResult, List.copyOf(trace), pendingToolCall);
+                }
                 if (!fireBeforeTool(context, toolCall, stepNumber)) {
                     JsonToolResult blocked = JsonToolResult.failure(toolCall.toolName(), "Tool blocked by callback: " + toolCall.toolName());
                     JsonToolResult finalBlocked = fireAfterTool(context, toolCall, blocked, stepNumber);
@@ -235,17 +315,18 @@ public class AgentOrchestrator implements AgentRunner {
         if (sessionTraceStore != null) {
             sessionTraceStore.append(stepResult);
         }
-        return new StepExecution(stepResult, List.copyOf(trace));
+        return new StepExecution(stepResult, List.copyOf(trace), null);
     }
 
-    private void fireBeforeLlm(ExecutionContext context, List<LlmMessage> messages, int stepNumber) {
-        if (callbacks.isEmpty()) {
-            return;
-        }
+    private BeforeLlmContext fireBeforeLlm(ExecutionContext context, List<LlmMessage> messages, int stepNumber) {
         BeforeLlmContext callbackContext = new BeforeLlmContext(context.getSessionId(), stepNumber, List.copyOf(messages));
+        if (callbacks.isEmpty()) {
+            return callbackContext;
+        }
         for (AgentCallback callback : callbacks) {
             callback.beforeLlm(callbackContext);
         }
+        return callbackContext;
     }
 
     private void fireAfterLlm(ExecutionContext context, List<LlmMessage> messages, LlmCompletion completion, int stepNumber) {
@@ -289,7 +370,7 @@ public class AgentOrchestrator implements AgentRunner {
         if (callbacks.isEmpty()) {
             return;
         }
-        AfterRunContext callbackContext = new AfterRunContext(context.getSessionId(), context.getInput(), result);
+        AfterRunContext callbackContext = new AfterRunContext(context.getSessionId(), context.getInput(), result, result.trace());
         for (AgentCallback callback : callbacks) {
             callback.afterRun(callbackContext);
         }
@@ -349,6 +430,6 @@ public class AgentOrchestrator implements AgentRunner {
         return priority == null ? 0 : priority.value();
     }
 
-    private record StepExecution(AgentStepResult stepResult, List<String> flatTrace) {
+    private record StepExecution(AgentStepResult stepResult, List<String> flatTrace, PendingToolCall pendingToolCall) {
     }
 }

@@ -78,6 +78,12 @@ For chapters 2-4, runtime default means the normal companion implementation arou
 - Chapter 3: generic tool abstraction, registry, executor, and adapters. Filesystem/document tools belong to the same framework, but they are later consumers rather than the chapter-3 learning core.
 - Chapter 4: manual agent loop, tool-calling flow, structured output, and inspection seams. Callback orchestration and memory bridging are runtime extensions layered onto that loop.
 
+## Chapter 6 Reading Rule
+
+- Chapter 6 is the next active memory track: keep conversation history, session state, short-term request projection, and long-term memory conceptually separate.
+- `after_run` is the bridge into compact memory persistence, `beforeLlm` is the bridge into request optimization, and explicit memory search remains a tool rather than a hidden side effect.
+- Pause/resume for confirmation-gated tools is an internal agent feature and should be read as part of the manual runtime, not as a chapter-5 companion pattern.
+
 ## `chapter_06_memory/`
 
 - `session agent` -> `src/main/java/dk/ashlan/agent/chapters/chapter06/SessionAgentDemo.java` - Adapted port
@@ -88,6 +94,8 @@ For chapters 2-4, runtime default means the normal companion implementation arou
 - `conversation search` -> `src/main/java/dk/ashlan/agent/chapters/chapter06/ConversationSearchDemo.java` - Direct port
 - `task long-term` -> `src/main/java/dk/ashlan/agent/chapters/chapter06/TaskLongTermDemo.java` - Direct port
 - `user long-term` -> `src/main/java/dk/ashlan/agent/chapters/chapter06/UserLongTermDemo.java` - Direct port
+- `context optimization` -> `src/main/java/dk/ashlan/agent/core/ContextOptimizer.java` and `src/main/java/dk/ashlan/agent/core/callback/ContextOptimizationCallback.java` - Quarkus runtime extension for before-LLM request projection
+- `after-run memory bridge` -> `src/main/java/dk/ashlan/agent/core/callback/AfterRunMemoryCallback.java` - Quarkus runtime extension for compact memory persistence
 - `scratch_agents/memory/*` -> `src/main/java/dk/ashlan/agent/memory/*` - Adapted port
 - `scratch_agents/sessions/*` -> `src/main/java/dk/ashlan/agent/sessions/*` - Adapted port
 - `scratch_agents/sessions/session.py` -> `src/main/java/dk/ashlan/agent/memory/SessionState.java` - Direct port

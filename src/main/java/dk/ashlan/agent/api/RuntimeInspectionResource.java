@@ -106,7 +106,7 @@ public class RuntimeInspectionResource {
     @Path("/sessions/{sessionId}")
     @Operation(
             summary = "Inspect a session",
-            description = "Book chapter: 6. Read-only session inspection seam backed by the existing runtime session state."
+            description = "Book chapter: 6. Read-only session inspection seam backed by the existing runtime session state and conversation history."
     )
     @APIResponse(
             responseCode = "200",
@@ -129,7 +129,7 @@ public class RuntimeInspectionResource {
     @Path("/sessions/{sessionId}/memory")
     @Operation(
             summary = "Inspect session memory",
-            description = "Book chapter: 6. Read-only memory inspection seam backed by the existing memory service."
+            description = "Book chapter: 6. Read-only long-term memory inspection seam backed by the existing memory service."
     )
     @APIResponse(
             responseCode = "200",

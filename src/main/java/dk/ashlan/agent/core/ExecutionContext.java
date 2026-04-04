@@ -26,12 +26,18 @@ public class ExecutionContext {
     }
 
     public ExecutionContext(String input, String sessionId, List<LlmMessage> initialMessages) {
+        this(input, sessionId, initialMessages, true);
+    }
+
+    public ExecutionContext(String input, String sessionId, List<LlmMessage> initialMessages, boolean appendUserMessage) {
         this.input = Objects.requireNonNullElse(input, "");
         this.sessionId = Objects.requireNonNullElse(sessionId, "default");
         if (initialMessages != null) {
             this.messages.addAll(initialMessages);
         }
-        this.messages.add(LlmMessage.user(this.input));
+        if (appendUserMessage) {
+            this.messages.add(LlmMessage.user(this.input));
+        }
     }
 
     public String getInput() {

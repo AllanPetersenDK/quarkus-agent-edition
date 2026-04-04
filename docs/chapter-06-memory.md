@@ -2,6 +2,15 @@
 
 This chapter maps the Python memory and session model into Java services and strategies.
 
+The current Quarkus implementation now treats chapter 6 as the next active chapter track:
+
+- conversation history stays in the execution/session layer
+- session state keeps multi-turn continuity
+- `beforeLlm` context optimization trims the active request projection
+- `after_run` is the canonical bridge into compact memory persistence
+- explicit memory search remains a tool, while auto-injection is a small runtime convenience
+- pause/resume for confirmation tools is an internal agent feature, not a callback trick
+
 ## Python Files
 
 - `scratch_agents/memory/base_memory_strategy.py`
@@ -22,6 +31,9 @@ This chapter maps the Python memory and session model into Java services and str
 - `dk.ashlan.agent.memory.CoreMemoryStrategy`
 - `dk.ashlan.agent.memory.SlidingWindowStrategy`
 - `dk.ashlan.agent.memory.SummarizationStrategy`
+- `dk.ashlan.agent.core.ContextOptimizer`
+- `dk.ashlan.agent.core.callback.ContextOptimizationCallback`
+- `dk.ashlan.agent.core.callback.AfterRunMemoryCallback`
 - `dk.ashlan.agent.sessions.Session`
 - `dk.ashlan.agent.sessions.SessionManager`
 - `dk.ashlan.agent.sessions.InMemorySessionManager`
@@ -30,7 +42,17 @@ This chapter maps the Python memory and session model into Java services and str
 - `dk.ashlan.agent.sessions.UserCrossSessionManager`
 - `dk.ashlan.agent.memory.MemoryService`
 - `dk.ashlan.agent.memory.MemoryAwareAgentOrchestrator`
+- `dk.ashlan.agent.core.PendingToolCall`
+- `dk.ashlan.agent.core.ToolConfirmation`
 - `dk.ashlan.agent.chapters.chapter06.*`
+
+## Memory Model
+
+- Conversation history: the live `ExecutionContext` / session message stream that preserves the full run history.
+- Session state: the persisted multi-turn state tracked by `SessionManager` and the chapter-6 `Session` demos.
+- Short-term memory: `SlidingWindowStrategy`, `SummarizationStrategy`, and the `beforeLlm` context optimizer that project a smaller request without deleting the ground truth.
+- Long-term memory: `MemoryService`, `ConversationSearchTool`, and the cross-session demo managers.
+- Bridge: `after_run` persists a compact memory signal after a run completes.
 
 ## Design Notes
 
@@ -42,10 +64,14 @@ This chapter maps the Python memory and session model into Java services and str
 - `SessionState` is the mutable per-session core, while `dk.ashlan.agent.sessions.Session` is the companion runtime-facing session object.
 - The chapter demos are intentionally tiny and use seeded in-memory data so the memory behaviors remain easy to observe.
 - `AgentOrchestrator` now exposes a small callback seam, and the canonical runtime bridge into memory persistence lives in `after_run` instead of the core tool loop.
+- `beforeLlm` now carries a small, deterministic context-optimization projection so the active request can shrink without deleting execution history.
+- `ToolDefinition.requiresConfirmation()` plus `PendingToolCall` and `ToolConfirmation` form the small pause/resume bridge for confirmation-gated tools.
 - `MemoryAwareAgentOrchestrator` remains as a thin chapter-6 façade, but the actual memory persistence hook is now callback-driven.
+- `ConversationSearchTool` is the explicit memory retrieval tool, while automatic memory injection stays a small convenience inside the request builder.
 
 ## Demo vs Production
 
 - Demo: in-memory strategies and cross-session stores.
 - Persistent layer: file-based H2 for session continuity.
 - Still in-memory: RAG chunk store, cross-session demo stores, and strategy-level demo helpers.
+- The chapter-6 memory bridge is intentionally small: it prepares the repo for further memory iterations without turning it into a separate platform.

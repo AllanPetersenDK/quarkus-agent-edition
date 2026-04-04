@@ -185,6 +185,9 @@ Quarkus CDI resolves the JDBC-backed persistence beans in runtime; the in-memory
 explicit default/manual paths.
 `AgentOrchestrator` also has a small callback seam now, with `after_run` acting as the bridge into
 chapter-6 memory so the core loop stays simple while memory/persistence hooks remain extensible.
+Chapter 6 is now the active next track: the repo has a small context-optimization seam, session
+continuity, explicit memory search, and a pause/resume bridge for confirmation-gated tools, while
+keeping chapter 5 as a separate companion story.
 That same seam also keeps `web-search` compression query-aware, while file and document tools still
 use straightforward truncation to keep context noise down.
 
