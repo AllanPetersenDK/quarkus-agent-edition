@@ -11,6 +11,9 @@ import dk.ashlan.agent.memory.SessionState;
 import dk.ashlan.agent.memory.SessionTraceStore;
 import dk.ashlan.agent.core.callback.AgentCallback;
 import dk.ashlan.agent.core.callback.AfterRunMemoryCallback;
+import dk.ashlan.agent.planning.ExecutionPlan;
+import dk.ashlan.agent.planning.PlanStep;
+import dk.ashlan.agent.planning.Chapter7ReflectionState;
 import dk.ashlan.agent.tools.JsonToolResult;
 import dk.ashlan.agent.tools.ProcessLlmRequestTool;
 import dk.ashlan.agent.tools.ToolExecutor;
@@ -325,6 +328,7 @@ public class AgentOrchestrator implements AgentRunner {
                 JsonToolResult adjustedResult = fireAfterTool(context, toolCall, result, stepNumber);
                 toolResults.add(adjustedResult);
                 recordChapter7Trace(trace, traceEntries, toolCall, adjustedResult);
+                recordChapter7State(session, toolCall, adjustedResult);
                 if (toolCall.callId() == null || toolCall.callId().isBlank()) {
                     context.addToolMessage(toolCall.toolName(), adjustedResult.output());
                     session.addToolMessage(toolCall.toolName(), adjustedResult.output());
@@ -551,6 +555,86 @@ public class AgentOrchestrator implements AgentRunner {
                 traceEntries.add(new AgentTraceEntry("replan", "needed"));
             }
         }
+    }
+
+    private void recordChapter7State(SessionState session, LlmToolCall toolCall, JsonToolResult toolResult) {
+        if (session == null || toolCall == null || toolCall.toolName() == null) {
+            return;
+        }
+        if ("create-tasks".equals(toolCall.toolName())) {
+            session.setChapter7Plan(chapter7Plan(toolCall));
+            return;
+        }
+        if ("reflection".equals(toolCall.toolName())) {
+            session.setChapter7Reflection(chapter7Reflection(toolCall, toolResult));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private ExecutionPlan chapter7Plan(LlmToolCall toolCall) {
+        java.util.Map<String, Object> arguments = toolCall.arguments();
+        String goal = stringArgument(arguments, "goal");
+        Object tasksValue = arguments == null ? null : arguments.get("tasks");
+        List<PlanStep> steps = new ArrayList<>();
+        if (tasksValue instanceof List<?> list) {
+            int order = 1;
+            for (Object item : list) {
+                if (item instanceof java.util.Map<?, ?> rawMap) {
+                    steps.add(new PlanStep(
+                            order++,
+                            stringArgument((java.util.Map<String, Object>) rawMap, "content"),
+                            statusArgument((java.util.Map<String, Object>) rawMap, "status"),
+                            stringArgument((java.util.Map<String, Object>) rawMap, "doneWhen"),
+                            stringArgument((java.util.Map<String, Object>) rawMap, "notes")
+                    ));
+                }
+            }
+        }
+        return new ExecutionPlan(goal, steps);
+    }
+
+    private Chapter7ReflectionState chapter7Reflection(LlmToolCall toolCall, JsonToolResult toolResult) {
+        java.util.Map<String, Object> arguments = toolCall.arguments();
+        String summary = toolResult == null ? "" : toolResult.output();
+        boolean needReplan = booleanArgument(arguments, "needReplan");
+        return new Chapter7ReflectionState(
+                stringArgument(arguments, "mode"),
+                stringArgument(arguments, "analysis"),
+                !needReplan,
+                needReplan,
+                booleanArgument(arguments, "readyToAnswer"),
+                stringArgument(arguments, "alternativeDirection"),
+                stringArgument(arguments, "nextStep"),
+                summary
+        );
+    }
+
+    private String stringArgument(java.util.Map<String, Object> arguments, String key) {
+        if (arguments == null) {
+            return "";
+        }
+        Object value = arguments.get(key);
+        return value == null ? "" : value.toString();
+    }
+
+    private boolean booleanArgument(java.util.Map<String, Object> arguments, String key) {
+        if (arguments == null) {
+            return false;
+        }
+        Object value = arguments.get(key);
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        return value != null && Boolean.parseBoolean(value.toString());
+    }
+
+    private dk.ashlan.agent.planning.TaskStatus statusArgument(java.util.Map<String, Object> arguments, String key) {
+        String value = stringArgument(arguments, key).toLowerCase(Locale.ROOT);
+        return switch (value) {
+            case "completed" -> dk.ashlan.agent.planning.TaskStatus.COMPLETED;
+            case "in_progress", "in-progress", "active" -> dk.ashlan.agent.planning.TaskStatus.IN_PROGRESS;
+            default -> dk.ashlan.agent.planning.TaskStatus.PENDING;
+        };
     }
 
     private String buildAfterRunMemorySignal(String input, String finalAnswer, List<String> trace) {

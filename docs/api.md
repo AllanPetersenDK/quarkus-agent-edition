@@ -60,6 +60,7 @@ Covered in Swagger:
 - `GET /workflow-demo` - internal deterministic workflow demo
 
 Chapter 7 planning and reflection are visible through the existing runtime/tool seams rather than a new workflow API: the runtime tool registry includes `create-tasks` and `reflection`, and chapter-7 runs now surface plan/reflection/replan markers in session trace entries.
+The runtime inspection seam now also exposes `GET /api/runtime/sessions/{sessionId}/plan` and `GET /api/runtime/sessions/{sessionId}/reflection` so the current chapter-7 plan and latest reflection/replan signal are visible without adding a separate workflow subsystem.
 
 Not covered in Swagger:
 
@@ -214,6 +215,7 @@ Response body:
 Chapter-3 direct tool execution seam. This endpoint bypasses the manual agent loop so a registered tool can be exercised directly from Swagger.
 
 The runtime tool registry now also includes the lightweight chapter-7 planning/reflection tools (`create-tasks` and `reflection`), so they can be listed and invoked through the same seam without becoming a new public workflow API.
+The planning/reflection cycle remains tool-style and context-driven: the visible runtime state is inspected through session endpoints, while the tools themselves stay hidden behind the existing agent loop.
 
 Request body:
 

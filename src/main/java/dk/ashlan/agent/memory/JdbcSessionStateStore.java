@@ -52,7 +52,7 @@ public class JdbcSessionStateStore implements SessionStateStore {
                 }
                 String json = resultSet.getString(1);
                 if (json == null || json.isBlank()) {
-                    return Optional.of(new SessionStateSnapshot(List.of(), List.of()));
+                    return Optional.of(new SessionStateSnapshot(List.of(), List.of(), null, null));
                 }
                 return Optional.of(readSnapshot(json));
             }
@@ -70,7 +70,12 @@ public class JdbcSessionStateStore implements SessionStateStore {
                      values (?, ?)
                      """)) {
             statement.setString(1, sessionState.sessionId());
-            statement.setString(2, objectMapper.writeValueAsString(new SessionStateSnapshot(sessionState.messages(), sessionState.pendingToolCalls())));
+            statement.setString(2, objectMapper.writeValueAsString(new SessionStateSnapshot(
+                    sessionState.messages(),
+                    sessionState.pendingToolCalls(),
+                    sessionState.chapter7Plan(),
+                    sessionState.chapter7Reflection()
+            )));
             statement.executeUpdate();
         } catch (SQLException | IOException exception) {
             throw new IllegalStateException("Unable to persist session state for " + sessionState.sessionId(), exception);
@@ -85,12 +90,12 @@ public class JdbcSessionStateStore implements SessionStateStore {
         }
         try {
             List<LlmMessage> messages = objectMapper.readValue(json, LIST_OF_MESSAGES);
-            return new SessionStateSnapshot(messages, List.of());
+            return new SessionStateSnapshot(messages, List.of(), null, null);
         } catch (IOException exception) {
             try {
                 List<String> legacyMessages = objectMapper.readValue(json, LIST_OF_LEGACY_MESSAGES);
                 List<LlmMessage> messages = legacyMessages.stream().map(LlmMessage::user).toList();
-                return new SessionStateSnapshot(messages, List.of());
+                return new SessionStateSnapshot(messages, List.of(), null, null);
             } catch (IOException legacyException) {
                 throw exception;
             }

@@ -25,7 +25,14 @@ public class SessionManager {
     }
 
     private SessionState loadSessionState(String sessionId) {
-        SessionStateSnapshot snapshot = store.load(sessionId).orElse(new SessionStateSnapshot(java.util.List.of(), java.util.List.of()));
-        return new SessionState(sessionId, snapshot.messages(), snapshot.pendingToolCalls(), store::save);
+        SessionStateSnapshot snapshot = store.load(sessionId).orElse(new SessionStateSnapshot(java.util.List.of(), java.util.List.of(), null, null));
+        return new SessionState(
+                sessionId,
+                snapshot.messages(),
+                snapshot.pendingToolCalls(),
+                snapshot.chapter7Plan(),
+                snapshot.chapter7Reflection(),
+                store::save
+        );
     }
 }

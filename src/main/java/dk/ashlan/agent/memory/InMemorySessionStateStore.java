@@ -20,6 +20,11 @@ public class InMemorySessionStateStore implements SessionStateStore {
 
     @Override
     public void save(SessionState sessionState) {
-        sessions.put(sessionState.sessionId(), new SessionStateSnapshot(sessionState.messages(), sessionState.pendingToolCalls()));
+        sessions.put(sessionState.sessionId(), new SessionStateSnapshot(
+                sessionState.messages(),
+                sessionState.pendingToolCalls(),
+                sessionState.chapter7Plan(),
+                sessionState.chapter7Reflection()
+        ));
     }
 }

@@ -191,6 +191,9 @@ Chapter 7 is now the active next track: planning and reflection build directly o
 manual agent core and the chapter 6 context/memory foundation. Chapter 6 remains the runtime base
 for request-time context optimization, session continuity, and structured long-term memory, while
 chapter 7 adds a small but visible task-plan and reflection cycle rather than a new workflow engine.
+The runtime inspection seam now also exposes the current chapter-7 plan and reflection state per
+session, so manual Swagger smoke-tests can inspect the active plan and the latest replan signal
+without turning the repo into a workflow platform.
 Long-term memory is stored as compact problem-solving records with structured `problem` /
 `summary` / `approach` / `result` fields, ranked cross-session retrieval, and more selective
 dedup. The runtime chapter-6 path now persists that memory through a JDBC-backed vector-like seam

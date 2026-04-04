@@ -3,6 +3,8 @@ package dk.ashlan.agent.memory;
 import dk.ashlan.agent.core.PendingToolCall;
 import dk.ashlan.agent.llm.LlmMessage;
 import dk.ashlan.agent.llm.LlmToolCall;
+import dk.ashlan.agent.planning.Chapter7ReflectionState;
+import dk.ashlan.agent.planning.PlannerService;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -107,6 +109,33 @@ class SessionManagerPersistenceTest {
         JdbcSessionStateStore store = new JdbcSessionStateStore(new FailingDataSource());
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> store.loadMessages("session-1"));
         assertTrue(exception.getMessage().contains("Unable to load session state"));
+    }
+
+    @Test
+    void persistsChapterSevenStateAcrossRestartLikeReload() throws Exception {
+        JdbcDataSource dataSource = dataSource();
+        createSchema(dataSource);
+        JdbcSessionStateStore store = new JdbcSessionStateStore(dataSource);
+
+        SessionManager sessionManager = new SessionManager(store);
+        SessionState session = sessionManager.session("chapter7-session");
+        session.setChapter7Plan(new PlannerService().plan("Explain Quarkus agents"));
+        session.setChapter7Reflection(new Chapter7ReflectionState(
+                "error_analysis",
+                "The tool failed before we could finish the work.",
+                false,
+                true,
+                false,
+                "Revise the failed step and retry with a valid expression.",
+                "Rebuild the plan around the corrected input.",
+                "Reflection recorded (ERROR ANALYSIS) (REPLAN NEEDED): The tool failed before we could finish the work."
+        ));
+
+        SessionManager restarted = new SessionManager(store);
+        assertEquals("Explain Quarkus agents", restarted.session("chapter7-session").chapter7Plan().goal());
+        assertEquals(3, restarted.session("chapter7-session").chapter7Plan().steps().size());
+        assertEquals("error_analysis", restarted.session("chapter7-session").chapter7Reflection().mode());
+        assertTrue(restarted.session("chapter7-session").chapter7Reflection().needReplan());
     }
 
     @Test

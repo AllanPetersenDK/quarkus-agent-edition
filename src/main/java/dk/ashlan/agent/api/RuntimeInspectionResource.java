@@ -3,6 +3,9 @@ package dk.ashlan.agent.api;
 import dk.ashlan.agent.health.AgentReadinessHealthCheck;
 import dk.ashlan.agent.health.RuntimeLivenessHealthCheck;
 import dk.ashlan.agent.core.ToolConfirmation;
+import dk.ashlan.agent.planning.ExecutionPlan;
+import dk.ashlan.agent.planning.PlanStep;
+import dk.ashlan.agent.planning.Chapter7ReflectionState;
 import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.MemoryAwareAgentOrchestrator;
 import dk.ashlan.agent.memory.SessionManager;
@@ -134,6 +137,44 @@ public class RuntimeInspectionResource {
     }
 
     @GET
+    @Path("/sessions/{sessionId}/plan")
+    @Operation(
+            summary = "Inspect a chapter-7 plan",
+            description = "Book chapter: 7. Read-only chapter-7 planning inspection seam backed by the current session state so the active task plan stays visible in Swagger without introducing a workflow engine."
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Current plan state for the requested session.",
+            content = @org.eclipse.microprofile.openapi.annotations.media.Content(schema = @Schema(implementation = SessionPlanInspectionResponse.class))
+    )
+    public SessionPlanInspectionResponse plan(
+            @Parameter(description = "Session identifier used by the runtime chapter-7 planning state.", required = true)
+            @PathParam("sessionId") String sessionId
+    ) {
+        SessionState session = sessionManager.session(sessionId);
+        return SessionPlanInspectionResponse.from(sessionId, session.chapter7Plan());
+    }
+
+    @GET
+    @Path("/sessions/{sessionId}/reflection")
+    @Operation(
+            summary = "Inspect a chapter-7 reflection",
+            description = "Book chapter: 7. Read-only chapter-7 reflection inspection seam backed by the current session state so review, synthesis, and replan signals are visible in Swagger."
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Current reflection state for the requested session.",
+            content = @org.eclipse.microprofile.openapi.annotations.media.Content(schema = @Schema(implementation = SessionReflectionInspectionResponse.class))
+    )
+    public SessionReflectionInspectionResponse reflection(
+            @Parameter(description = "Session identifier used by the runtime chapter-7 reflection state.", required = true)
+            @PathParam("sessionId") String sessionId
+    ) {
+        SessionState session = sessionManager.session(sessionId);
+        return SessionReflectionInspectionResponse.from(sessionId, session.chapter7Reflection());
+    }
+
+    @GET
     @Path("/sessions/{sessionId}/memory")
     @Operation(
             summary = "Inspect session memory",
@@ -243,6 +284,92 @@ public class RuntimeInspectionResource {
             @Schema(description = "Number of messages in the session.")
             int messageCount
     ) {
+    }
+
+    public record SessionPlanInspectionResponse(
+            @Schema(description = "Session identifier.")
+            String sessionId,
+            @Schema(description = "Current task-plan goal.")
+            String goal,
+            @Schema(description = "Plan status for the session.")
+            String status,
+            @Schema(description = "Current chapter-7 task steps.")
+            List<PlanStepResponse> steps,
+            @Schema(description = "Next active task step, if one exists.", nullable = true)
+            PlanStepResponse nextActiveStep
+    ) {
+        static SessionPlanInspectionResponse from(String sessionId, ExecutionPlan plan) {
+            if (plan == null) {
+                return new SessionPlanInspectionResponse(sessionId, "", "missing", List.of(), null);
+            }
+            List<PlanStepResponse> steps = plan.steps() == null ? List.of() : plan.steps().stream().map(PlanStepResponse::from).toList();
+            PlanStepResponse nextActiveStep = plan.nextActiveStep() == null ? null : PlanStepResponse.from(plan.nextActiveStep());
+            return new SessionPlanInspectionResponse(sessionId, plan.goal(), "active", steps, nextActiveStep);
+        }
+    }
+
+    public record SessionReflectionInspectionResponse(
+            @Schema(description = "Session identifier.")
+            String sessionId,
+            @Schema(description = "Reflection status for the session.")
+            String status,
+            @Schema(description = "Reflection mode.", nullable = true)
+            String mode,
+            @Schema(description = "Reflection analysis text.", nullable = true)
+            String analysis,
+            @Schema(description = "Whether the reflection accepted the current answer.")
+            boolean accepted,
+            @Schema(description = "Whether a replan is needed.")
+            boolean needReplan,
+            @Schema(description = "Whether the answer is ready to be finalized.")
+            boolean readyToAnswer,
+            @Schema(description = "Alternative direction suggested by the reflection.", nullable = true)
+            String alternativeDirection,
+            @Schema(description = "Next step suggested by the reflection.", nullable = true)
+            String nextStep,
+            @Schema(description = "Summary text captured for the reflection.", nullable = true)
+            String summary
+    ) {
+        static SessionReflectionInspectionResponse from(String sessionId, Chapter7ReflectionState reflection) {
+            if (reflection == null) {
+                return new SessionReflectionInspectionResponse(sessionId, "missing", "", "", false, false, false, "", "", "");
+            }
+            return new SessionReflectionInspectionResponse(
+                    sessionId,
+                    "available",
+                    reflection.mode(),
+                    reflection.analysis(),
+                    reflection.accepted(),
+                    reflection.needReplan(),
+                    reflection.readyToAnswer(),
+                    reflection.alternativeDirection(),
+                    reflection.nextStep(),
+                    reflection.summary()
+            );
+        }
+    }
+
+    public record PlanStepResponse(
+            @Schema(description = "Task order in the plan.")
+            int order,
+            @Schema(description = "Task description.")
+            String content,
+            @Schema(description = "Task status.")
+            String status,
+            @Schema(description = "Completion cue for the task.", nullable = true)
+            String doneWhen,
+            @Schema(description = "Optional notes for the task.", nullable = true)
+            String notes
+    ) {
+        static PlanStepResponse from(PlanStep step) {
+            return new PlanStepResponse(
+                    step.order(),
+                    step.description(),
+                    step.status().name().toLowerCase(),
+                    step.doneWhen(),
+                    step.notes()
+            );
+        }
     }
 
     public record MemoryInspectionResponse(

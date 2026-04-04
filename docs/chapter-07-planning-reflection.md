@@ -36,6 +36,7 @@ Plan state is kept session/context-based and re-derived when the model asks for 
 - The re-entry loop is deterministic in the companion edition so it is easy to test.
 - The manual planning/reflection loop remains the baseline learning path, while the new tools let the same idea show up in the runtime registry and the existing `/api/agent/run` seam.
 - Runtime trace now exposes planning, reflection, and replan markers so a manual Swagger smoke-test can see the cycle directly.
+- Runtime inspection also exposes `/api/runtime/sessions/{sessionId}/plan` and `/api/runtime/sessions/{sessionId}/reflection`, which keeps the active plan and the latest reflection visible without introducing a separate workflow engine.
 - The LangChain4j agentic demo is a comparison seam that shows a framework-backed workflow without replacing the manual services.
 - The LangChain4j tool-calling companion demo is a separate comparison seam that exercises the framework-backed tool path without replacing the manual services.
 
