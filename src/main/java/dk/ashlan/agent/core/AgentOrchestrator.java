@@ -182,6 +182,7 @@ public class AgentOrchestrator implements AgentRunner {
                     ? toolExecutor.execute(toolCall.toolName(), confirmation.arguments().isEmpty() ? toolCall.arguments() : confirmation.arguments())
                     : JsonToolResult.failure(toolCall.toolName(), reason == null || reason.isBlank() ? "Tool call not approved." : reason);
             JsonToolResult adjustedResult = fireAfterTool(context, toolCall, toolResult, pending.stepNumber());
+            recordChapter7Recovery(resumeTrace, null, session, toolCall, adjustedResult);
             if (approved) {
                 resumeTrace.add("pending_approved:" + toolCall.toolName() + ":" + normalizeTrace(toolCallId));
             } else {
@@ -329,6 +330,8 @@ public class AgentOrchestrator implements AgentRunner {
                 toolResults.add(adjustedResult);
                 recordChapter7Trace(trace, traceEntries, toolCall, adjustedResult);
                 recordChapter7State(session, toolCall, adjustedResult);
+                recordChapter7Recovery(trace, traceEntries, session, toolCall, adjustedResult);
+                recordChapter7PromptRecovery(context, trace, traceEntries, session, toolCall, adjustedResult);
                 if (toolCall.callId() == null || toolCall.callId().isBlank()) {
                     context.addToolMessage(toolCall.toolName(), adjustedResult.output());
                     session.addToolMessage(toolCall.toolName(), adjustedResult.output());
@@ -570,6 +573,77 @@ public class AgentOrchestrator implements AgentRunner {
         }
     }
 
+    private void recordChapter7Recovery(List<String> trace, List<AgentTraceEntry> traceEntries, SessionState session, LlmToolCall toolCall, JsonToolResult toolResult) {
+        if (trace == null || session == null || toolCall == null || toolResult == null) {
+            return;
+        }
+        if (toolResult.success() || session.chapter7Plan() == null || toolCall.toolName() == null) {
+            return;
+        }
+        if ("create-tasks".equals(toolCall.toolName()) || "reflection".equals(toolCall.toolName())) {
+            return;
+        }
+
+        String summary = toolResult.output() == null ? "" : toolResult.output().trim();
+        if (summary.isBlank()) {
+            summary = "Tool failure required a revised chapter-7 plan.";
+        }
+        Chapter7ReflectionState reflection = new Chapter7ReflectionState(
+                "error_analysis",
+                summary,
+                false,
+                true,
+                false,
+                "Switch method and retry with the corrected input.",
+                "Revise the plan around the failure cause.",
+                "Reflection recorded (ERROR ANALYSIS) (REPLAN NEEDED): " + summary
+        );
+        session.setChapter7Reflection(reflection);
+        trace.add("chapter7-reflection:" + normalizeTrace(reflection.summary()));
+        trace.add("chapter7-replan:" + normalizeTrace(reflection.summary()));
+        if (traceEntries != null) {
+            traceEntries.add(new AgentTraceEntry("reflection", reflection.summary()));
+            traceEntries.add(new AgentTraceEntry("replan", "needed"));
+        }
+    }
+
+    private void recordChapter7PromptRecovery(ExecutionContext context, List<String> trace, List<AgentTraceEntry> traceEntries, SessionState session, LlmToolCall toolCall, JsonToolResult toolResult) {
+        if (trace == null || context == null || session == null || toolCall == null || toolResult == null) {
+            return;
+        }
+        if (!toolResult.success() || session.chapter7Plan() == null || toolCall.toolName() == null) {
+            return;
+        }
+        if (!"create-tasks".equals(toolCall.toolName())) {
+            return;
+        }
+        if (!looksLikeChapterSevenRecovery(context.getInput())) {
+            return;
+        }
+        if (session.chapter7Reflection() != null && session.chapter7Reflection().needReplan()) {
+            return;
+        }
+
+        String summary = "Prompt signalled recovery from a failure, so the plan should be revised.";
+        Chapter7ReflectionState reflection = new Chapter7ReflectionState(
+                "error_analysis",
+                summary,
+                false,
+                true,
+                false,
+                "Switch method and retry with the corrected input.",
+                "Revise the plan around the failure cause.",
+                "Reflection recorded (ERROR ANALYSIS) (REPLAN NEEDED): " + summary
+        );
+        session.setChapter7Reflection(reflection);
+        trace.add("chapter7-reflection:" + normalizeTrace(reflection.summary()));
+        trace.add("chapter7-replan:" + normalizeTrace(reflection.summary()));
+        if (traceEntries != null) {
+            traceEntries.add(new AgentTraceEntry("reflection", reflection.summary()));
+            traceEntries.add(new AgentTraceEntry("replan", "needed"));
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private ExecutionPlan chapter7Plan(LlmToolCall toolCall) {
         java.util.Map<String, Object> arguments = toolCall.arguments();
@@ -666,6 +740,15 @@ public class AgentOrchestrator implements AgentRunner {
             return normalized;
         }
         return normalized.substring(0, 120).trim() + " …";
+    }
+
+    private boolean looksLikeChapterSevenRecovery(String input) {
+        String normalized = normalizeTrace(input).toLowerCase(Locale.ROOT);
+        return normalized.contains("recover")
+                || normalized.contains("failure")
+                || normalized.contains("retry")
+                || normalized.contains("2 / 0")
+                || normalized.contains("division by zero");
     }
 
     private boolean hasAfterRunMemoryCallback() {

@@ -172,6 +172,25 @@ public class OpenAiLlmClient implements BaseLlmClient {
                 properties.set("expression", stringProperty("Arithmetic expression to evaluate."));
                 required.add("expression");
             }
+            case "create-tasks" -> {
+                properties.set("goal", stringProperty("Overall task goal or working objective."));
+                properties.set("tasks", chapter7TasksArrayProperty());
+                required.add("goal");
+                required.add("tasks");
+            }
+            case "reflection" -> {
+                properties.set("analysis", stringProperty("Reflection analysis or progress review."));
+                properties.set("mode", chapter7ReflectionModeProperty());
+                properties.set("needReplan", booleanProperty("Whether the current plan should be revised."));
+                properties.set("readyToAnswer", booleanProperty("Whether the answer is ready to finalize."));
+                properties.set("alternativeDirection", stringProperty("Suggested alternative direction when replanning."));
+                properties.set("nextStep", stringProperty("Suggested next step when replanning."));
+                properties.set("summary", stringProperty("Short reflection summary."));
+                required.add("analysis");
+                required.add("mode");
+                required.add("needReplan");
+                required.add("readyToAnswer");
+            }
             case "clock" -> {
                 parameters.put("description", "No arguments required.");
             }
@@ -206,6 +225,48 @@ public class OpenAiLlmClient implements BaseLlmClient {
         }
 
         return parameters;
+    }
+
+    private ObjectNode chapter7TasksArrayProperty() {
+        ObjectNode taskItem = objectMapper.createObjectNode();
+        taskItem.put("type", "object");
+        taskItem.put("additionalProperties", false);
+        ObjectNode itemProperties = taskItem.putObject("properties");
+        itemProperties.set("content", stringProperty("Task content."));
+        itemProperties.set("status", chapter7TaskStatusProperty());
+        itemProperties.set("doneWhen", stringProperty("Completion cue for the task."));
+        itemProperties.set("notes", stringProperty("Optional notes or rationale."));
+        ArrayNode itemRequired = taskItem.putArray("required");
+        itemRequired.add("content");
+
+        ObjectNode tasks = objectMapper.createObjectNode();
+        tasks.put("type", "array");
+        tasks.put("description", "Ordered chapter-7 task list to regenerate in full.");
+        tasks.set("items", taskItem);
+        return tasks;
+    }
+
+    private ObjectNode chapter7TaskStatusProperty() {
+        ObjectNode property = objectMapper.createObjectNode();
+        property.put("type", "string");
+        property.put("description", "Task status.");
+        ArrayNode values = property.putArray("enum");
+        values.add("pending");
+        values.add("in_progress");
+        values.add("completed");
+        return property;
+    }
+
+    private ObjectNode chapter7ReflectionModeProperty() {
+        ObjectNode property = objectMapper.createObjectNode();
+        property.put("type", "string");
+        property.put("description", "Reflection mode.");
+        ArrayNode values = property.putArray("enum");
+        values.add("progress_review");
+        values.add("error_analysis");
+        values.add("result_synthesis");
+        values.add("self_check");
+        return property;
     }
 
     private ObjectNode stringProperty(String description) {

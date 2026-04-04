@@ -2,6 +2,7 @@ package dk.ashlan.agent.api;
 
 import dk.ashlan.agent.health.AgentReadinessHealthCheck;
 import dk.ashlan.agent.health.RuntimeLivenessHealthCheck;
+import dk.ashlan.agent.core.AgentStepResult;
 import dk.ashlan.agent.core.ToolConfirmation;
 import dk.ashlan.agent.planning.ExecutionPlan;
 import dk.ashlan.agent.planning.PlanStep;
@@ -171,7 +172,11 @@ public class RuntimeInspectionResource {
             @PathParam("sessionId") String sessionId
     ) {
         SessionState session = sessionManager.session(sessionId);
-        return SessionReflectionInspectionResponse.from(sessionId, session.chapter7Reflection());
+        Chapter7ReflectionState reflection = session.chapter7Reflection();
+        if (!hasMeaningfulReflection(reflection)) {
+            reflection = reflectionFromTrace(sessionId);
+        }
+        return SessionReflectionInspectionResponse.from(sessionId, reflection);
     }
 
     @GET
@@ -299,7 +304,7 @@ public class RuntimeInspectionResource {
             PlanStepResponse nextActiveStep
     ) {
         static SessionPlanInspectionResponse from(String sessionId, ExecutionPlan plan) {
-            if (plan == null) {
+            if (!hasMeaningfulPlan(plan)) {
                 return new SessionPlanInspectionResponse(sessionId, "", "missing", List.of(), null);
             }
             List<PlanStepResponse> steps = plan.steps() == null ? List.of() : plan.steps().stream().map(PlanStepResponse::from).toList();
@@ -331,7 +336,7 @@ public class RuntimeInspectionResource {
             String summary
     ) {
         static SessionReflectionInspectionResponse from(String sessionId, Chapter7ReflectionState reflection) {
-            if (reflection == null) {
+            if (!hasMeaningfulReflection(reflection)) {
                 return new SessionReflectionInspectionResponse(sessionId, "missing", "", "", false, false, false, "", "", "");
             }
             return new SessionReflectionInspectionResponse(
@@ -347,6 +352,80 @@ public class RuntimeInspectionResource {
                     reflection.summary()
             );
         }
+    }
+
+    private static boolean hasMeaningfulPlan(ExecutionPlan plan) {
+        if (plan == null) {
+            return false;
+        }
+        boolean hasGoal = plan.goal() != null && !plan.goal().isBlank();
+        boolean hasSteps = plan.steps() != null && !plan.steps().isEmpty();
+        return hasGoal || hasSteps;
+    }
+
+    private static boolean hasMeaningfulReflection(Chapter7ReflectionState reflection) {
+        if (reflection == null) {
+            return false;
+        }
+        boolean hasText = !reflection.mode().isBlank()
+                || !reflection.analysis().isBlank()
+                || !reflection.alternativeDirection().isBlank()
+                || !reflection.nextStep().isBlank()
+                || !reflection.summary().isBlank();
+        return hasText || reflection.accepted() || reflection.needReplan() || reflection.readyToAnswer();
+    }
+
+    private Chapter7ReflectionState reflectionFromTrace(String sessionId) {
+        if (sessionTraceStore == null) {
+            return null;
+        }
+        return sessionTraceStore.load(sessionId)
+                .map(steps -> {
+                    for (int i = steps.size() - 1; i >= 0; i--) {
+                        Chapter7ReflectionState reflection = reflectionFromStep(steps.get(i));
+                        if (reflection != null) {
+                            return reflection;
+                        }
+                    }
+                    return null;
+                })
+                .orElse(null);
+    }
+
+    private Chapter7ReflectionState reflectionFromStep(AgentStepResult step) {
+        if (step == null || step.traceEntries() == null || step.traceEntries().isEmpty()) {
+            return null;
+        }
+        String reflectionMessage = null;
+        boolean replan = false;
+        for (int i = step.traceEntries().size() - 1; i >= 0; i--) {
+            var entry = step.traceEntries().get(i);
+            if (entry == null || entry.kind() == null) {
+                continue;
+            }
+            if ("replan".equals(entry.kind())) {
+                replan = true;
+            } else if ("reflection".equals(entry.kind()) && reflectionMessage == null) {
+                reflectionMessage = entry.message();
+            }
+        }
+        if (reflectionMessage == null || reflectionMessage.isBlank()) {
+            return null;
+        }
+        String normalized = reflectionMessage.trim();
+        String mode = normalized.contains("ERROR ANALYSIS") ? "error_analysis" : normalized.contains("PROGRESS REVIEW") ? "progress_review" : "self_check";
+        boolean needReplan = replan || normalized.contains("REPLAN NEEDED");
+        String analysis = normalized.contains(":") ? normalized.substring(normalized.indexOf(':') + 1).trim() : normalized;
+        return new Chapter7ReflectionState(
+                mode,
+                analysis,
+                !needReplan,
+                needReplan,
+                !needReplan && !analysis.isBlank(),
+                needReplan ? "Switch method and retry with the corrected input." : "",
+                needReplan ? "Revise the plan around the failure cause." : "",
+                normalized
+        );
     }
 
     public record PlanStepResponse(

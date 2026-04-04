@@ -5,9 +5,12 @@ import dk.ashlan.agent.tools.ToolRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.ashlan.agent.rag.KnowledgeBaseTool;
 import dk.ashlan.agent.rag.RagService;
+import dk.ashlan.agent.planning.CreateTasksTool;
+import dk.ashlan.agent.planning.ReflectionTool;
 import dk.ashlan.agent.tools.OpenAiWebSearchService;
 import dk.ashlan.agent.tools.WebSearchTool;
 import dk.ashlan.agent.tools.WikipediaTool;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -206,5 +209,63 @@ class OpenAiLlmClientTest {
         assertTrue(requestBody.get().contains("Search the in-memory knowledge base for repo or RAG questions. Not for simple stable facts or basic general knowledge."));
         assertTrue(requestBody.get().contains("Search the live web through OpenAI Responses API for current, external, or explicitly requested lookup tasks. Not for simple stable facts or common general knowledge."));
         assertTrue(requestBody.get().contains("Search Wikipedia when the user explicitly asks for Wikipedia or needs a sourced lookup. Not for simple stable facts."));
+    }
+
+    @Test
+    void completeSerializesChapterSevenToolSchemasForPlanningAndReflection() throws Exception {
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        OpenAiLlmClient.OpenAiTransport transport = (uri, apiKey, payload, timeout) -> {
+            requestBody.set(payload);
+            return new OpenAiLlmClient.OpenAiResponse(200, """
+                    {
+                      "choices": [
+                        {
+                          "message": {
+                            "role": "assistant",
+                            "content": "Done"
+                          }
+                        }
+                      ]
+                    }
+                    """);
+        };
+
+        OpenAiLlmClient client = new OpenAiLlmClient("test-key", "gpt-4.1-mini", "http://example.com/v1", 10, transport, new ObjectMapper());
+        client.complete(
+                List.of(LlmMessage.user("Create a plan and reflect on it.")),
+                new ToolRegistry(List.of(new CreateTasksTool(), new ReflectionTool())),
+                new ExecutionContext("Create a plan and reflect on it.")
+        );
+
+        JsonNode root = new ObjectMapper().readTree(requestBody.get());
+        JsonNode tools = root.path("tools");
+        JsonNode createTasks = findTool(tools, "create-tasks");
+        JsonNode reflection = findTool(tools, "reflection");
+
+        assertTrue(createTasks.isObject());
+        assertTrue(createTasks.path("function").path("parameters").path("properties").has("goal"));
+        assertTrue(createTasks.path("function").path("parameters").path("properties").has("tasks"));
+        assertTrue(createTasks.path("function").path("parameters").path("properties").path("tasks").path("items").path("properties").has("content"));
+        assertTrue(createTasks.path("function").path("parameters").path("properties").path("tasks").path("items").path("properties").has("status"));
+        assertTrue(createTasks.path("function").path("parameters").path("properties").path("tasks").path("items").path("properties").has("doneWhen"));
+        assertTrue(createTasks.path("function").path("parameters").path("properties").path("tasks").path("items").path("properties").has("notes"));
+
+        assertTrue(reflection.isObject());
+        assertTrue(reflection.path("function").path("parameters").path("properties").has("analysis"));
+        assertTrue(reflection.path("function").path("parameters").path("properties").has("mode"));
+        assertTrue(reflection.path("function").path("parameters").path("properties").has("needReplan"));
+        assertTrue(reflection.path("function").path("parameters").path("properties").has("readyToAnswer"));
+        assertTrue(reflection.path("function").path("parameters").path("properties").has("alternativeDirection"));
+        assertTrue(reflection.path("function").path("parameters").path("properties").has("nextStep"));
+        assertTrue(reflection.path("function").path("parameters").path("properties").has("summary"));
+    }
+
+    private JsonNode findTool(JsonNode tools, String name) {
+        for (JsonNode tool : tools) {
+            if (name.equals(tool.path("function").path("name").asText())) {
+                return tool;
+            }
+        }
+        return com.fasterxml.jackson.databind.node.MissingNode.getInstance();
     }
 }

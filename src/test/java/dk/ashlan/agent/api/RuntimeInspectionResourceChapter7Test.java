@@ -64,6 +64,28 @@ class RuntimeInspectionResourceChapter7Test {
         assertNotNull(reflection.alternativeDirection());
     }
 
+    @Test
+    void missingChapterSevenStateIsReportedExplicitly() {
+        RuntimeHarness harness = harness();
+
+        RuntimeInspectionResource.SessionPlanInspectionResponse plan = harness.resource.plan("unknown-session");
+        assertEquals("unknown-session", plan.sessionId());
+        assertEquals("missing", plan.status());
+        assertTrue(plan.goal().isBlank());
+        assertTrue(plan.steps().isEmpty());
+        assertTrue(plan.nextActiveStep() == null);
+
+        RuntimeInspectionResource.SessionReflectionInspectionResponse reflection = harness.resource.reflection("unknown-session");
+        assertEquals("unknown-session", reflection.sessionId());
+        assertEquals("missing", reflection.status());
+        assertTrue(reflection.mode().isBlank());
+        assertTrue(reflection.analysis().isBlank());
+        assertFalse(reflection.accepted());
+        assertFalse(reflection.needReplan());
+        assertFalse(reflection.readyToAnswer());
+        assertTrue(reflection.summary().isBlank());
+    }
+
     private RuntimeHarness harness() {
         SessionManager sessionManager = new SessionManager();
         MemoryService memoryService = new MemoryService(sessionManager, new InMemoryTaskMemoryStore(), new MemoryExtractionService());

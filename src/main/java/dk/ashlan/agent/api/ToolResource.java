@@ -3,6 +3,7 @@ package dk.ashlan.agent.api;
 import dk.ashlan.agent.api.dto.ToolSummaryResponse;
 import dk.ashlan.agent.tools.Tool;
 import dk.ashlan.agent.tools.ToolRegistry;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -15,8 +16,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
 
-@Path("/api/agent")
+@Path("/api/agent/tools")
 @Produces(MediaType.APPLICATION_JSON)
+@ApplicationScoped
 @Tag(name = "Tool Discovery", description = "Utility endpoint that exposes the runtime tool registry through Swagger.")
 public class ToolResource {
     private final ToolRegistry toolRegistry;
@@ -26,7 +28,6 @@ public class ToolResource {
     }
 
     @GET
-    @Path("/tools")
     @Operation(
             summary = "List runtime tools",
             description = "Book chapter mapping: cross-cutting runtime seam. Utility/discovery endpoint that lists the tools registered in the runtime."
