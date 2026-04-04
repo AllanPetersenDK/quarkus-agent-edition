@@ -21,6 +21,9 @@ public class GaiaValidationRunner {
     private final GaiaDatasetService datasetService;
     private final GaiaEvalCaseMapper caseMapper;
     private final GaiaAnswerScorer scorer;
+    private final GaiaQuestionClassifier questionClassifier;
+    private final GaiaAnswerPolicy answerPolicy;
+    private final GaiaAnswerPostProcessor answerPostProcessor;
     private final GaiaAttachmentResolver attachmentResolver;
     private final GaiaEvaluationStore evaluationStore;
     private final Config config;
@@ -43,6 +46,9 @@ public class GaiaValidationRunner {
         this.datasetService = datasetService;
         this.caseMapper = caseMapper;
         this.scorer = scorer;
+        this.questionClassifier = new GaiaQuestionClassifier();
+        this.answerPolicy = new GaiaAnswerPolicy();
+        this.answerPostProcessor = new GaiaAnswerPostProcessor(scorer);
         this.attachmentResolver = attachmentResolver;
         this.evaluationStore = evaluationStore;
         this.config = config;
@@ -95,8 +101,15 @@ public class GaiaValidationRunner {
     private GaiaCaseResult runCase(String runId, GaiaExample example) {
         GaiaEvalCase evalCase = caseMapper.map(example);
         String sessionId = "gaia-" + runId + "-" + evalCase.taskId();
+        GaiaQuestionType questionType = questionClassifier.classify(evalCase.prompt());
         List<String> attachmentEvents = example.attachment() == null ? List.of() : example.attachment().traceEvents();
         List<LlmMessage> supplementalMessages = new ArrayList<>();
+        List<String> policyTraceEvents = new ArrayList<>();
+        policyTraceEvents.add("gaia-question-type:" + questionType.name());
+        if (questionType == GaiaQuestionType.SINGLE_ENTITY) {
+            supplementalMessages.addAll(answerPolicy.supplementalMessages(questionType));
+            policyTraceEvents.add("gaia-answer-policy:single-entity");
+        }
         if (example.attachment() != null) {
             String note = attachmentResolver.toContextNote(example.attachment());
             if (!note.isBlank()) {
@@ -106,8 +119,13 @@ public class GaiaValidationRunner {
         AgentRunResult output = supplementalMessages.isEmpty()
                 ? agentOrchestrator.run(evalCase.prompt(), sessionId)
                 : agentOrchestrator.run(evalCase.prompt(), sessionId, supplementalMessages);
-        GaiaScoreResult score = scorer.score(evalCase.prompt(), evalCase.expectedAnswers(), output.finalAnswer());
+        GaiaAnswerPostProcessResult postProcessed = answerPostProcessor.process(questionType, evalCase.expectedAnswers(), output.finalAnswer());
+        GaiaScoreResult score = scorer.score(evalCase.prompt(), evalCase.expectedAnswers(), postProcessed.answer());
         List<String> trace = new ArrayList<>(output.trace());
+        trace.addAll(policyTraceEvents);
+        trace.add("gaia-answer-raw:" + (output.finalAnswer() == null ? "" : output.finalAnswer()));
+        trace.addAll(postProcessed.traceEvents());
+        trace.add("gaia-answer-final:" + postProcessed.answer());
         trace.add("taskId:" + evalCase.taskId());
         trace.add("question:" + evalCase.prompt());
         trace.add("expectedNormalized:" + score.expectedNormalized());
@@ -126,7 +144,7 @@ public class GaiaValidationRunner {
                 evalCase.prompt(),
                 evalCase.level(),
                 evalCase.expectedAnswers(),
-                output.finalAnswer(),
+                postProcessed.answer(),
                 score,
                 score.passed(),
                 output.iterations(),

@@ -233,6 +233,7 @@ GAIA also uses the live `web-search` runtime tool for current web/video lookup q
 Set `GAIA_AUDIO_TRANSCRIPTION_MODEL` if you want to override the default `gpt-4o-mini-transcribe` audio model.
 GAIA now also extracts plain text from text-like attachments and PDFs (`txt`, `md`, `csv`, `json`, `html`, `xml`, `pdf`) and injects the extracted text into the validation context. Unsupported types stay explicit, and OCR/vision are still out of scope.
 For short entity-style answers, GAIA scoring is now stricter about long compound responses that mention the expected entity together with competing alternatives.
+GAIA validation also applies a single-entity answer policy and conservative post-processing for questions that clearly expect one named entity, so the runner prefers one precise answer over a broad list when that is safe.
 
 Example GAIA run body:
 
