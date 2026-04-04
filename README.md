@@ -118,6 +118,8 @@ mvn test
 - `POST /api/companion/langchain4j/agentic-demo`
 - `POST /api/companion/llm/completions`
 - `POST /api/companion/llm/async-batch`
+
+For local GAIA validation, `./scripts/run-dev.sh` will auto-download the workspace snapshot into `target/gaia-data` on first start when `GAIA_DATASET_URL` is not set.
 - `POST /code-agent`
 - `POST /multi-agent`
 - `GET /workflow-demo`
@@ -193,6 +195,7 @@ Demo and fake components are intentionally marked and include:
 - `CodeGenerationTool`
 - `TestExecutionTool`
 - `WorkspaceService` defaults to `target/workspace` for safe local runs.
+- GAIA validation/dev defaults to `target/gaia-data`, so a downloaded GAIA snapshot can live inside the workspace without any machine-specific absolute path.
 - Micrometer timers/counters are enabled for agent runs and tool execution.
 - SmallRye Fault Tolerance backs the OpenAI retry policy, and the provider call is wrapped in a local timeout boundary.
 
@@ -211,6 +214,33 @@ Covered in Swagger:
 - GAIA validation/dev run and per-task lookup
 - the selected LangChain4j companion run and agentic demo
 - internal chapter demos for code-agent, multi-agent, and workflow
+
+## GAIA Local Setup
+
+For local validation/dev, GAIA defaults to a workspace-local snapshot under `target/gaia-data`.
+That lets you keep the real Hugging Face snapshot in the repo workspace without committing dataset files.
+
+Typical local flow:
+
+```bash
+./scripts/run-dev.sh
+```
+
+`scripts/run-dev.sh` automatically downloads the GAIA validation snapshot into `target/gaia-data` on first use when `GAIA_DATASET_URL` is not set.
+If you want to prepare the snapshot without starting dev mode, run `scripts/setup-gaia-local.sh` directly.
+
+Example GAIA run body:
+
+```json
+{
+  "localPath": "target/gaia-data",
+  "config": "2023",
+  "split": "validation",
+  "level": 1,
+  "limit": 3,
+  "failFast": false
+}
+```
 
 Still internal:
 

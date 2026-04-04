@@ -46,6 +46,11 @@ if [[ -f "$repo_root/.env" ]]; then
   set +a
 fi
 
+if [[ -z "${GAIA_DATASET_URL:-}" ]]; then
+  export GAIA_LOCAL_PATH="${GAIA_LOCAL_PATH:-$repo_root/target/gaia-data}"
+  "$repo_root/scripts/setup-gaia-local.sh"
+fi
+
 mvn_bin="$(choose_mvn)"
 repo_local="${M2_REPO:-$HOME/.m2/repository}"
 

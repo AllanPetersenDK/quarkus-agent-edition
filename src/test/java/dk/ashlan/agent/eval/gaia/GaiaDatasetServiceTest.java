@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GaiaDatasetServiceTest {
@@ -23,8 +24,8 @@ class GaiaDatasetServiceTest {
         Files.createDirectories(validationDir);
         Files.writeString(validationDir.resolve("attachment.txt"), "GAIA attachment content");
         GaiaTestSupport.writeParquet(validationDir.resolve("metadata.level1.parquet"), List.of(
-                new GaiaTestSupport.GaiaRow("task-1", "What is PostgreSQL?", "PostgreSQL", "1", "attachment.txt", "attachment.txt"),
-                new GaiaTestSupport.GaiaRow("task-2", "What is H2?", "H2", "2", "ignored.txt", "ignored.txt")
+                new GaiaTestSupport.GaiaRow("task-1", "What is PostgreSQL?", "PostgreSQL", "1", "attachment.txt", "2023/validation/attachment.txt"),
+                new GaiaTestSupport.GaiaRow("task-2", "What is H2?", "H2", "2", "ignored.txt", "2023/validation/ignored.txt")
         ));
 
         GaiaDatasetService service = new GaiaDatasetService(
@@ -38,5 +39,19 @@ class GaiaDatasetServiceTest {
         assertEquals("task-1", examples.getFirst().taskId());
         assertTrue(examples.getFirst().attachment().present());
         assertTrue(examples.getFirst().attachment().note().contains("GAIA attachment text preview"));
+    }
+
+    @Test
+    void failsClearlyWhenSourceIsMissing() {
+        GaiaDatasetService service = new GaiaDatasetService(
+                new GaiaParquetLoader(new ObjectMapper(), new SmallRyeConfigBuilder().build()),
+                new GaiaAttachmentResolver()
+        );
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                service.load(new GaiaDatasetSelection("", "", "2023", "validation", 1, 1, false))
+        );
+
+        assertTrue(exception.getMessage().contains("GAIA dataset source is required"));
     }
 }

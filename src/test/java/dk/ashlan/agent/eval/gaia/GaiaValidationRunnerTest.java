@@ -30,7 +30,7 @@ class GaiaValidationRunnerTest {
         Files.createDirectories(validationDir);
         Files.writeString(validationDir.resolve("attachment.txt"), "GAIA attachment content");
         GaiaTestSupport.writeParquet(validationDir.resolve("metadata.level1.parquet"), List.of(
-                new GaiaTestSupport.GaiaRow("task-1", "What is PostgreSQL?", "PostgreSQL", "1", "attachment.txt", "attachment.txt")
+                new GaiaTestSupport.GaiaRow("task-1", "What is PostgreSQL?", "PostgreSQL", "1", "attachment.txt", "2023/validation/attachment.txt")
         ));
 
         GaiaValidationRunner runner = new GaiaValidationRunner(

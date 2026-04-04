@@ -28,8 +28,8 @@ public class GaiaDatasetService {
         }
         List<String> resolvedSources = resolveSources(source, selection.config(), selection.split(), selection.level());
         List<GaiaExample> examples = new ArrayList<>();
+        String attachmentBase = sourceBase(source);
         for (String resolvedSource : resolvedSources) {
-            String attachmentBase = sourceBase(resolvedSource);
             examples.addAll(parquetLoader.load(resolvedSource).stream()
                     .map(example -> example.withAttachment(attachmentResolver.resolve(example, attachmentBase)))
                     .toList());

@@ -5,7 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.parquet.avro.AvroParquetReader;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.parquet.example.data.Group;
+import org.apache.parquet.hadoop.ParquetReader;
+import org.apache.parquet.hadoop.example.GroupReadSupport;
 import org.eclipse.microprofile.config.Config;
 
 import java.io.IOException;
@@ -173,9 +176,11 @@ public class GaiaParquetLoader {
         java.nio.file.Path tempFile = Files.createTempFile("gaia-validation", ".parquet");
         try {
             Files.write(tempFile, bytes);
-            try (var reader = AvroParquetReader.<GenericRecord>builder(new org.apache.hadoop.fs.Path(tempFile.toUri())).build()) {
+            try (ParquetReader<Group> reader = ParquetReader.builder(new GroupReadSupport(), new org.apache.hadoop.fs.Path(tempFile.toUri()))
+                    .withConf(new Configuration(false))
+                    .build()) {
                 List<GaiaExample> cases = new ArrayList<>();
-                GenericRecord record;
+                Group record;
                 while ((record = reader.read()) != null) {
                     cases.add(map(record));
                 }
@@ -218,6 +223,21 @@ public class GaiaParquetLoader {
         );
     }
 
+    private GaiaExample map(Group group) {
+        Map<String, Object> raw = convertGroup(group);
+        return new GaiaExample(
+                text(group, "task_id", "taskId", "id"),
+                text(group, "Question", "question"),
+                text(group, "Level", "level"),
+                text(group, "file_name", "fileName"),
+                text(group, "file_path", "filePath"),
+                firstAnswer(group),
+                listAnswers(group),
+                raw,
+                null
+        );
+    }
+
     private Object convertValue(Object value) {
         if (value instanceof GenericRecord genericRecord) {
             Map<String, Object> map = new LinkedHashMap<>();
@@ -241,6 +261,11 @@ public class GaiaParquetLoader {
 
     private List<String> listAnswers(GenericRecord record) {
         Object value = firstValue(record, "golden_answers", "goldenAnswers", "Final answer", "final_answer", "finalAnswer", "answer");
+        return listAnswers(value);
+    }
+
+    private List<String> listAnswers(Group group) {
+        Object value = firstValue(group, "golden_answers", "goldenAnswers", "Final answer", "final_answer", "finalAnswer", "answer");
         return listAnswers(value);
     }
 
@@ -298,6 +323,11 @@ public class GaiaParquetLoader {
         return answers.isEmpty() ? "" : answers.getFirst();
     }
 
+    private String firstAnswer(Group group) {
+        List<String> answers = listAnswers(group);
+        return answers.isEmpty() ? "" : answers.getFirst();
+    }
+
     private JsonNode firstNode(JsonNode node, String... names) {
         for (String name : names) {
             JsonNode value = node.get(name);
@@ -317,6 +347,20 @@ public class GaiaParquetLoader {
             if (value != null) {
                 return value;
             }
+        }
+        return null;
+    }
+
+    private Object firstValue(Group group, String... names) {
+        for (String name : names) {
+            if (!group.getType().containsField(name) || group.getFieldRepetitionCount(name) == 0) {
+                continue;
+            }
+            int fieldIndex = group.getType().getFieldIndex(name);
+            if (group.getType().getType(fieldIndex).isPrimitive()) {
+                return group.getValueToString(fieldIndex, 0);
+            }
+            return convertGroup((Group) group.getGroup(name, 0));
         }
         return null;
     }
@@ -345,5 +389,51 @@ public class GaiaParquetLoader {
             }
         }
         return "";
+    }
+
+    private String text(Group group, String... names) {
+        for (String name : names) {
+            if (!group.getType().containsField(name) || group.getFieldRepetitionCount(name) == 0) {
+                continue;
+            }
+            int fieldIndex = group.getType().getFieldIndex(name);
+            String text = group.getValueToString(fieldIndex, 0);
+            if (text != null) {
+                return text;
+            }
+        }
+        return "";
+    }
+
+    private Map<String, Object> convertGroup(Group group) {
+        Map<String, Object> raw = new LinkedHashMap<>();
+        group.getType().getFields().forEach(field -> raw.put(field.getName(), convertField(group, field.getName())));
+        return raw;
+    }
+
+    private Object convertField(Group group, String name) {
+        if (!group.getType().containsField(name) || group.getFieldRepetitionCount(name) == 0) {
+            return null;
+        }
+        int count = group.getFieldRepetitionCount(name);
+        int fieldIndex = group.getType().getFieldIndex(name);
+        if (group.getType().getType(fieldIndex).isPrimitive()) {
+            if (count == 1) {
+                return group.getValueToString(fieldIndex, 0);
+            }
+            List<Object> values = new ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                values.add(group.getValueToString(fieldIndex, i));
+            }
+            return values;
+        }
+        if (count == 1) {
+            return convertGroup((Group) group.getGroup(name, 0));
+        }
+        List<Object> values = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            values.add(convertGroup((Group) group.getGroup(name, i)));
+        }
+        return values;
     }
 }
