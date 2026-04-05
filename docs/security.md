@@ -9,7 +9,7 @@ The current security posture is a documented stance, not a live auth implementat
 |---|---|---|
 | `POST /api/v1/assistants/query` | Official product backend entrypoint | Preferred internal API for closed-network integrations |
 | `GET /api/v1/assistants/admin/*` | Product operator inspection | Internal-only drift and debugging seam |
-| `POST /api/agent/run` | Main companion API for the agent loop | Safe for local/dev use and private deployments; not hardened for public internet exposure |
+| `POST /api/agent/run` | Secondary runtime/manual seam for the agent loop | Safe for local/dev use and private deployments; not hardened for public internet exposure |
 | `GET /api/agent/tools` | Public companion metadata | Safe to keep open in the companion app |
 | `POST /api/code-agent/run` | Code-agent production seam | Treat as internal/admin-only if exposed outside localhost |
 | `POST /multi-agent` | Multi-agent production seam | Treat as internal/admin-only if exposed outside localhost |
@@ -22,6 +22,7 @@ The current security posture is a documented stance, not a live auth implementat
 - The repo is a book companion, not a hardened multi-tenant service.
 - `code`, `multiagent`, and `eval` are intentionally isolated seams, but they do not yet have an auth layer.
 - The product lane is the intended internal backend surface, while chapter-demo and companion seams remain secondary inspection and comparison paths.
+- `/api/agent/run` is a runtime/manual seam and not the canonical product backend.
 - The cleanest next step, if these endpoints need real exposure, is Quarkus OIDC with role-based access, not ad hoc checks inside the resources.
 - For now, the network boundary, reverse proxy/gateway placement, endpoint hygiene, and bounded defaults are the main safety controls.
 
@@ -40,4 +41,4 @@ If you want to expose this beyond local/private network use, add `quarkus-oidc` 
 - `/api/v1/assistants/admin/*` as operator-only inspection
 - `admin` and `eval` endpoints with an admin role
 - `/api/code-agent/run` and `multi-agent` with an operator role
-- keep `api/agent/run` either public for demos or operator-only for non-demo deployments
+- keep `api/agent/run` either public for demos or operator-only for non-demo deployments, but do not treat it as the primary product integration path

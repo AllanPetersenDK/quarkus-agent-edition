@@ -3,7 +3,7 @@
 This repository exposes a Swagger-visible surface for selected outer runtime and companion seams.
 It does not turn the from-scratch orchestration internals into HTTP endpoints.
 Chapter 10 adds a shared run-history and lightweight evaluation seam so the important lanes can be inspected after execution without turning the repo into a monitoring platform.
-The canonical product contract is the `/api/v1/assistants` family. `agent-ashlan-app` should integrate there first; operator seams, chapter demo surfaces, and raw runtime seams remain available, but they are secondary.
+The canonical product contract is the `/api/v1/assistants` family. `agent-ashlan-app` should integrate there first; operator seams, chapter demo surfaces, and raw runtime seams remain available, but they are secondary. The product lane now promotes the useful runtime metadata into product-shaped DTOs so the frontend does not need to depend on `/api/agent/run` as a hidden backend.
 
 ## OpenAPI And Swagger UI
 
@@ -56,7 +56,7 @@ Covered in Swagger:
 - `GET /api/v1/assistants/admin/overview` - secondary product operator seam for a compact closed-network overview
 - `GET /api/v1/assistants/admin/conversations` - secondary product operator seam for persistent conversation summaries
 - `GET /api/v1/assistants/admin/conversations/{conversationId}` - secondary product operator seam for persistent conversation detail
-- `POST /api/agent/run` - secondary chapter-4 manual-agent core seam
+- `POST /api/agent/run` - secondary chapter-4 runtime/manual seam
 - `POST /api/agent/step` - secondary chapter-4 manual-loop inspection seam
 - `POST /api/agent/run/structured` - secondary chapter-4 structured-output seam around the manual loop
 - `GET /api/agent/tools` - secondary chapter-3 tool-system discovery seam
@@ -101,8 +101,8 @@ Covered in Swagger:
 Chapter 7 planning and reflection are visible through the existing runtime/tool seams rather than a new workflow API: the runtime tool registry includes `create-tasks` and `reflection`, `GET /api/agent/tools` now works in the live runtime, and chapter-7 runs surface plan/reflection/replan markers in session trace entries.
 The runtime inspection seam now also exposes `GET /api/runtime/sessions/{sessionId}/plan` and `GET /api/runtime/sessions/{sessionId}/reflection` so the current chapter-7 plan and latest reflection/replan signal are visible without adding a separate workflow subsystem. In the current runtime, those inspection seams are meaningfully populated for chapter-7 sessions instead of acting as thin placeholders.
 Chapter 8 follows the same companion pattern: the runtime exposes a small code-agent run seam, while workspace state and generated tools remain inspectable through session-scoped endpoints rather than a separate platform.
-The canonical product lane follows the same “small seam first” rule: `POST /api/v1/assistants/query` delegates to RAG, memory, planning, reflection, and session state, while keeping the chapter demo endpoints available as companion surfaces rather than the recommended product path.
-The shared chapter-10 run history ties the manual runtime lane, the product lane, the code-agent lane, the multi-agent lane, the GAIA lane, and the evaluation lane together. The visible records stay intentionally compact and human-readable: run id, lane, input summary, timing, status, outcome, trace summary, tool usage, quality signals, and the key approval or failure details.
+The canonical product lane follows the same “small seam first” rule: `POST /api/v1/assistants/query` delegates to RAG, memory, planning, reflection, and session state, while keeping the chapter demo endpoints available as companion surfaces rather than the recommended product path. The product responses now also surface trace highlights, outcome categories, tool and source counts, approval state, and artifact summaries in product form.
+The shared chapter-10 run history ties the manual runtime lane, the product lane, the code-agent lane, the multi-agent lane, the GAIA lane, and the evaluation lane together. The visible records stay intentionally compact and human-readable: run id, lane, input summary, timing, status, outcome, trace summary, trace highlights, tool usage, quality signals, and the key approval or failure details.
 Chapter 10 is also the shared evaluation and quality gate layer for the product lane: product runs record into the same history seam, and the product evaluation cases can be replayed and explained without the original live response body.
 
 Not covered in Swagger:
@@ -212,7 +212,7 @@ Manual runtime runs, product runs, code-agent runs, multi-agent runs, evaluation
 
 `POST /api/agent/run`
 
-Runtime API: this is the main REST-exposed manual agent loop and the chapter-4 core seam.
+Runtime API: this is the secondary REST-exposed manual agent loop and the chapter-4 core seam, not the canonical product path.
 Same-session calls now replay prior role-aware conversation history, so a session can remember user-provided facts across turns without relying on tool memory.
 The same endpoint also accepts `toolConfirmations` for the small chapter-6 pause/resume bridge; when those are supplied, the request routes to the existing resume path instead of a fresh run, and an explicit `sessionId` is required so the confirmations do not drift onto an anonymous ephemeral run.
 

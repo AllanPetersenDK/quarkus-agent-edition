@@ -60,6 +60,30 @@ public record ProductConversationState(
         return lastTurn() == null ? null : lastTurn().toolUsageSummary();
     }
 
+    public List<String> lastTraceHighlights() {
+        return lastTurn() == null ? List.of() : lastTurn().traceHighlights();
+    }
+
+    public String lastOutcomeCategory() {
+        return lastTurn() == null ? null : lastTurn().outcomeCategory();
+    }
+
+    public Boolean lastApproved() {
+        return lastTurn() == null ? null : lastTurn().approved();
+    }
+
+    public Double lastScore() {
+        return lastTurn() == null ? null : lastTurn().score();
+    }
+
+    public String lastRejectionReason() {
+        return lastTurn() == null ? null : lastTurn().rejectionReason();
+    }
+
+    public String lastErrorCategory() {
+        return lastTurn() == null ? null : lastTurn().errorCategory();
+    }
+
     public String lastPlanSummary() {
         return lastTurn() == null ? null : lastTurn().planSummary();
     }

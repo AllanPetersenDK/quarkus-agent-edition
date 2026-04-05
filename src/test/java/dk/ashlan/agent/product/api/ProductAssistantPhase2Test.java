@@ -55,6 +55,9 @@ class ProductAssistantPhase2Test {
         assertEquals(1, first.conversationTurnCount());
         assertEquals("COMPLETED", first.status());
         assertTrue(first.failureReason() == null || first.failureReason().isBlank());
+        assertEquals("answered_with_sources", first.outcomeCategory());
+        assertTrue(first.approved());
+        assertFalse(first.traceHighlights().isEmpty());
 
         ProductAssistantQueryResponse second = harness.resource.query(
                 new ProductAssistantQueryRequest("product-conversation", "Which text mentions PostgreSQL?", 2)
@@ -63,6 +66,8 @@ class ProductAssistantPhase2Test {
         assertEquals(2, second.conversationTurnCount());
         assertEquals("product-conversation", second.conversationId());
         assertEquals(second.runId(), harness.store.load("product-conversation").orElseThrow().lastRunId());
+        assertEquals(4, second.toolCount());
+        assertFalse(second.traceHighlights().isEmpty());
 
         var state = harness.store.load("product-conversation").orElseThrow();
         assertEquals(2, state.turnCount());

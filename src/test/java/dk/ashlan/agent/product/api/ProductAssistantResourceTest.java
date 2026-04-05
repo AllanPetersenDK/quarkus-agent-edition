@@ -59,6 +59,14 @@ class ProductAssistantResourceTest {
         assertFalse(response.plan().nextStep().isBlank());
         assertEquals(3, response.plan().stepCount());
         assertTrue(response.reflection().accepted());
+        assertFalse(response.traceHighlights().isEmpty());
+        assertEquals("answered_with_sources", response.outcomeCategory());
+        assertEquals(2, response.sourceCount());
+        assertEquals(2, response.citationCount());
+        assertEquals(2, response.retrievalCount());
+        assertEquals(4, response.toolCount());
+        assertEquals(3, response.planStepCount());
+        assertTrue(response.approved());
         assertTrue(response.signals().contains("product-query-start"));
         assertTrue(response.signals().contains("conversation:product-conversation"));
         assertTrue(response.signals().stream().anyMatch(signal -> signal.startsWith("rag:retrieved:")));

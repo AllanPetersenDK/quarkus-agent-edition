@@ -33,10 +33,20 @@ public record ProductConversationDetailResponse(
         String traceSummary,
         @Schema(description = "Latest tool-usage summary.")
         String toolUsageSummary,
+        @Schema(description = "Selected trace highlights for the latest turn.")
+        List<String> traceHighlights,
         @Schema(description = "Latest planning summary.")
         String planSummary,
         @Schema(description = "Latest reflection summary.")
         String reflectionSummary,
+        @Schema(description = "Latest outcome category.")
+        String lastOutcomeCategory,
+        @Schema(description = "Approval status for the latest turn.")
+        Boolean lastApproved,
+        @Schema(description = "Latest simple score.")
+        Double lastScore,
+        @Schema(description = "Latest error category, if any.")
+        String lastErrorCategory,
         @Schema(description = "Number of artifacts associated with the latest turn.")
         int artifactCount,
         @Schema(description = "Latest turn start timestamp.")
@@ -52,6 +62,7 @@ public record ProductConversationDetailResponse(
 ) {
     public ProductConversationDetailResponse {
         qualitySignals = qualitySignals == null ? List.of() : List.copyOf(qualitySignals);
+        traceHighlights = traceHighlights == null ? List.of() : List.copyOf(traceHighlights);
         artifacts = artifacts == null ? List.of() : List.copyOf(artifacts);
         turns = turns == null ? List.of() : List.copyOf(turns);
     }
@@ -71,8 +82,13 @@ public record ProductConversationDetailResponse(
                 state.lastSummary(),
                 state.lastTraceSummary(),
                 state.lastToolUsageSummary(),
+                state.lastTraceHighlights(),
                 state.lastPlanSummary(),
                 state.lastReflectionSummary(),
+                state.lastOutcomeCategory(),
+                state.lastApproved(),
+                state.lastScore(),
+                state.lastErrorCategory(),
                 state.lastArtifactCount(),
                 state.lastStartedAt(),
                 state.lastCompletedAt(),

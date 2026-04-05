@@ -14,12 +14,12 @@ The network boundary is the primary safety boundary in this phase.
 - chapter demo seams such as `/api/code-agent/run`, `/multi-agent`, and `/workflow-demo`
 - companion/runtime seams such as `/api/agent/run`, `/api/rag/*`, `/api/runtime/*`, and `/admin/evaluations/*`
 
-These surfaces remain useful for book-aligned exploration, runtime inspection, and evaluation, but they are not the primary product entry point.
+These surfaces remain useful for book-aligned exploration, runtime inspection, and evaluation, but they are not the primary product entry point. `/api/agent/run` stays available as a runtime/manual seam, while `/api/v1/assistants/...` is the official product contract.
 
 ## Deployment Hygiene
 
 - Keep the service on a private network or behind a gateway/reverse proxy.
 - Prefer the product lane for normal internal integrations.
 - Treat chapter demo and companion seams as secondary surfaces.
+- Keep `/api/agent/run` as a secondary runtime/manual seam.
 - Keep auth/OIDC/roles/tenancy for phase 3 rather than forcing ad hoc access rules into this phase.
-

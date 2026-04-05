@@ -185,17 +185,19 @@ public class RuntimeRunRecorder {
 
     public RuntimeRunRecord recordProductRun(String runId, String conversationId, String query, ProductAssistantQueryResponse response, Instant startedAt, Instant endedAt) {
         List<String> signals = response.signals() == null ? List.of() : response.signals();
-        List<String> selectedTrace = selectedEntries(signals, 6);
+        List<String> selectedTrace = response.traceHighlights() == null || response.traceHighlights().isEmpty()
+                ? selectedEntries(signals, 6)
+                : List.copyOf(response.traceHighlights());
         List<String> historyTrace = new ArrayList<>();
         historyTrace.add("chapter10-run-start:" + runId);
         historyTrace.add("chapter10-lane:product");
         historyTrace.addAll(selectedTrace);
-        int sourceCount = response.sources() == null ? 0 : response.sources().size();
-        int planSteps = response.plan() == null ? 0 : response.plan().stepCount();
-        boolean accepted = response.reflection() != null && response.reflection().accepted();
-        String status = accepted ? "COMPLETED" : "REJECTED";
-        String outcomeCategory = accepted ? (sourceCount > 0 ? "answered_with_sources" : "answered_without_sources") : "reflection_rejected";
-        String failureReason = accepted ? null : (response.reflection() == null ? "reflection rejected the answer" : response.reflection().feedback());
+        int sourceCount = response.sourceCount();
+        int planSteps = response.planStepCount();
+        boolean accepted = Boolean.TRUE.equals(response.approved());
+        String status = response.status() == null ? (accepted ? "COMPLETED" : "REJECTED") : response.status();
+        String outcomeCategory = response.outcomeCategory() == null ? (accepted ? (sourceCount > 0 ? "answered_with_sources" : "answered_without_sources") : "reflection_rejected") : response.outcomeCategory();
+        String failureReason = response.failureReason() == null ? (accepted ? null : "reflection rejected the answer") : response.failureReason();
         historyTrace.add("chapter10-run-" + (accepted ? "completed" : "rejected") + ":" + runId);
         return historyStore.record(new RuntimeRunRecord(
                 runId,
@@ -214,18 +216,18 @@ public class RuntimeRunRecorder {
                 response.answer(),
                 compactTrace(historyTrace),
                 historyTrace,
-                "retrievals=" + sourceCount + ", memoryHints=" + (response.memoryHints() == null ? 0 : response.memoryHints().size()) + ", planSteps=" + planSteps,
+                response.toolUsageSummary() == null ? "retrievals=" + sourceCount + ", memoryHints=" + (response.memoryHints() == null ? 0 : response.memoryHints().size()) + ", planSteps=" + planSteps : response.toolUsageSummary(),
                 signals,
                 sourceCount,
                 sourceCount,
-                sourceCount,
-                null,
+                response.retrievalCount(),
+                response.toolCount(),
                 planSteps,
                 accepted,
-                accepted ? 1.0 : 0.0,
-                accepted ? null : "reflection_rejected",
+                response.score() == null ? (accepted ? 1.0 : 0.0) : response.score(),
+                accepted ? null : response.rejectionReason(),
                 failureReason,
-                accepted ? null : "reflection_rejected"
+                response.errorCategory() == null ? (accepted ? null : "reflection_rejected") : response.errorCategory()
         ));
     }
 

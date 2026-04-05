@@ -65,7 +65,10 @@ class ProductLanePhase2Test {
         assertEquals(second.runId(), summary.lastRunId());
         assertNotNull(summary.summary());
         assertNotNull(summary.traceSummary());
+        assertEquals("answered_with_sources", summary.lastOutcomeCategory());
+        assertTrue(summary.lastApproved());
         assertTrue(summary.artifactCount() > 0);
+        assertFalse(summary.traceHighlights().isEmpty());
 
         ProductConversationDetailResponse detail = harness.laneResource.conversation("product-conversation");
         assertEquals(2, detail.turnCount());
@@ -74,6 +77,9 @@ class ProductLanePhase2Test {
         assertFalse(detail.artifacts().isEmpty());
         assertNotNull(detail.summary());
         assertNotNull(detail.traceSummary());
+        assertEquals("answered_with_sources", detail.lastOutcomeCategory());
+        assertTrue(detail.lastApproved());
+        assertFalse(detail.traceHighlights().isEmpty());
 
         ProductRunDetailResponse runDetail = harness.laneResource.run(first.runId());
         assertEquals(first.runId(), runDetail.runId());
@@ -82,6 +88,8 @@ class ProductLanePhase2Test {
         assertFalse(runDetail.sources().isEmpty());
         assertNotNull(runDetail.summary());
         assertNotNull(runDetail.traceSummary());
+        assertEquals("answered_with_sources", runDetail.outcomeCategory());
+        assertFalse(runDetail.traceHighlights().isEmpty());
 
         ProductArtifactCollectionResponse artifactCollection = harness.laneResource.runArtifacts(first.runId());
         assertEquals(runDetail.artifacts().size(), artifactCollection.artifactCount());

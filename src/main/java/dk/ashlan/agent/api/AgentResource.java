@@ -54,8 +54,8 @@ public class AgentResource {
     @POST
     @Path("/run")
     @Operation(
-            summary = "Run the manual agent loop",
-            description = "Book chapter mapping: chapter 4 manual-agent core seam. REST-exposed manual agent loop that delegates to the manual AgentOrchestrator."
+            summary = "Run the secondary manual agent loop",
+            description = "Book chapter mapping: chapter 4 manual-agent core seam. REST-exposed runtime/manual seam that delegates to the manual AgentOrchestrator and remains secondary to the official /api/v1/assistants product lane."
     )
     @RequestBody(
             description = "User message and optional session id for the runtime agent loop. If tool confirmations are supplied, sessionId must be present so the request can resume an explicit session instead of an anonymous ephemeral run.",

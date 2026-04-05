@@ -1,6 +1,6 @@
 # Product Lane
 
-This repository now treats `/api/v1/assistants` as the canonical product backend contract for the assistant frontend, and `agent-ashlan-app` should integrate there first.
+This repository now treats `/api/v1/assistants` as the canonical product backend contract for the assistant frontend, and `agent-ashlan-app` should integrate there first. The product lane is where the useful runtime capabilities land in product form, so the frontend does not need to depend on `/api/agent/run` as a primary backend.
 
 The product lane is intentionally product-shaped:
 
@@ -19,6 +19,8 @@ The product lane is built on the existing runtime motor:
 - persisted conversation state
 - chapter-10 runtime run history
 - product-friendly artifact summaries
+- trace highlights and outcome categories promoted from the runtime history
+- source, citation, retrieval, tool, and planning counts for run inspection
 
 ## Canonical Endpoints
 
@@ -46,19 +48,21 @@ The canonical product lane returns small, frontend-friendly DTOs:
 - compact summaries for list views
 - planning and reflection metadata
 - trace and tool-usage summaries
+- trace highlights and outcome categories
 - source- and artifact-level summaries
+- source, citation, retrieval, tool, and planning counts
 
 ## How It Differs From Operator/Admin Seams
 
 The product lane is the normal frontend backend contract and the only recommended product integration path.
 
 The operator/admin lane remains available for read-only inspection and release-gate review, but the product frontend does not need to depend on it for normal operation.
-Runtime, chapter-demo, and companion seams remain available for teaching and operator workflows, but they are secondary to the product lane.
+Runtime, chapter-demo, and companion seams remain available for teaching and operator workflows, but they are secondary to the product lane. `POST /api/agent/run` is kept as a runtime/manual seam, not as the primary product path.
 
 ## Implementation Notes
 
 - Product conversations are persisted in the existing product conversation store.
-- Product runs are read back from the shared chapter-10 runtime run history.
+- Product runs are read back from the shared chapter-10 runtime run history, and the richer run metadata is promoted into the product DTOs instead of exposing raw runtime models.
 - Product artifacts are lightweight summaries derived from the product run/conversation data.
 - No auth, roles, OIDC, or tenancy layer is added in this step.
 

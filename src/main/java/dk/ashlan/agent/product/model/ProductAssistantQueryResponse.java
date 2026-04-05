@@ -30,8 +30,12 @@ public record ProductAssistantQueryResponse(
         ProductReflectionResponse reflection,
         @Schema(description = "Small product-lane signals that make the run easy to inspect without exposing chapter internals.")
         List<String> signals,
+        @Schema(description = "Selected trace highlights promoted into the official product response.")
+        List<String> traceHighlights,
         @Schema(description = "Conversation status such as COMPLETED or REJECTED.")
         String status,
+        @Schema(description = "Outcome category used by the shared run history.")
+        String outcomeCategory,
         @Schema(description = "Failure reason when the product pipeline rejected the answer, if any.")
         String failureReason,
         @Schema(description = "Compact one-line summary for product list views.")
@@ -46,12 +50,32 @@ public record ProductAssistantQueryResponse(
         String traceSummary,
         @Schema(description = "Compact tool-usage summary for product dashboards.")
         String toolUsageSummary,
+        @Schema(description = "Number of retrieved knowledge sources used for the query.")
+        int sourceCount,
+        @Schema(description = "Number of citations used for the query.")
+        int citationCount,
+        @Schema(description = "Number of retrieval hits used for the query.")
+        int retrievalCount,
+        @Schema(description = "Number of tool or tool-like steps used for the query.")
+        int toolCount,
+        @Schema(description = "Number of planning steps used for the query.")
+        int planStepCount,
+        @Schema(description = "Approval status when the lightweight reflection gate accepts the answer.")
+        Boolean approved,
+        @Schema(description = "Simple score when the lane computes one.")
+        Double score,
+        @Schema(description = "Reason the product pipeline rejected the answer, if any.")
+        String rejectionReason,
+        @Schema(description = "Simple error category for failures, if any.")
+        String errorCategory,
         @Schema(description = "Number of product artifacts associated with the query.")
         int artifactCount,
         @Schema(description = "Product artifacts associated with the query.")
         List<ProductArtifactSummaryResponse> artifacts
 ) {
     public ProductAssistantQueryResponse {
+        signals = signals == null ? List.of() : List.copyOf(signals);
+        traceHighlights = traceHighlights == null ? List.of() : List.copyOf(traceHighlights);
         artifacts = artifacts == null ? List.of() : List.copyOf(artifacts);
     }
 }

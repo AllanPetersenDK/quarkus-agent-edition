@@ -29,6 +29,10 @@ public record ProductRunSummaryResponse(
         String traceSummary,
         @Schema(description = "Compact tool-usage summary.")
         String toolUsageSummary,
+        @Schema(description = "Selected trace highlights for the run.")
+        List<String> traceHighlights,
+        @Schema(description = "Outcome category used by the shared run history.")
+        String outcomeCategory,
         @Schema(description = "Planning summary, when available.")
         String planSummary,
         @Schema(description = "Reflection summary, when available.")
@@ -60,5 +64,6 @@ public record ProductRunSummaryResponse(
 ) {
     public ProductRunSummaryResponse {
         qualitySignals = qualitySignals == null ? List.of() : List.copyOf(qualitySignals);
+        traceHighlights = traceHighlights == null ? List.of() : List.copyOf(traceHighlights);
     }
 }

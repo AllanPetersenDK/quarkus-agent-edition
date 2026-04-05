@@ -49,6 +49,18 @@ public record ProductConversationTurn(
         List<ProductArtifactSummaryResponse> artifacts,
         @Schema(description = "Quality signals captured for the turn.")
         List<String> qualitySignals,
+        @Schema(description = "Selected trace highlights promoted into the official product turn.")
+        List<String> traceHighlights,
+        @Schema(description = "Outcome category used by the shared run history.")
+        String outcomeCategory,
+        @Schema(description = "Approval status when the lightweight reflection gate accepts the answer.")
+        Boolean approved,
+        @Schema(description = "Simple score when the lane computes one.")
+        Double score,
+        @Schema(description = "Reason the product pipeline rejected the answer, if any.")
+        String rejectionReason,
+        @Schema(description = "Simple error category for failures, if any.")
+        String errorCategory,
         @Schema(description = "Failure reason when the pipeline rejected the answer, if any.")
         String failureReason
 ) {
@@ -56,5 +68,6 @@ public record ProductConversationTurn(
         sources = sources == null ? List.of() : List.copyOf(sources);
         artifacts = artifacts == null ? List.of() : List.copyOf(artifacts);
         qualitySignals = qualitySignals == null ? List.of() : List.copyOf(qualitySignals);
+        traceHighlights = traceHighlights == null ? List.of() : List.copyOf(traceHighlights);
     }
 }

@@ -139,6 +139,7 @@ public class ProductLaneService {
         ProductConversationTurn turn = context.turn();
         List<ProductArtifactSummaryResponse> artifacts = turn == null ? List.of() : turn.artifacts();
         List<ProductSourceResponse> sources = turn == null ? List.of() : turn.sources();
+        List<String> traceHighlights = traceHighlights(record, turn);
         String planSummary = turn == null ? null : turn.planSummary();
         String reflectionSummary = turn == null ? null : turn.reflectionSummary();
         ProductPlanResponse plan = turn == null ? null : turn.plan();
@@ -158,6 +159,8 @@ public class ProductLaneService {
                 record.durationMs(),
                 record.traceSummary(),
                 record.toolUsageSummary(),
+                traceHighlights,
+                record.outcomeCategory(),
                 planSummary,
                 reflectionSummary,
                 plan,
@@ -218,17 +221,17 @@ public class ProductLaneService {
                             turn.traceSummary(),
                             turn.qualitySignals(),
                             turn.toolUsageSummary(),
-                            turn.qualitySignals(),
+                            turn.traceHighlights(),
                             turn.sourceCount(),
                             turn.citationCount(),
                             turn.retrievalCount(),
-                            null,
+                            4,
                             turn.planStepCount(),
-                            "COMPLETED".equalsIgnoreCase(turn.status()),
-                            "COMPLETED".equalsIgnoreCase(turn.status()) ? 1.0 : 0.0,
-                            null,
+                            turn.approved(),
+                            turn.score(),
+                            turn.rejectionReason(),
                             turn.failureReason(),
-                            turn.failureReason() == null ? null : "reflection_rejected"
+                            turn.errorCategory()
                     );
                 }
                 return new ProductRunContext(record, turn);
@@ -257,26 +260,27 @@ public class ProductLaneService {
                     turn.durationMs(),
                     turn.status(),
                     turn.status().equalsIgnoreCase("COMPLETED") ? "answered_with_sources" : "reflection_rejected",
-                    turn.answer(),
-                    turn.traceSummary(),
-                    turn.qualitySignals(),
-                    turn.toolUsageSummary(),
-                    turn.qualitySignals(),
-                    turn.sourceCount(),
-                    turn.citationCount(),
-                    turn.retrievalCount(),
-                    null,
-                    turn.planStepCount(),
-                    "COMPLETED".equalsIgnoreCase(turn.status()),
-                    "COMPLETED".equalsIgnoreCase(turn.status()) ? 1.0 : 0.0,
-                    null,
-                    turn.failureReason(),
-                    turn.failureReason() == null ? null : "reflection_rejected"
-            );
+                            turn.answer(),
+                            turn.traceSummary(),
+                            turn.qualitySignals(),
+                            turn.toolUsageSummary(),
+                            turn.traceHighlights(),
+                            turn.sourceCount(),
+                            turn.citationCount(),
+                            turn.retrievalCount(),
+                            4,
+                            turn.planStepCount(),
+                            turn.approved(),
+                            turn.score(),
+                            turn.rejectionReason(),
+                            turn.failureReason(),
+                            turn.errorCategory()
+                    );
         }
         int artifactCount = turn == null ? 0 : turn.artifacts().size();
         String planSummary = turn.planSummary();
         String reflectionSummary = turn.reflectionSummary();
+        List<String> traceHighlights = traceHighlights(record, turn);
         return new ProductRunSummaryResponse(
                 record.runId(),
                 record.conversationId(),
@@ -289,6 +293,8 @@ public class ProductLaneService {
                 record.durationMs(),
                 record.traceSummary(),
                 record.toolUsageSummary(),
+                traceHighlights,
+                record.outcomeCategory(),
                 planSummary,
                 reflectionSummary,
                 safeCount(record.sourceCount()),
@@ -319,6 +325,8 @@ public class ProductLaneService {
                 record.durationMs(),
                 record.traceSummary(),
                 record.toolUsageSummary(),
+                record.selectedTraceEntries(),
+                record.outcomeCategory(),
                 null,
                 null,
                 safeCount(record.sourceCount()),
@@ -358,6 +366,16 @@ public class ProductLaneService {
 
     private static int safeCount(Integer value) {
         return value == null ? 0 : value;
+    }
+
+    private List<String> traceHighlights(RuntimeRunRecord record, ProductConversationTurn turn) {
+        if (turn != null && turn.traceHighlights() != null && !turn.traceHighlights().isEmpty()) {
+            return turn.traceHighlights();
+        }
+        if (record != null && record.selectedTraceEntries() != null && !record.selectedTraceEntries().isEmpty()) {
+            return record.selectedTraceEntries();
+        }
+        return List.of();
     }
 
     private record ProductRunContext(RuntimeRunRecord record, ProductConversationTurn turn) {

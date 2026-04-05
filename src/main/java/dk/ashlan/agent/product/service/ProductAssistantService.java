@@ -160,6 +160,24 @@ public class ProductAssistantService {
             signals.add("memory-write:" + memoryWriteDecision.name().toLowerCase());
             signals.add("conversation:stored");
             signals.add("artifact-count:" + artifacts.size());
+            List<String> traceHighlights = List.of(
+                    "conversation:" + conversationId,
+                    "conversation:" + (conversationCreated ? "created" : "continued"),
+                    "rag:retrieved:" + retrieval.size(),
+                    "memory:hints:" + memoryHints.size(),
+                    "plan:steps:" + planStepCount,
+                    "reflection:" + (reflection.accepted() ? "accepted" : "needs-work"),
+                    "memory-write:" + memoryWriteDecision.name().toLowerCase()
+            );
+            String outcomeCategory = reflection.accepted() ? "answered_with_sources" : "reflection_rejected";
+            boolean approved = reflection.accepted();
+            double score = approved ? 1.0 : 0.0;
+            String rejectionReason = approved ? null : reflection.feedback();
+            String errorCategory = approved ? null : "reflection_rejected";
+            int sourceCount = sources.size();
+            int citationCount = sources.size();
+            int retrievalCount = retrieval.size();
+            int toolCount = 4;
 
             ProductConversationTurn turn = new ProductConversationTurn(
                     requestId,
@@ -183,6 +201,12 @@ public class ProductAssistantService {
                     List.copyOf(sources),
                     artifacts,
                     List.copyOf(signals),
+                    List.copyOf(traceHighlights),
+                    outcomeCategory,
+                    approved,
+                    score,
+                    rejectionReason,
+                    errorCategory,
                     reflection.accepted() ? null : reflection.feedback()
             );
 
@@ -207,14 +231,25 @@ public class ProductAssistantService {
                     new ProductPlanResponse(plan.formattedPlan(), plan.nextActiveStep() == null ? "" : plan.nextActiveStep().formattedLine(), planStepCount),
                     new ProductReflectionResponse(reflection.accepted(), reflection.feedback()),
                     List.copyOf(signals),
+                    List.copyOf(traceHighlights),
                     reflection.accepted() ? "COMPLETED" : "REJECTED",
-                    reflection.accepted() ? null : reflection.feedback(),
+                    outcomeCategory,
+                    rejectionReason,
                     summary,
                     startedAt,
                     completedAt,
                     durationMs,
                     traceSummary,
                     toolUsageSummary,
+                    sourceCount,
+                    citationCount,
+                    retrievalCount,
+                    toolCount,
+                    planStepCount,
+                    approved,
+                    score,
+                    rejectionReason,
+                    errorCategory,
                     artifacts.size(),
                     artifacts
             );
