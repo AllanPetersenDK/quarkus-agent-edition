@@ -35,7 +35,7 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @ApplicationScoped
-@Tag(name = "Runtime API", description = "REST-exposed runtime seam for the manual agent loop and tool registry.")
+@Tag(name = "Runtime API", description = "Secondary runtime seam for the manual agent loop and tool registry. The canonical product backend lives under /api/v1/assistants.")
 public class AgentResource {
     private final AgentOrchestrator orchestrator;
     private final RuntimeRunRecorder runRecorder;

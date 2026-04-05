@@ -23,7 +23,7 @@ import java.util.List;
 
 @Path("/api/v1/assistants/admin")
 @Produces(MediaType.APPLICATION_JSON)
-@Tag(name = "Product Operator", description = "Internal product operator seam for inspecting persistent conversations, release-gate signals, and closed-network drift health.")
+@Tag(name = "Product Operator", description = "Secondary operator/admin inspection surface for the canonical product lane. Used for read-only drift checks, release-gate review, and closed-network health inspection.")
 public class ProductOperatorResource {
     private static final int MAX_LIST_LIMIT = 100;
     private static final int MAX_OVERVIEW_LIMIT = 20;

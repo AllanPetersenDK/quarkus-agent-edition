@@ -3,7 +3,7 @@
 This repository exposes a Swagger-visible surface for selected outer runtime and companion seams.
 It does not turn the from-scratch orchestration internals into HTTP endpoints.
 Chapter 10 adds a shared run-history and lightweight evaluation seam so the important lanes can be inspected after execution without turning the repo into a monitoring platform.
-The repo is now also framed for closed-network internal use: the `/api/v1/assistants` family is the official product contract, operator seams are separate from user-facing product flows, and chapter demo surfaces remain available for the book story without being the recommended API.
+The canonical product contract is the `/api/v1/assistants` family. `agent-ashlan-app` should integrate there first; operator seams, chapter demo surfaces, and raw runtime seams remain available, but they are secondary.
 
 ## OpenAPI And Swagger UI
 
@@ -28,67 +28,80 @@ For chapters 2-4, keep the distinction clear: chapter 2 is the LLM layer, chapte
 For operator and closed-network readability, keep these categories in mind:
 
 - `Product API` - the official internal backend entrypoint and canonical assistant product contract
-- `Product Operator` - read-only drift and conversation inspection for the product lane
-- `Runtime Inspection`, `Runtime Memory`, `RAG API`, `Runtime Context`, `Runtime Health`, `Internal Evaluation`, and `GAIA Validation` - companion/runtime and admin seams
-- `Internal Chapter Demo` - chapter 7/8/9/10 comparison surfaces that stay useful for the book story but are not the product entrypoint
+- `Product Operator` - secondary read-only drift and conversation inspection for the product lane
+- `Runtime Inspection`, `Runtime Memory`, `RAG API`, `Runtime Context`, `Runtime Health`, `Internal Evaluation`, and `GAIA Validation` - secondary companion/runtime and admin seams
+- `Internal Chapter Demo` - secondary chapter 7/8/9/10 comparison surfaces that stay useful for the book story but are not the product entrypoint
+
+## Canonical Product Contract
+
+The canonical assistant backend is the `/api/v1/assistants` family:
+
+- `POST /api/v1/assistants/query`
+- `GET /api/v1/assistants/overview`
+- `GET /api/v1/assistants/conversations`
+- `GET /api/v1/assistants/conversations/{conversationId}`
+- `GET /api/v1/assistants/runs/{runId}`
+- `GET /api/v1/assistants/runs/{runId}/artifacts`
+
+That family is the primary integration surface for `agent-ashlan-app`. It is designed to cover submit, overview, list, detail, run inspection, and artifact inspection without requiring any chapter-demo or raw runtime seams.
 
 Covered in Swagger:
 
-- `POST /api/agent/run` - chapter-4 manual-agent core seam
-- `POST /api/agent/step` - chapter-4 manual-loop inspection seam
-- `POST /api/agent/run/structured` - chapter-4 structured-output seam around the manual loop
-- `GET /api/agent/tools` - chapter-3 tool-system discovery seam
-- `POST /api/agent/tools/invoke` - chapter-3 direct tool execution seam for Swagger-based tool testing
-- `GET /api/runtime/health` - combined readiness and liveness view
-- `GET /api/runtime/health/ready` - readiness snapshot
-- `GET /api/runtime/health/live` - liveness snapshot
-- `GET /api/runtime/sessions/{sessionId}` - session inspection, more naturally chapter 6-oriented than chapter 4-oriented
-- `GET /api/runtime/sessions/{sessionId}/memory` - memory inspection, more naturally chapter 6-oriented than chapter 4-oriented
-- `POST /api/runtime/sessions/{sessionId}/resume` - chapter-6 pause/resume seam for confirmation-gated tools
-- `GET /api/runtime/sessions/{sessionId}/trace` - chapter-4 runtime trace inspection seam
-- `POST /api/runtime/context/sliding-window` - chapter-6 sliding-window preview seam
-- `POST /api/runtime/memory/recall` - chapter-6 explicit long-term memory retrieval seam
-- `POST /api/runtime/memory/conversation-search` - chapter-6 explicit conversation memory retrieval seam
-- `POST /api/runtime/context/optimize` - chapter-6 request-time context optimization inspection seam
-- `POST /api/rag/ingest` - chapter 5-oriented document ingest into the RAG stack
-- `POST /api/rag/ingest/path` - chapter 5-oriented workspace path ingest through the shared document-read layer
-- `POST /api/rag/ingest/directory` - chapter 5-oriented bulk directory ingest through the shared document-read layer
-- `GET /api/rag/query` - chapter 5-oriented RAG query and answer
-- `POST /admin/evaluations` - evaluation run
-- `POST /admin/evaluations/runs` - chapter-10 case-based evaluation run
-- `POST /admin/evaluations/gaia/run` - GAIA validation/dev run with level filtering and attachment-aware context
-- `GET /admin/evaluations/gaia/{taskId}` - GAIA task lookup
-- `GET /admin/evaluations/gaia/runs/{runId}` - GAIA run lookup
-- `GET /admin/evaluations/{caseId}` - evaluation trace lookup
-- `POST /api/companion/langchain4j/run` - LangChain4j companion run
-- `POST /api/companion/langchain4j/agentic-demo` - LangChain4j agentic companion demo
-- `POST /api/companion/llm/completions` - chapter-02 companion direct chat simulation
-- `POST /api/companion/llm/async-batch` - chapter-02 companion async batch demo with bounded concurrency and per-prompt failure isolation
-- `POST /api/code-agent/run` - chapter-8 code-agent companion seam for the constrained workspace/code-generation flow
-- `GET /api/runtime/sessions/{sessionId}/workspace` - chapter-8 workspace inspection seam
-- `GET /api/runtime/sessions/{sessionId}/workspace/files` - chapter-8 workspace file listing seam
-- `GET /api/runtime/sessions/{sessionId}/generated-tools` - chapter-8 generated-tool registry seam
-- `POST /api/runtime/sessions/{sessionId}/generated-tools/invoke` - chapter-8 generated-tool invocation seam
-- `POST /multi-agent` - internal chapter demo for the coordinator/reviewer flow
-- `GET /multi-agent/history` - chapter-9 run history lookup seam
-- `GET /multi-agent/history/{runId}` - chapter-9 single-run inspection seam
 - `POST /api/v1/assistants/query` - canonical product write seam for the assistant frontend
 - `GET /api/v1/assistants/overview` - canonical product overview seam for dashboard cards and health summaries
 - `GET /api/v1/assistants/conversations` - canonical product conversation list seam
 - `GET /api/v1/assistants/conversations/{conversationId}` - canonical product conversation detail seam
 - `GET /api/v1/assistants/runs/{runId}` - canonical product run detail seam
 - `GET /api/v1/assistants/runs/{runId}/artifacts` - canonical product artifact seam
-- `GET /api/v1/assistants/admin/overview` - product operator seam for a compact closed-network overview
-- `GET /api/v1/assistants/admin/conversations` - product operator seam for persistent conversation summaries
-- `GET /api/v1/assistants/admin/conversations/{conversationId}` - product operator seam for persistent conversation detail
-- `GET /api/runtime/runs` - shared chapter-10 runtime run-history seam
-- `GET /api/runtime/runs/{runId}` - shared chapter-10 single-run inspection seam
-- `GET /workflow-demo` - internal deterministic workflow demo
+- `GET /api/v1/assistants/admin/overview` - secondary product operator seam for a compact closed-network overview
+- `GET /api/v1/assistants/admin/conversations` - secondary product operator seam for persistent conversation summaries
+- `GET /api/v1/assistants/admin/conversations/{conversationId}` - secondary product operator seam for persistent conversation detail
+- `POST /api/agent/run` - secondary chapter-4 manual-agent core seam
+- `POST /api/agent/step` - secondary chapter-4 manual-loop inspection seam
+- `POST /api/agent/run/structured` - secondary chapter-4 structured-output seam around the manual loop
+- `GET /api/agent/tools` - secondary chapter-3 tool-system discovery seam
+- `POST /api/agent/tools/invoke` - secondary chapter-3 direct tool execution seam for Swagger-based tool testing
+- `GET /api/runtime/health` - secondary combined readiness and liveness view
+- `GET /api/runtime/health/ready` - secondary readiness snapshot
+- `GET /api/runtime/health/live` - secondary liveness snapshot
+- `GET /api/runtime/sessions/{sessionId}` - secondary session inspection, more naturally chapter 6-oriented than chapter 4-oriented
+- `GET /api/runtime/sessions/{sessionId}/memory` - secondary memory inspection, more naturally chapter 6-oriented than chapter 4-oriented
+- `POST /api/runtime/sessions/{sessionId}/resume` - secondary chapter-6 pause/resume seam for confirmation-gated tools
+- `GET /api/runtime/sessions/{sessionId}/trace` - secondary chapter-4 runtime trace inspection seam
+- `POST /api/runtime/context/sliding-window` - secondary chapter-6 sliding-window preview seam
+- `POST /api/runtime/memory/recall` - secondary chapter-6 explicit long-term memory retrieval seam
+- `POST /api/runtime/memory/conversation-search` - secondary chapter-6 explicit conversation memory retrieval seam
+- `POST /api/runtime/context/optimize` - secondary chapter-6 request-time context optimization inspection seam
+- `POST /api/rag/ingest` - secondary chapter 5-oriented document ingest into the RAG stack
+- `POST /api/rag/ingest/path` - secondary chapter 5-oriented workspace path ingest through the shared document-read layer
+- `POST /api/rag/ingest/directory` - secondary chapter 5-oriented bulk directory ingest through the shared document-read layer
+- `GET /api/rag/query` - secondary chapter 5-oriented RAG query and answer
+- `POST /admin/evaluations` - secondary evaluation run
+- `POST /admin/evaluations/runs` - secondary chapter-10 case-based evaluation run
+- `POST /admin/evaluations/gaia/run` - secondary GAIA validation/dev run with level filtering and attachment-aware context
+- `GET /admin/evaluations/gaia/{taskId}` - secondary GAIA task lookup
+- `GET /admin/evaluations/gaia/runs/{runId}` - secondary GAIA run lookup
+- `GET /admin/evaluations/{caseId}` - secondary evaluation trace lookup
+- `POST /api/companion/langchain4j/run` - secondary LangChain4j companion run
+- `POST /api/companion/langchain4j/agentic-demo` - secondary LangChain4j agentic companion demo
+- `POST /api/companion/llm/completions` - secondary chapter-02 companion direct chat simulation
+- `POST /api/companion/llm/async-batch` - secondary chapter-02 companion async batch demo with bounded concurrency and per-prompt failure isolation
+- `POST /api/code-agent/run` - secondary chapter-8 code-agent companion seam for the constrained workspace/code-generation flow
+- `GET /api/runtime/sessions/{sessionId}/workspace` - secondary chapter-8 workspace inspection seam
+- `GET /api/runtime/sessions/{sessionId}/workspace/files` - secondary chapter-8 workspace file listing seam
+- `GET /api/runtime/sessions/{sessionId}/generated-tools` - secondary chapter-8 generated-tool registry seam
+- `POST /api/runtime/sessions/{sessionId}/generated-tools/invoke` - secondary chapter-8 generated-tool invocation seam
+- `POST /multi-agent` - secondary internal chapter demo for the coordinator/reviewer flow
+- `GET /multi-agent/history` - secondary chapter-9 run history lookup seam
+- `GET /multi-agent/history/{runId}` - secondary chapter-9 single-run inspection seam
+- `GET /api/runtime/runs` - secondary shared chapter-10 runtime run-history seam
+- `GET /api/runtime/runs/{runId}` - secondary shared chapter-10 single-run inspection seam
+- `GET /workflow-demo` - secondary internal deterministic workflow demo
 
 Chapter 7 planning and reflection are visible through the existing runtime/tool seams rather than a new workflow API: the runtime tool registry includes `create-tasks` and `reflection`, `GET /api/agent/tools` now works in the live runtime, and chapter-7 runs surface plan/reflection/replan markers in session trace entries.
 The runtime inspection seam now also exposes `GET /api/runtime/sessions/{sessionId}/plan` and `GET /api/runtime/sessions/{sessionId}/reflection` so the current chapter-7 plan and latest reflection/replan signal are visible without adding a separate workflow subsystem. In the current runtime, those inspection seams are meaningfully populated for chapter-7 sessions instead of acting as thin placeholders.
 Chapter 8 follows the same companion pattern: the runtime exposes a small code-agent run seam, while workspace state and generated tools remain inspectable through session-scoped endpoints rather than a separate platform.
-The first product lane follows the same “small seam first” rule: `POST /api/v1/assistants/query` delegates to RAG, memory, planning, reflection, and session state, while keeping the chapter demo endpoints available as companion surfaces rather than the recommended product path.
+The canonical product lane follows the same “small seam first” rule: `POST /api/v1/assistants/query` delegates to RAG, memory, planning, reflection, and session state, while keeping the chapter demo endpoints available as companion surfaces rather than the recommended product path.
 The shared chapter-10 run history ties the manual runtime lane, the product lane, the code-agent lane, the multi-agent lane, the GAIA lane, and the evaluation lane together. The visible records stay intentionally compact and human-readable: run id, lane, input summary, timing, status, outcome, trace summary, tool usage, quality signals, and the key approval or failure details.
 Chapter 10 is also the shared evaluation and quality gate layer for the product lane: product runs record into the same history seam, and the product evaluation cases can be replayed and explained without the original live response body.
 

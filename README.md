@@ -113,19 +113,28 @@ mvn test
 
 ## API
 
-For closed-network deployments, the official product contract is the `/api/v1/assistants` family. The chapter-demo and companion/runtime seams remain available for book-aligned exploration and operator work, but they are secondary surfaces. See [`docs/product-lane.md`](docs/product-lane.md) for the canonical product contract and [`docs/closed-network-operation.md`](docs/closed-network-operation.md) for the deployment posture.
+For closed-network deployments, the canonical product contract is the `/api/v1/assistants` family. `agent-ashlan-app` should integrate there first and treat every other Swagger-visible seam as secondary. See [`docs/product-lane.md`](docs/product-lane.md) for the canonical product contract and [`docs/closed-network-operation.md`](docs/closed-network-operation.md) for the deployment posture.
 
 - OpenAPI: `http://localhost:8090/openapi`
 - Swagger UI: `http://localhost:8090/swagger-ui`
+
+### Canonical Product Contract
+
 - `POST /api/v1/assistants/query`
 - `GET /api/v1/assistants/overview`
 - `GET /api/v1/assistants/conversations`
 - `GET /api/v1/assistants/conversations/{conversationId}`
 - `GET /api/v1/assistants/runs/{runId}`
 - `GET /api/v1/assistants/runs/{runId}/artifacts`
+
+### Secondary Product Operator Surface
+
 - `GET /api/v1/assistants/admin/overview`
 - `GET /api/v1/assistants/admin/conversations`
 - `GET /api/v1/assistants/admin/conversations/{conversationId}`
+
+### Secondary Runtime, Demo, And Inspection Seams
+
 - `POST /api/agent/run`
 - `GET /api/agent/tools`
 - `GET /api/runtime/health`
@@ -165,7 +174,7 @@ Chapter 6 now also exposes a small pause/resume seam for confirmation-gated tool
 - `GET /workflow-demo`
 - MCP server: `http://localhost:8090/mcp`
 
-The recommended product lane is `POST /api/v1/assistants/query`: a small document/knowledge assistant built on the mature RAG, memory, planning, reflection, and observability capabilities. Chapter demo endpoints remain available for the book companion story, but they are not the primary product surface. The small operator endpoints under `/api/v1/assistants/admin` are for closed-network drift checks and stay separate from the user-facing product contract.
+The recommended product lane is the full `/api/v1/assistants` family, with `POST /api/v1/assistants/query` as the write entrypoint. That lane is a small document/knowledge assistant built on the mature RAG, memory, planning, reflection, and observability capabilities. Chapter demo endpoints remain available for the book companion story, but they are not the primary product surface. The small operator endpoints under `/api/v1/assistants/admin` are for closed-network drift checks and stay separate from the user-facing product contract.
 Chapter 10 now adds a shared runtime run-history seam at `GET /api/runtime/runs` and `GET /api/runtime/runs/{runId}`, plus a case-based evaluation seam at `POST /admin/evaluations/runs`, so manual, product, code, multi-agent, evaluation, and GAIA runs can be replayed after execution without relying on the original live response body.
 The chapter-10 history layer is intentionally small and human-readable: run id, lane, input summary, timing, outcome, trace summary, quality signals, and failure or approval details are enough to replay the important parts of a run without creating a heavyweight monitoring backend.
 Phase 2 of the product lane adds JDBC-backed persistent conversation state with a PostgreSQL-compatible schema, a small operator inspection lane, and structured failure responses. Local smoke still uses the embedded H2 runtime database, but the product storage contract is now closer to a real internal platform than a demo overlay. Auth, roles, OIDC, and tenancy are intentionally deferred to phase 3.

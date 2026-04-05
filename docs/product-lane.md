@@ -1,6 +1,6 @@
 # Product Lane
 
-This repository now treats `/api/v1/assistants` as the canonical product backend contract for the assistant frontend.
+This repository now treats `/api/v1/assistants` as the canonical product backend contract for the assistant frontend, and `agent-ashlan-app` should integrate there first.
 
 The product lane is intentionally product-shaped:
 
@@ -50,9 +50,10 @@ The canonical product lane returns small, frontend-friendly DTOs:
 
 ## How It Differs From Operator/Admin Seams
 
-The product lane is the normal frontend backend contract.
+The product lane is the normal frontend backend contract and the only recommended product integration path.
 
 The operator/admin lane remains available for read-only inspection and release-gate review, but the product frontend does not need to depend on it for normal operation.
+Runtime, chapter-demo, and companion seams remain available for teaching and operator workflows, but they are secondary to the product lane.
 
 ## Implementation Notes
 

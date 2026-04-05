@@ -53,7 +53,7 @@ import java.util.Map;
 
 @Path("/api/runtime")
 @Produces(MediaType.APPLICATION_JSON)
-@Tag(name = "Runtime Inspection", description = "Read-only runtime health, session, and memory inspection seams exposed through Swagger.")
+@Tag(name = "Runtime Inspection", description = "Secondary runtime inspection seams for read-only health, session, and memory inspection. The canonical product backend lives under /api/v1/assistants.")
 public class RuntimeInspectionResource {
     private static final int MAX_MEMORY_LIMIT = 20;
     private static final int MAX_RUN_HISTORY_LIMIT = 100;

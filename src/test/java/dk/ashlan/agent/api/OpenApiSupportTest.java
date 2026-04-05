@@ -1,6 +1,7 @@
 package dk.ashlan.agent.api;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -40,6 +41,11 @@ class OpenApiSupportTest {
 
     @Test
     void keyOperationsExposeChapterMappingInSwaggerText() throws Exception {
+        assertTagContains(AgentResource.class, "Secondary runtime seam");
+        assertTagContains(RuntimeInspectionResource.class, "Secondary runtime inspection");
+        assertTagContains(dk.ashlan.agent.product.api.ProductAssistantResource.class, "Official product backend entrypoint");
+        assertTagContains(dk.ashlan.agent.product.api.ProductLaneResource.class, "Official product backend contract");
+        assertTagContains(dk.ashlan.agent.product.api.ProductOperatorResource.class, "Secondary operator/admin inspection surface");
         assertOperationContains(AgentResource.class, "runAgent", "Book chapter mapping: chapter 4 manual-agent core seam");
         assertOperationContains(AgentResource.class, "step", "Book chapter mapping: chapter 4 manual-loop inspection seam");
         assertOperationContains(AgentResource.class, "runStructured", "Book chapter mapping: chapter 4 structured-output seam around the manual loop");
@@ -84,6 +90,12 @@ class OpenApiSupportTest {
         assertOperationContains(RagResource.class, "ingestPath", "Book chapter: 5");
         assertOperationContains(RagResource.class, "ingestDirectory", "Book chapter: 5");
         assertOperationContains(RagResource.class, "query", "Book chapter: 5");
+    }
+
+    private static void assertTagContains(Class<?> type, String expected) {
+        Tag tag = type.getAnnotation(Tag.class);
+        assertTrue(tag != null, type.getSimpleName() + " is missing @Tag");
+        assertTrue(tag.description().contains(expected), type.getSimpleName() + " tag should contain '" + expected + "'");
     }
 
     private static void assertOperationContains(Class<?> type, String methodName, String expected) throws Exception {
