@@ -11,6 +11,8 @@ import dk.ashlan.agent.core.AgentStepResult;
 import dk.ashlan.agent.core.ToolConfirmation;
 import dk.ashlan.agent.core.StructuredOutputAgentOrchestrator;
 import dk.ashlan.agent.eval.RuntimeRunRecorder;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -32,12 +34,14 @@ import java.util.UUID;
 @Path("/api/agent")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@ApplicationScoped
 @Tag(name = "Runtime API", description = "REST-exposed runtime seam for the manual agent loop and tool registry.")
 public class AgentResource {
     private final AgentOrchestrator orchestrator;
     private final RuntimeRunRecorder runRecorder;
     private final StructuredOutputAgentOrchestrator structuredOutputOrchestrator = new StructuredOutputAgentOrchestrator();
 
+    @Inject
     public AgentResource(AgentOrchestrator orchestrator) {
         this(orchestrator, null);
     }
