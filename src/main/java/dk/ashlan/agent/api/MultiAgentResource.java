@@ -22,7 +22,7 @@ import java.util.List;
 @Path("/multi-agent")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-@Tag(name = "Internal Chapter Demo", description = "HTTP-exposed chapter demo endpoint for the multi-agent comparison seam.")
+@Tag(name = "Internal Chapter Demo", description = "Secondary chapter-9 companion/demo seam for the multi-agent comparison flow. It is not the official product backend entrypoint.")
 public class MultiAgentResource {
     private final CoordinatorAgent coordinatorAgent;
 
@@ -33,7 +33,7 @@ public class MultiAgentResource {
     @POST
     @Operation(
             summary = "Run the multi-agent chapter demo",
-            description = "Book chapter: 9. Internal chapter demo endpoint for the coordinator/reviewer flow."
+            description = "Book chapter: 9. Internal chapter demo endpoint for the coordinator/reviewer flow. This remains a chapter/demo seam rather than the official product API."
     )
     @APIResponse(
             responseCode = "200",

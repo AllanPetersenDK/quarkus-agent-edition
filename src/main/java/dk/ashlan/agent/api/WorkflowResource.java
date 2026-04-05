@@ -10,12 +10,12 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/workflow-demo")
 @Produces(MediaType.TEXT_PLAIN)
-@Tag(name = "Internal Chapter Demo", description = "HTTP-exposed chapter demo endpoint for a deterministic workflow comparison.")
+@Tag(name = "Internal Chapter Demo", description = "Secondary chapter-7 companion/demo seam for deterministic workflow comparison. It is not the official product backend entrypoint.")
 public class WorkflowResource {
     @GET
     @Operation(
             summary = "Run the workflow demo",
-            description = "Book chapter: 7. Internal chapter demo endpoint for the deterministic workflow comparison."
+            description = "Book chapter: 7. Internal chapter demo endpoint for the deterministic workflow comparison. This remains a chapter/demo seam rather than the official product API."
     )
     @APIResponse(responseCode = "200", description = "Plain-text workflow demo result.")
     public String demo() {

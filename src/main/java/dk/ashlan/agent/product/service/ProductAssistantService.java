@@ -76,6 +76,9 @@ public class ProductAssistantService {
     public ProductAssistantQueryResponse query(ProductAssistantQueryRequest request) {
         Instant startedAt = Instant.now();
         String requestId = runRecorder == null ? "product-" + UUID.randomUUID() : runRecorder.nextRunId();
+        if (request == null) {
+            throw new ProductApiException(400, "product_request_required", "request is required", null, requestId, null);
+        }
         String rawConversationId = request.conversationId();
         String query = request.query() == null ? "" : request.query().trim();
         if (query.isBlank()) {

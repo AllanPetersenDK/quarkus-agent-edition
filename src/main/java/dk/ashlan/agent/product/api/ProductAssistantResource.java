@@ -18,7 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Path("/api/v1/assistants")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-@Tag(name = "Product API", description = "Stable product-lane assistant query seam built on the repo's mature runtime capabilities.")
+@Tag(name = "Product API", description = "Official product backend entrypoint for closed-network integrations. Stable product-lane assistant query seam built on the repo's mature runtime capabilities.")
 public class ProductAssistantResource {
     private final ProductAssistantService assistantService;
 
@@ -30,7 +30,7 @@ public class ProductAssistantResource {
     @Path("/query")
     @Operation(
             summary = "Query the product assistant",
-            description = "Product lane v1. Small stable query seam built on top of the existing RAG, memory, planning, reflection, and session capabilities without exposing chapter-specific contract details."
+            description = "Official product lane v1. Small stable query seam built on top of the existing RAG, memory, planning, reflection, and session capabilities without exposing chapter-specific contract details."
     )
     @RequestBody(
             description = "Conversation reference, user query, and optional retrieval depth for the product assistant.",

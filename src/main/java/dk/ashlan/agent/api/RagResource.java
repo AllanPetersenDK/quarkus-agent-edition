@@ -32,6 +32,7 @@ import java.util.Map;
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "RAG API", description = "REST-exposed knowledge-base query and ingest seams backed by the repo's RAG services.")
 public class RagResource {
+    private static final int MAX_TOP_K = 10;
     private final RagService ragService;
 
     public RagResource(RagService ragService) {
@@ -127,6 +128,9 @@ public class RagResource {
         String effectiveQuery = query == null ? "" : query.trim();
         if (effectiveQuery.isEmpty()) {
             throw new BadRequestException("query is required");
+        }
+        if (topK < 1 || topK > MAX_TOP_K) {
+            throw new BadRequestException("topK must be between 1 and " + MAX_TOP_K);
         }
         List<RetrievalResult> results = ragService.retrieve(effectiveQuery, topK);
         List<RagChunkResponse> chunks = results.stream()

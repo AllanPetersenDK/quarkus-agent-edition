@@ -70,8 +70,9 @@ class OpenApiSupportTest {
         assertOperationContains(RuntimeInspectionResource.class, "runs", "Book chapter: 10");
         assertOperationContains(RuntimeInspectionResource.class, "run", "Book chapter: 10");
         assertOperationContains(RuntimeInspectionResource.class, "runs", "Book chapter: 10");
-        assertOperationContains(dk.ashlan.agent.product.api.ProductAssistantResource.class, "query", "Product lane v1");
+        assertOperationContains(dk.ashlan.agent.product.api.ProductAssistantResource.class, "query", "Official product lane v1");
         assertOperationContains(dk.ashlan.agent.product.api.ProductOperatorResource.class, "listConversations", "Phase-2 product operator seam");
+        assertOperationContains(dk.ashlan.agent.product.api.ProductOperatorResource.class, "overview", "Closed-network operator seam");
         assertOperationContains(dk.ashlan.agent.product.api.ProductOperatorResource.class, "conversation", "Phase-2 product operator seam");
         assertOperationContains(RagResource.class, "ingest", "Book chapter: 5");
         assertOperationContains(RagResource.class, "ingestPath", "Book chapter: 5");

@@ -18,7 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Path("/api/code-agent")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-@Tag(name = "Internal Chapter Demo", description = "HTTP-exposed chapter demo endpoint. It is a comparison seam, not the primary runtime API.")
+@Tag(name = "Internal Chapter Demo", description = "Secondary chapter-8 companion/demo seam for workspace code-agent comparison. It is not the official product backend entrypoint.")
 public class CodeAgentResource {
     private final CodeAgentOrchestrator orchestrator;
 
@@ -30,7 +30,7 @@ public class CodeAgentResource {
     @Path("/run")
     @Operation(
             summary = "Run the code-agent chapter demo",
-            description = "Book chapter: 8. Internal chapter 8 companion endpoint for the constrained workspace code-agent flow. The run creates workspace-local artifacts, registers a session-scoped generated tool, and records stable Chapter 8 trace markers."
+            description = "Book chapter: 8. Internal chapter 8 companion endpoint for the constrained workspace code-agent flow. The run creates workspace-local artifacts, registers a session-scoped generated tool, and records stable Chapter 8 trace markers. This is a chapter/demo seam, not the official product API."
     )
     @APIResponse(
             responseCode = "200",

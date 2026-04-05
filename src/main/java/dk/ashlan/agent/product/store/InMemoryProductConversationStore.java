@@ -36,4 +36,9 @@ public class InMemoryProductConversationStore implements ProductConversationStor
         states.sort(Comparator.comparing(ProductConversationState::updatedAt).reversed());
         return states.stream().limit(limit).toList();
     }
+
+    @Override
+    public long count() {
+        return conversations.size();
+    }
 }

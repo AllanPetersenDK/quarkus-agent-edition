@@ -4,6 +4,7 @@
 
 This repository now has a first small product lane alongside the book companion layers.
 The goal is to make the repository feel more like a driftable internal platform without rewriting the chapter spine.
+The product lane is designed for closed-network internal use first: it is the official backend entrypoint, while chapter demos and companion seams remain available for book-aligned exploration and operator inspection.
 
 ## Layers
 
@@ -34,3 +35,4 @@ Phase 2 adds a small JDBC-backed conversation store with a PostgreSQL-compatible
 - Chapter demo endpoints stay available for book-aligned exploration, but the product lane is the recommended path for building forward.
 - Product code delegates to existing runtime capabilities instead of duplicating them.
 - Auth, roles, OIDC, and tenancy are intentionally phase-3 work, so the product contract stays focused on persistence, inspection, and operator readiness first.
+- Closed-network hygiene comes from the network boundary, bounded defaults, structured errors, and operator inspection rather than from application-layer auth in this phase.

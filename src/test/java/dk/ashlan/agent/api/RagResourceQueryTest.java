@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RagResourceQueryTest {
@@ -51,6 +52,13 @@ class RagResourceQueryTest {
         assertEquals("docs/postgresql.txt", response.citations().get(0).sourcePath());
         assertFalse(response.citations().get(0).chunkId().isBlank());
         assertFalse(response.citations().get(0).sectionHint().isBlank());
+    }
+
+    @Test
+    void queryRejectsOutOfRangeTopK() throws Exception {
+        RagResource resource = new RagResource(ragService());
+
+        assertThrows(jakarta.ws.rs.BadRequestException.class, () -> resource.query("Which text mentions PostgreSQL?", 11));
     }
 
     private RagService ragService() throws Exception {

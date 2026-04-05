@@ -10,10 +10,12 @@ import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
 import dk.ashlan.agent.planning.PlannerService;
 import dk.ashlan.agent.planning.ReflectionService;
+import dk.ashlan.agent.product.api.ProductApiException;
 import dk.ashlan.agent.product.model.ProductAssistantQueryRequest;
 import dk.ashlan.agent.product.model.ProductAssistantQueryResponse;
 import dk.ashlan.agent.product.model.ProductConversationDetailResponse;
 import dk.ashlan.agent.product.model.ProductConversationSummaryResponse;
+import dk.ashlan.agent.product.model.ProductOperatorOverviewResponse;
 import dk.ashlan.agent.product.service.ProductAssistantService;
 import dk.ashlan.agent.product.store.JdbcProductConversationStore;
 import dk.ashlan.agent.product.store.ProductConversationStore;
@@ -79,13 +81,38 @@ class ProductAssistantPhase2Test {
         assertEquals(2, detail.turns().size());
         assertNotNull(detail.lastAnswer());
         assertTrue(detail.qualitySignals().stream().anyMatch(signal -> signal.startsWith("memory-write:")));
+
+        ProductOperatorOverviewResponse overview = harness.operator.overview(5);
+        assertEquals(1L, overview.conversationCount());
+        assertEquals(1, overview.recentConversationCount());
+        assertEquals("product-conversation", overview.latestConversationId());
+        assertEquals(second.runId(), overview.latestRunId());
+        assertEquals("COMPLETED", overview.latestStatus());
+        assertTrue(overview.latestFailureReason() == null || overview.latestFailureReason().isBlank());
+        assertEquals(1, overview.recentConversations().size());
+        assertTrue(overview.signals().stream().anyMatch(signal -> signal.startsWith("conversationCount:")));
     }
 
     @Test
-    void productRequestIsConstrainedAndFailureResponsesAreStructured() {
+    void productRequestIsConstrainedAndFailureResponsesAreStructured() throws Exception {
         Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
         assertFalse(validator.validate(new ProductAssistantQueryRequest("product-conversation", " ", 3)).isEmpty());
         assertFalse(validator.validate(new ProductAssistantQueryRequest("product-conversation", "query", 11)).isEmpty());
+        assertFalse(validator.validate(new ProductAssistantQueryRequest("bad space", "query", 3)).isEmpty());
+        assertFalse(validator.validate(new ProductAssistantQueryRequest("product-conversation", "x".repeat(4101), 3)).isEmpty());
+
+        ProductPhase2Harness harness = harness();
+        ProductApiException invalidConversation = assertThrows(ProductApiException.class, () ->
+                harness.resource.query(new ProductAssistantQueryRequest("bad space", "Which text mentions PostgreSQL?", 2))
+        );
+        assertEquals(400, invalidConversation.status());
+        assertEquals("product_conversation_invalid", invalidConversation.errorCode());
+
+        ProductApiException longQuery = assertThrows(ProductApiException.class, () ->
+                harness.resource.query(new ProductAssistantQueryRequest("product-conversation", "x".repeat(4101), 2))
+        );
+        assertEquals(400, longQuery.status());
+        assertEquals("product_query_too_long", longQuery.errorCode());
     }
 
     @Test
@@ -112,6 +139,11 @@ class ProductAssistantPhase2Test {
                     @Override
                     public java.util.List<dk.ashlan.agent.product.model.ProductConversationState> list(int limit) {
                         return java.util.List.of();
+                    }
+
+                    @Override
+                    public long count() {
+                        return 0;
                     }
                 }
         );

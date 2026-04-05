@@ -3,6 +3,7 @@
 This repository exposes a Swagger-visible surface for selected outer runtime and companion seams.
 It does not turn the from-scratch orchestration internals into HTTP endpoints.
 Chapter 10 adds a shared run-history and lightweight evaluation seam so the important lanes can be inspected after execution without turning the repo into a monitoring platform.
+The repo is now also framed for closed-network internal use: the product lane is the official backend entrypoint, operator seams are separate from user-facing product flows, and chapter demo surfaces remain available for the book story without being the recommended API.
 
 ## OpenAPI And Swagger UI
 
@@ -24,6 +25,12 @@ Configured properties:
 
 Swagger now documents the outer runtime and companion seams that are practical to exercise over HTTP.
 For chapters 2-4, keep the distinction clear: chapter 2 is the LLM layer, chapter 3 is the tool system, and chapter 4 is the manual agent loop. Swagger-visible runtime or companion seams should be read as overlays on those chapters, not as replacements for the book core.
+For operator and closed-network readability, keep these categories in mind:
+
+- `Product API` - the official internal backend entrypoint
+- `Product Operator` - read-only drift and conversation inspection for the product lane
+- `Runtime Inspection`, `Runtime Memory`, `RAG API`, `Runtime Context`, `Runtime Health`, `Internal Evaluation`, and `GAIA Validation` - companion/runtime and admin seams
+- `Internal Chapter Demo` - chapter 7/8/9/10 comparison surfaces that stay useful for the book story but are not the product entrypoint
 
 Covered in Swagger:
 
@@ -66,6 +73,7 @@ Covered in Swagger:
 - `GET /multi-agent/history` - chapter-9 run history lookup seam
 - `GET /multi-agent/history/{runId}` - chapter-9 single-run inspection seam
 - `POST /api/v1/assistants/query` - first product-lane document/knowledge assistant seam
+- `GET /api/v1/assistants/admin/overview` - product operator seam for a compact closed-network overview
 - `GET /api/v1/assistants/admin/conversations` - product operator seam for persistent conversation summaries
 - `GET /api/v1/assistants/admin/conversations/{conversationId}` - product operator seam for persistent conversation detail
 - `GET /api/runtime/runs` - shared chapter-10 runtime run-history seam
@@ -117,6 +125,10 @@ Phase 2 makes the product lane a little more driftable: the conversation state i
 
 ### Product Operations
 
+`GET /api/v1/assistants/admin/overview`
+
+Operator seam that summarizes the current product lane, highlights the latest conversation, and exposes a compact drift-readiness signal for closed-network operation.
+
 `GET /api/v1/assistants/admin/conversations`
 
 Operator seam that lists persistent product conversations with their latest status, turn count, and quality signals.
@@ -131,6 +143,7 @@ The product request contract is defensive by design:
 - `query` is required and bounded with validation
 - `topK` is capped to a small safe range
 - persistence and pipeline failures return a structured product error response instead of an opaque stack trace
+- the operator endpoints also cap their list sizes so the product lane stays bounded and reviewable in a closed network
 
 ## Chapter 10 Run History And Evaluation
 

@@ -11,4 +11,6 @@ public interface ProductConversationStore {
     ProductConversationState save(ProductConversationState state);
 
     List<ProductConversationState> list(int limit);
+
+    long count();
 }

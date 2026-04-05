@@ -55,6 +55,8 @@ import java.util.Map;
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "Runtime Inspection", description = "Read-only runtime health, session, and memory inspection seams exposed through Swagger.")
 public class RuntimeInspectionResource {
+    private static final int MAX_MEMORY_LIMIT = 20;
+    private static final int MAX_RUN_HISTORY_LIMIT = 100;
     private final AgentReadinessHealthCheck readinessHealthCheck;
     private final RuntimeLivenessHealthCheck livenessHealthCheck;
     private final SessionManager sessionManager;
@@ -217,6 +219,9 @@ public class RuntimeInspectionResource {
             @QueryParam("limit") @DefaultValue("3") int limit
     ) {
         String effectiveQuery = query == null ? "" : query.trim();
+        if (limit < 1 || limit > MAX_MEMORY_LIMIT) {
+            throw new BadRequestException("limit must be between 1 and " + MAX_MEMORY_LIMIT);
+        }
         List<MemoryEntryResponse> memories = memoryService.longTermMemories(sessionId, effectiveQuery, limit).stream()
                 .map(MemoryEntryResponse::from)
                 .toList();
@@ -265,6 +270,9 @@ public class RuntimeInspectionResource {
             @Parameter(description = "Maximum number of records to return.")
             @QueryParam("limit") @DefaultValue("50") int limit
     ) {
+        if (limit < 1 || limit > MAX_RUN_HISTORY_LIMIT) {
+            throw new BadRequestException("limit must be between 1 and " + MAX_RUN_HISTORY_LIMIT);
+        }
         return runHistoryStore.list(lane, limit);
     }
 

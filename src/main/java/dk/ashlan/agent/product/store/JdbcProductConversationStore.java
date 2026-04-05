@@ -14,7 +14,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -93,20 +92,40 @@ public class JdbcProductConversationStore implements ProductConversationStore {
              PreparedStatement statement = connection.prepareStatement("""
                      select state_json
                      from product_conversation_state
-                     """);
-             ResultSet resultSet = statement.executeQuery()) {
-            List<ProductConversationState> states = new ArrayList<>();
-            while (resultSet.next()) {
-                String json = resultSet.getString(1);
-                if (json == null || json.isBlank()) {
-                    continue;
+                     order by updated_at desc
+                     fetch first ? rows only
+                     """)) {
+            statement.setInt(1, limit);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<ProductConversationState> states = new ArrayList<>();
+                while (resultSet.next()) {
+                    String json = resultSet.getString(1);
+                    if (json == null || json.isBlank()) {
+                        continue;
+                    }
+                    states.add(objectMapper.readValue(json, STATE_TYPE));
                 }
-                states.add(objectMapper.readValue(json, STATE_TYPE));
+                return List.copyOf(states);
             }
-            states.sort(Comparator.comparing(ProductConversationState::updatedAt).reversed());
-            return states.stream().limit(limit).toList();
         } catch (SQLException | IOException exception) {
             throw new IllegalStateException("Unable to list product conversations", exception);
+        }
+    }
+
+    @Override
+    public long count() {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     select count(*)
+                     from product_conversation_state
+                     """);
+             ResultSet resultSet = statement.executeQuery()) {
+            if (resultSet.next()) {
+                return resultSet.getLong(1);
+            }
+            return 0L;
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to count product conversations", exception);
         }
     }
 

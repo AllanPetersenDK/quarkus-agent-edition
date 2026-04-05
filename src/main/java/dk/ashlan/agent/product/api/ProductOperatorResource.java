@@ -2,6 +2,7 @@ package dk.ashlan.agent.product.api;
 
 import dk.ashlan.agent.product.model.ProductConversationDetailResponse;
 import dk.ashlan.agent.product.model.ProductConversationSummaryResponse;
+import dk.ashlan.agent.product.model.ProductOperatorOverviewResponse;
 import dk.ashlan.agent.product.store.ProductConversationStore;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -22,8 +23,10 @@ import java.util.List;
 
 @Path("/api/v1/assistants/admin")
 @Produces(MediaType.APPLICATION_JSON)
-@Tag(name = "Product Operator", description = "Lightweight operator seam for inspecting product conversations and their persistent state.")
+@Tag(name = "Product Operator", description = "Internal product operator seam for inspecting persistent conversations, release-gate signals, and closed-network drift health.")
 public class ProductOperatorResource {
+    private static final int MAX_LIST_LIMIT = 100;
+    private static final int MAX_OVERVIEW_LIMIT = 20;
     private final ProductConversationStore conversationStore;
 
     public ProductOperatorResource(ProductConversationStore conversationStore) {
@@ -45,9 +48,48 @@ public class ProductOperatorResource {
             @Parameter(description = "Maximum number of summaries to return.")
             @QueryParam("limit") @DefaultValue("20") int limit
     ) {
+        validateLimit(limit, MAX_LIST_LIMIT, "list");
         return conversationStore.list(limit).stream()
                 .map(ProductConversationSummaryResponse::from)
                 .toList();
+    }
+
+    @GET
+    @Path("/overview")
+    @Operation(
+            summary = "Inspect the product operator overview",
+            description = "Closed-network operator seam that summarizes the product lane, highlights the latest conversation, and exposes a compact drift-readiness signal."
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "Compact product operator overview.",
+            content = @Content(schema = @Schema(implementation = ProductOperatorOverviewResponse.class))
+    )
+    public ProductOperatorOverviewResponse overview(
+            @Parameter(description = "Maximum number of recent conversations to include in the overview.")
+            @QueryParam("recentLimit") @DefaultValue("5") int recentLimit
+    ) {
+        validateLimit(recentLimit, MAX_OVERVIEW_LIMIT, "recent");
+        List<ProductConversationSummaryResponse> recentConversations = conversationStore.list(recentLimit).stream()
+                .map(ProductConversationSummaryResponse::from)
+                .toList();
+        long conversationCount = conversationStore.count();
+        ProductConversationSummaryResponse latest = recentConversations.isEmpty() ? null : recentConversations.get(0);
+        return new ProductOperatorOverviewResponse(
+                conversationCount,
+                recentConversations.size(),
+                latest == null ? null : latest.conversationId(),
+                latest == null ? null : latest.lastRunId(),
+                latest == null ? null : latest.lastStatus(),
+                latest == null ? null : latest.updatedAt(),
+                latest == null ? null : latest.lastFailureReason(),
+                recentConversations,
+                List.of(
+                        "conversationCount:" + conversationCount,
+                        "recentLimit:" + recentLimit,
+                        "latestStatus:" + (latest == null ? "none" : latest.lastStatus())
+                )
+        );
     }
 
     @GET
@@ -69,5 +111,11 @@ public class ProductOperatorResource {
         return conversationStore.load(conversationId)
                 .map(ProductConversationDetailResponse::from)
                 .orElseThrow(() -> new jakarta.ws.rs.NotFoundException("No product conversation found for conversationId=" + conversationId));
+    }
+
+    private static void validateLimit(int limit, int max, String fieldName) {
+        if (limit < 1 || limit > max) {
+            throw new ProductApiException(400, "product_operator_" + fieldName + "_out_of_range", fieldName + " must be between 1 and " + max, null, null, null);
+        }
     }
 }
