@@ -3,7 +3,7 @@
 This repository exposes a Swagger-visible surface for selected outer runtime and companion seams.
 It does not turn the from-scratch orchestration internals into HTTP endpoints.
 Chapter 10 adds a shared run-history and lightweight evaluation seam so the important lanes can be inspected after execution without turning the repo into a monitoring platform.
-The repo is now also framed for closed-network internal use: the product lane is the official backend entrypoint, operator seams are separate from user-facing product flows, and chapter demo surfaces remain available for the book story without being the recommended API.
+The repo is now also framed for closed-network internal use: the `/api/v1/assistants` family is the official product contract, operator seams are separate from user-facing product flows, and chapter demo surfaces remain available for the book story without being the recommended API.
 
 ## OpenAPI And Swagger UI
 
@@ -27,7 +27,7 @@ Swagger now documents the outer runtime and companion seams that are practical t
 For chapters 2-4, keep the distinction clear: chapter 2 is the LLM layer, chapter 3 is the tool system, and chapter 4 is the manual agent loop. Swagger-visible runtime or companion seams should be read as overlays on those chapters, not as replacements for the book core.
 For operator and closed-network readability, keep these categories in mind:
 
-- `Product API` - the official internal backend entrypoint
+- `Product API` - the official internal backend entrypoint and canonical assistant product contract
 - `Product Operator` - read-only drift and conversation inspection for the product lane
 - `Runtime Inspection`, `Runtime Memory`, `RAG API`, `Runtime Context`, `Runtime Health`, `Internal Evaluation`, and `GAIA Validation` - companion/runtime and admin seams
 - `Internal Chapter Demo` - chapter 7/8/9/10 comparison surfaces that stay useful for the book story but are not the product entrypoint
@@ -72,7 +72,12 @@ Covered in Swagger:
 - `POST /multi-agent` - internal chapter demo for the coordinator/reviewer flow
 - `GET /multi-agent/history` - chapter-9 run history lookup seam
 - `GET /multi-agent/history/{runId}` - chapter-9 single-run inspection seam
-- `POST /api/v1/assistants/query` - first product-lane document/knowledge assistant seam
+- `POST /api/v1/assistants/query` - canonical product write seam for the assistant frontend
+- `GET /api/v1/assistants/overview` - canonical product overview seam for dashboard cards and health summaries
+- `GET /api/v1/assistants/conversations` - canonical product conversation list seam
+- `GET /api/v1/assistants/conversations/{conversationId}` - canonical product conversation detail seam
+- `GET /api/v1/assistants/runs/{runId}` - canonical product run detail seam
+- `GET /api/v1/assistants/runs/{runId}/artifacts` - canonical product artifact seam
 - `GET /api/v1/assistants/admin/overview` - product operator seam for a compact closed-network overview
 - `GET /api/v1/assistants/admin/conversations` - product operator seam for persistent conversation summaries
 - `GET /api/v1/assistants/admin/conversations/{conversationId}` - product operator seam for persistent conversation detail
@@ -100,28 +105,36 @@ Not covered in Swagger:
 
 ## Product Lane
 
-The first product-oriented public seam is:
+The canonical product seams are:
 
 - `POST /api/v1/assistants/query`
+- `GET /api/v1/assistants/overview`
+- `GET /api/v1/assistants/conversations`
+- `GET /api/v1/assistants/conversations/{conversationId}`
+- `GET /api/v1/assistants/runs/{runId}`
+- `GET /api/v1/assistants/runs/{runId}/artifacts`
 
-It is intentionally small and stable. The endpoint is built on the existing RAG, memory, planning, reflection, and session capabilities, while keeping the chapter-demo endpoints available for the companion story.
+They are intentionally small and stable. The write path is built on the existing RAG, memory, planning, reflection, and session capabilities, while the read/list/detail paths are built on the persisted conversation store and shared chapter-10 run history.
 
 Product responses expose:
 
 - a conversation reference
+- a run reference
 - a conversation creation flag
 - a conversation turn count
+- timestamps and duration
 - a final answer
 - source citations
 - compact memory hints
 - a small planning summary
 - a lightweight reflection result
 - a stable status and failure reason when the pipeline rejects the answer
+- compact trace, tool-usage, and artifact summaries for product dashboards
 - product-lane signals for inspection
 
 The chapter demo endpoints remain useful for book-aligned exploration, but they are not the recommended product path.
 Product runs are also recorded in the shared chapter-10 run history so a query can be replayed or explained later through the same inspection seam as the other runtime lanes.
-Phase 2 makes the product lane a little more driftable: the conversation state is persisted in a JDBC-backed store with a PostgreSQL-compatible schema, while local smoke still uses the embedded H2 runtime database. The product contract stays small, and auth/roles/OIDC/tenancy are deliberately phase-3 work.
+The product lane is now a real frontend contract: the conversation state is persisted in a JDBC-backed store with a PostgreSQL-compatible schema, while local smoke still uses the embedded H2 runtime database. Auth/roles/OIDC/tenancy are deliberately phase-3 work.
 
 ### Product Operations
 

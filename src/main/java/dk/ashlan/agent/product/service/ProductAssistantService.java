@@ -11,6 +11,7 @@ import dk.ashlan.agent.planning.ReflectionResult;
 import dk.ashlan.agent.planning.ReflectionService;
 import dk.ashlan.agent.product.model.ProductAssistantQueryRequest;
 import dk.ashlan.agent.product.model.ProductAssistantQueryResponse;
+import dk.ashlan.agent.product.model.ProductArtifactSummaryResponse;
 import dk.ashlan.agent.product.model.ProductConversationState;
 import dk.ashlan.agent.product.model.ProductConversationTurn;
 import dk.ashlan.agent.product.model.ProductPlanResponse;
@@ -24,6 +25,7 @@ import dk.ashlan.agent.rag.RetrievalResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -112,12 +114,34 @@ public class ProductAssistantService {
             List<ProductSourceResponse> sources = retrieval.stream()
                     .map(ProductSourceResponse::from)
                     .toList();
-
             List<String> memoryHints = memoryService.relevantMemories(conversationId, query);
             ExecutionPlan plan = plannerService.plan(query);
             int planStepCount = plan.steps() == null ? 0 : plan.steps().size();
             ReflectionResult reflection = reflectionService.reflect(answer);
             String finalAnswer = reflection.accepted() ? answer : reflection.revisedOutput();
+            String summary = buildSummary(reflection.accepted(), sources.size(), memoryHints.size(), planStepCount, finalAnswer);
+            String traceSummary = buildTraceSummary(
+                    conversationId,
+                    conversationCreated,
+                    retrieval.size(),
+                    memoryHints.size(),
+                    planStepCount,
+                    reflection.accepted(),
+                    reflection.accepted() ? "accepted" : reflection.feedback()
+            );
+            String toolUsageSummary = buildToolUsageSummary(retrieval.size(), memoryHints.size(), planStepCount, reflection.accepted());
+            Instant completedAt = Instant.now();
+            long durationMs = Duration.between(startedAt, completedAt).toMillis();
+            List<ProductArtifactSummaryResponse> artifacts = buildArtifacts(
+                    conversationId,
+                    requestId,
+                    startedAt,
+                    completedAt,
+                    summary,
+                    traceSummary,
+                    sources,
+                    finalAnswer
+            );
 
             boolean canRemember = reflection.accepted() && !"No relevant knowledge found.".equals(finalAnswer);
             MemoryWriteDecision memoryWriteDecision = canRemember
@@ -135,17 +159,29 @@ public class ProductAssistantService {
             signals.add("reflection:" + (reflection.accepted() ? "accepted" : "needs-work"));
             signals.add("memory-write:" + memoryWriteDecision.name().toLowerCase());
             signals.add("conversation:stored");
+            signals.add("artifact-count:" + artifacts.size());
 
             ProductConversationTurn turn = new ProductConversationTurn(
                     requestId,
                     startedAt,
+                    completedAt,
+                    durationMs,
                     query,
                     finalAnswer,
                     reflection.accepted() ? "COMPLETED" : "REJECTED",
+                    summary,
+                    traceSummary,
+                    toolUsageSummary,
                     retrieval.size(),
                     sources.size(),
                     retrieval.size(),
                     planStepCount,
+                    plan.formattedPlan(),
+                    reflection.accepted() ? "accepted" : reflection.feedback(),
+                    new ProductPlanResponse(plan.formattedPlan(), plan.nextActiveStep() == null ? "" : plan.nextActiveStep().formattedLine(), planStepCount),
+                    new ProductReflectionResponse(reflection.accepted(), reflection.feedback()),
+                    List.copyOf(sources),
+                    artifacts,
                     List.copyOf(signals),
                     reflection.accepted() ? null : reflection.feedback()
             );
@@ -153,7 +189,7 @@ public class ProductAssistantService {
             ProductConversationState updatedState = new ProductConversationState(
                     conversationId,
                     existingState == null ? startedAt : existingState.createdAt(),
-                    Instant.now(),
+                    completedAt,
                     appendTurn(existingState, turn)
             );
             conversationStore.save(updatedState);
@@ -172,10 +208,18 @@ public class ProductAssistantService {
                     new ProductReflectionResponse(reflection.accepted(), reflection.feedback()),
                     List.copyOf(signals),
                     reflection.accepted() ? "COMPLETED" : "REJECTED",
-                    reflection.accepted() ? null : reflection.feedback()
+                    reflection.accepted() ? null : reflection.feedback(),
+                    summary,
+                    startedAt,
+                    completedAt,
+                    durationMs,
+                    traceSummary,
+                    toolUsageSummary,
+                    artifacts.size(),
+                    artifacts
             );
             if (runRecorder != null) {
-                runRecorder.recordProductRun(requestId, conversationId, query, response, startedAt, Instant.now());
+                runRecorder.recordProductRun(requestId, conversationId, query, response, startedAt, completedAt);
             }
             return response;
         } catch (RuntimeException exception) {
@@ -191,6 +235,85 @@ public class ProductAssistantService {
                     exception
             );
         }
+    }
+
+    private List<ProductArtifactSummaryResponse> buildArtifacts(
+            String conversationId,
+            String runId,
+            Instant createdAt,
+            Instant completedAt,
+            String summary,
+            String traceSummary,
+            List<ProductSourceResponse> sources,
+            String finalAnswer
+    ) {
+        List<ProductArtifactSummaryResponse> artifacts = new ArrayList<>();
+        for (ProductSourceResponse source : sources) {
+            String title = source.sourcePath() == null || source.sourcePath().isBlank() ? source.sourceId() : source.sourcePath();
+            String chunkId = source.chunkId() == null || source.chunkId().isBlank()
+                    ? source.sourceId() + ":" + source.chunkIndex()
+                    : source.chunkId();
+            artifacts.add(new ProductArtifactSummaryResponse(
+                    chunkId,
+                    runId,
+                    conversationId,
+                    "knowledge-source",
+                    title,
+                    "text/plain",
+                    source.excerpt() == null ? null : (long) source.excerpt().getBytes(java.nio.charset.StandardCharsets.UTF_8).length,
+                    createdAt,
+                    source.excerpt(),
+                    source.sourcePath(),
+                    source.sourceId()
+            ));
+        }
+        artifacts.add(new ProductArtifactSummaryResponse(
+                runId + ":summary",
+                runId,
+                conversationId,
+                "assistant-summary",
+                "Assistant answer",
+                "text/plain",
+                finalAnswer == null ? null : (long) finalAnswer.getBytes(java.nio.charset.StandardCharsets.UTF_8).length,
+                completedAt,
+                summary,
+                null,
+                null
+        ));
+        artifacts.add(new ProductArtifactSummaryResponse(
+                runId + ":trace",
+                runId,
+                conversationId,
+                "trace-summary",
+                "Trace summary",
+                "text/plain",
+                null,
+                completedAt,
+                traceSummary,
+                null,
+                null
+        ));
+        return List.copyOf(artifacts);
+    }
+
+    private String buildSummary(boolean accepted, int sourceCount, int memoryHintCount, int planStepCount, String finalAnswer) {
+        String status = accepted ? "accepted" : "rejected";
+        String answer = finalAnswer == null || finalAnswer.isBlank() ? "no answer" : finalAnswer;
+        return "Product query " + status + " with " + sourceCount + " sources, " + memoryHintCount + " memory hints, " + planStepCount + " plan steps. " + answer;
+    }
+
+    private String buildTraceSummary(String conversationId, boolean conversationCreated, int retrievalCount, int memoryHintCount, int planStepCount, boolean accepted, String reflectionNote) {
+        return "conversation=" + conversationId
+                + ", " + (conversationCreated ? "created" : "continued")
+                + ", retrievals=" + retrievalCount
+                + ", memoryHints=" + memoryHintCount
+                + ", planSteps=" + planStepCount
+                + ", reflection=" + (accepted ? "accepted" : "needs-work")
+                + ", note=" + reflectionNote;
+    }
+
+    private String buildToolUsageSummary(int retrievalCount, int memoryHintCount, int planStepCount, boolean accepted) {
+        return "retrievals=" + retrievalCount + ", memoryHints=" + memoryHintCount + ", planSteps=" + planStepCount + ", reflection=" + (accepted ? "accepted" : "needs-work");
     }
 
     private String normalizeConversationId(String conversationId) {

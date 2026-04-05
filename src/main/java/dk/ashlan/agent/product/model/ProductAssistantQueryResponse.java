@@ -2,6 +2,7 @@ package dk.ashlan.agent.product.model;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+import java.time.Instant;
 import java.util.List;
 
 public record ProductAssistantQueryResponse(
@@ -32,6 +33,25 @@ public record ProductAssistantQueryResponse(
         @Schema(description = "Conversation status such as COMPLETED or REJECTED.")
         String status,
         @Schema(description = "Failure reason when the product pipeline rejected the answer, if any.")
-        String failureReason
+        String failureReason,
+        @Schema(description = "Compact one-line summary for product list views.")
+        String summary,
+        @Schema(description = "Run start timestamp.")
+        Instant startedAt,
+        @Schema(description = "Run completion timestamp.")
+        Instant completedAt,
+        @Schema(description = "Wall-clock duration in milliseconds.")
+        long durationMs,
+        @Schema(description = "Compact trace summary for product dashboards.")
+        String traceSummary,
+        @Schema(description = "Compact tool-usage summary for product dashboards.")
+        String toolUsageSummary,
+        @Schema(description = "Number of product artifacts associated with the query.")
+        int artifactCount,
+        @Schema(description = "Product artifacts associated with the query.")
+        List<ProductArtifactSummaryResponse> artifacts
 ) {
+    public ProductAssistantQueryResponse {
+        artifacts = artifacts == null ? List.of() : List.copyOf(artifacts);
+    }
 }

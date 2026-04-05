@@ -113,11 +113,16 @@ mvn test
 
 ## API
 
-For closed-network deployments, the official product entrypoint is `POST /api/v1/assistants/query`. The chapter-demo and companion/runtime seams remain available for book-aligned exploration and operator work, but they are secondary surfaces. See [`docs/closed-network-operation.md`](docs/closed-network-operation.md) for the deployment posture.
+For closed-network deployments, the official product contract is the `/api/v1/assistants` family. The chapter-demo and companion/runtime seams remain available for book-aligned exploration and operator work, but they are secondary surfaces. See [`docs/product-lane.md`](docs/product-lane.md) for the canonical product contract and [`docs/closed-network-operation.md`](docs/closed-network-operation.md) for the deployment posture.
 
 - OpenAPI: `http://localhost:8090/openapi`
 - Swagger UI: `http://localhost:8090/swagger-ui`
 - `POST /api/v1/assistants/query`
+- `GET /api/v1/assistants/overview`
+- `GET /api/v1/assistants/conversations`
+- `GET /api/v1/assistants/conversations/{conversationId}`
+- `GET /api/v1/assistants/runs/{runId}`
+- `GET /api/v1/assistants/runs/{runId}/artifacts`
 - `GET /api/v1/assistants/admin/overview`
 - `GET /api/v1/assistants/admin/conversations`
 - `GET /api/v1/assistants/admin/conversations/{conversationId}`

@@ -26,7 +26,25 @@ public record ProductConversationSummaryResponse(
         @Schema(description = "Latest failure reason, if any.")
         String lastFailureReason,
         @Schema(description = "Latest quality signals.")
-        List<String> qualitySignals
+        List<String> qualitySignals,
+        @Schema(description = "Latest turn summary.")
+        String summary,
+        @Schema(description = "Latest trace summary.")
+        String traceSummary,
+        @Schema(description = "Latest tool-usage summary.")
+        String toolUsageSummary,
+        @Schema(description = "Latest planning summary.")
+        String planSummary,
+        @Schema(description = "Latest reflection summary.")
+        String reflectionSummary,
+        @Schema(description = "Number of artifacts associated with the latest turn.")
+        int artifactCount,
+        @Schema(description = "Latest turn start timestamp.")
+        Instant lastStartedAt,
+        @Schema(description = "Latest turn completion timestamp.")
+        Instant lastCompletedAt,
+        @Schema(description = "Latest turn duration in milliseconds.")
+        long lastDurationMs
 ) {
     public ProductConversationSummaryResponse {
         qualitySignals = qualitySignals == null ? List.of() : List.copyOf(qualitySignals);
@@ -43,7 +61,16 @@ public record ProductConversationSummaryResponse(
                 state.lastQuery(),
                 state.lastAnswer(),
                 state.lastFailureReason(),
-                state.lastQualitySignals()
+                state.lastQualitySignals(),
+                state.lastSummary(),
+                state.lastTraceSummary(),
+                state.lastToolUsageSummary(),
+                state.lastPlanSummary(),
+                state.lastReflectionSummary(),
+                state.lastArtifactCount(),
+                state.lastStartedAt(),
+                state.lastCompletedAt(),
+                state.lastDurationMs()
         );
     }
 }

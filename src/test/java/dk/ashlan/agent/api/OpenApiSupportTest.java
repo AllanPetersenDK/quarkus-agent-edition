@@ -23,6 +23,7 @@ class OpenApiSupportTest {
         assertTrue(MultiAgentResource.class.isAnnotationPresent(jakarta.ws.rs.Path.class));
         assertTrue(WorkflowResource.class.isAnnotationPresent(jakarta.ws.rs.Path.class));
         assertTrue(dk.ashlan.agent.product.api.ProductAssistantResource.class.isAnnotationPresent(jakarta.ws.rs.Path.class));
+        assertTrue(dk.ashlan.agent.product.api.ProductLaneResource.class.isAnnotationPresent(jakarta.ws.rs.Path.class));
         assertTrue(dk.ashlan.agent.product.api.ProductOperatorResource.class.isAnnotationPresent(jakarta.ws.rs.Path.class));
         String properties = Files.readString(Path.of("src/main/resources/application.properties"));
         assertTrue(properties.contains("quarkus.smallrye-openapi.path=/openapi"));
@@ -71,6 +72,11 @@ class OpenApiSupportTest {
         assertOperationContains(RuntimeInspectionResource.class, "run", "Book chapter: 10");
         assertOperationContains(RuntimeInspectionResource.class, "runs", "Book chapter: 10");
         assertOperationContains(dk.ashlan.agent.product.api.ProductAssistantResource.class, "query", "Official product lane v1");
+        assertOperationContains(dk.ashlan.agent.product.api.ProductLaneResource.class, "overview", "Official product lane overview");
+        assertOperationContains(dk.ashlan.agent.product.api.ProductLaneResource.class, "conversations", "Official product list seam");
+        assertOperationContains(dk.ashlan.agent.product.api.ProductLaneResource.class, "conversation", "Official product detail seam");
+        assertOperationContains(dk.ashlan.agent.product.api.ProductLaneResource.class, "run", "Official product run detail seam");
+        assertOperationContains(dk.ashlan.agent.product.api.ProductLaneResource.class, "runArtifacts", "Official product artifact seam");
         assertOperationContains(dk.ashlan.agent.product.api.ProductOperatorResource.class, "listConversations", "Phase-2 product operator seam");
         assertOperationContains(dk.ashlan.agent.product.api.ProductOperatorResource.class, "overview", "Closed-network operator seam");
         assertOperationContains(dk.ashlan.agent.product.api.ProductOperatorResource.class, "conversation", "Phase-2 product operator seam");

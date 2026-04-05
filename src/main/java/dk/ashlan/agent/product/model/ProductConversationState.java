@@ -48,6 +48,55 @@ public record ProductConversationState(
         return lastTurn() == null ? null : lastTurn().failureReason();
     }
 
+    public String lastSummary() {
+        return lastTurn() == null ? null : lastTurn().summary();
+    }
+
+    public String lastTraceSummary() {
+        return lastTurn() == null ? null : lastTurn().traceSummary();
+    }
+
+    public String lastToolUsageSummary() {
+        return lastTurn() == null ? null : lastTurn().toolUsageSummary();
+    }
+
+    public String lastPlanSummary() {
+        return lastTurn() == null ? null : lastTurn().planSummary();
+    }
+
+    public String lastReflectionSummary() {
+        return lastTurn() == null ? null : lastTurn().reflectionSummary();
+    }
+
+    public Instant lastStartedAt() {
+        return lastTurn() == null ? null : lastTurn().startedAt();
+    }
+
+    public Instant lastCompletedAt() {
+        return lastTurn() == null ? null : lastTurn().completedAt();
+    }
+
+    public long lastDurationMs() {
+        return lastTurn() == null ? 0L : lastTurn().durationMs();
+    }
+
+    public int lastArtifactCount() {
+        return lastTurn() == null ? 0 : lastTurn().artifacts().size();
+    }
+
+    public List<ProductArtifactSummaryResponse> lastArtifacts() {
+        return lastTurn() == null ? List.of() : lastTurn().artifacts();
+    }
+
+    public List<ProductArtifactSummaryResponse> allArtifacts() {
+        if (turns.isEmpty()) {
+            return List.of();
+        }
+        return turns.stream()
+                .flatMap(turn -> turn.artifacts().stream())
+                .toList();
+    }
+
     public List<String> lastQualitySignals() {
         return lastTurn() == null ? List.of() : lastTurn().qualitySignals();
     }

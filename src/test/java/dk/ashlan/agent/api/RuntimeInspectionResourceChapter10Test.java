@@ -27,6 +27,7 @@ import dk.ashlan.agent.memory.MemoryService;
 import dk.ashlan.agent.memory.SessionManager;
 import dk.ashlan.agent.multiagent.AgentTaskResult;
 import dk.ashlan.agent.product.model.ProductAssistantQueryResponse;
+import dk.ashlan.agent.product.model.ProductArtifactSummaryResponse;
 import dk.ashlan.agent.product.model.ProductPlanResponse;
 import dk.ashlan.agent.product.model.ProductReflectionResponse;
 import dk.ashlan.agent.product.model.ProductSourceResponse;
@@ -65,22 +66,57 @@ class RuntimeInspectionResourceChapter10Test {
                 "product-run-1",
                 "product-conversation",
                 "Which text mentions PostgreSQL?",
-                new ProductAssistantQueryResponse(
-                        "product-run-1",
-                        "product-conversation",
-                        false,
-                        2,
+                        new ProductAssistantQueryResponse(
+                                "product-run-1",
+                                "product-conversation",
+                                false,
+                                2,
                         1,
                         "Which text mentions PostgreSQL?",
                         "PostgreSQL is an open-source relational database.",
                         List.of(new ProductSourceResponse("docs/postgresql", "docs/postgresql.txt", 0, "chunk-1", "PostgreSQL is an open-source relational database.", 0.91)),
                         List.of("memory:hints:1", "rag:retrieved:1"),
-                        new ProductPlanResponse("Task plan", "Check sources", 2),
-                        new ProductReflectionResponse(true, "Looks good."),
-                        List.of("product-query-start", "rag:retrieved:1", "reflection:accepted"),
-                        "COMPLETED",
-                        null
-                ),
+                                new ProductPlanResponse("Task plan", "Check sources", 2),
+                                new ProductReflectionResponse(true, "Looks good."),
+                                List.of("product-query-start", "rag:retrieved:1", "reflection:accepted"),
+                                "COMPLETED",
+                                null,
+                                "Product query accepted with 1 sources, 1 memory hints, 2 plan steps. PostgreSQL is an open-source relational database.",
+                                started.plusMillis(10),
+                                started.plusMillis(15),
+                                5L,
+                                "conversation=product-conversation, created, retrievals=1, memoryHints=1, planSteps=2, reflection=accepted, note=accepted",
+                                "retrievals=1, memoryHints=1, planSteps=2, reflection=accepted",
+                                2,
+                                List.of(
+                                        new ProductArtifactSummaryResponse(
+                                                "docs/postgresql:0:chunk-1",
+                                                "product-run-1",
+                                                "product-conversation",
+                                                "knowledge-source",
+                                                "docs/postgresql.txt",
+                                                "text/plain",
+                                                48L,
+                                                started,
+                                                "PostgreSQL is an open-source relational database.",
+                                                "docs/postgresql.txt",
+                                                "docs/postgresql"
+                                        ),
+                                        new ProductArtifactSummaryResponse(
+                                                "product-run-1:summary",
+                                                "product-run-1",
+                                                "product-conversation",
+                                                "assistant-summary",
+                                                "Assistant answer",
+                                                "text/plain",
+                                                48L,
+                                                started.plusMillis(10),
+                                                "Product query accepted with 1 sources, 1 memory hints, 2 plan steps. PostgreSQL is an open-source relational database.",
+                                                null,
+                                                null
+                                        )
+                                )
+                        ),
                 started.plusMillis(10),
                 started.plusMillis(15)
         );

@@ -27,11 +27,32 @@ public record ProductConversationDetailResponse(
         String lastFailureReason,
         @Schema(description = "Latest quality signals.")
         List<String> qualitySignals,
+        @Schema(description = "Latest turn summary.")
+        String summary,
+        @Schema(description = "Latest trace summary.")
+        String traceSummary,
+        @Schema(description = "Latest tool-usage summary.")
+        String toolUsageSummary,
+        @Schema(description = "Latest planning summary.")
+        String planSummary,
+        @Schema(description = "Latest reflection summary.")
+        String reflectionSummary,
+        @Schema(description = "Number of artifacts associated with the latest turn.")
+        int artifactCount,
+        @Schema(description = "Latest turn start timestamp.")
+        Instant lastStartedAt,
+        @Schema(description = "Latest turn completion timestamp.")
+        Instant lastCompletedAt,
+        @Schema(description = "Latest turn duration in milliseconds.")
+        long lastDurationMs,
+        @Schema(description = "All artifacts associated with the conversation.")
+        List<ProductArtifactSummaryResponse> artifacts,
         @Schema(description = "All stored turns for the conversation.")
         List<ProductConversationTurn> turns
 ) {
     public ProductConversationDetailResponse {
         qualitySignals = qualitySignals == null ? List.of() : List.copyOf(qualitySignals);
+        artifacts = artifacts == null ? List.of() : List.copyOf(artifacts);
         turns = turns == null ? List.of() : List.copyOf(turns);
     }
 
@@ -47,6 +68,16 @@ public record ProductConversationDetailResponse(
                 state.lastAnswer(),
                 state.lastFailureReason(),
                 state.lastQualitySignals(),
+                state.lastSummary(),
+                state.lastTraceSummary(),
+                state.lastToolUsageSummary(),
+                state.lastPlanSummary(),
+                state.lastReflectionSummary(),
+                state.lastArtifactCount(),
+                state.lastStartedAt(),
+                state.lastCompletedAt(),
+                state.lastDurationMs(),
+                state.allArtifacts(),
                 state.turns()
         );
     }
