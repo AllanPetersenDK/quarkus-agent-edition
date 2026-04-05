@@ -2,6 +2,7 @@ target/
 .m2/
 .idea/
 .vscode/
+quarkus-agent-edition.code-workspace
 *.iml
 .DS_Store
 .env
