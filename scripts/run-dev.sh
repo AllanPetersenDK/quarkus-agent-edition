@@ -5,8 +5,28 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
 quarkus_version="3.32.2"
-host="0.0.0.0"
-port="${QUARKUS_HTTP_PORT:-8080}"
+# In WSL, bind to all interfaces so Windows browsers can reach the app.
+# Outside WSL, keep the safer loopback default unless explicitly overridden.
+if [[ -n "${QUARKUS_HTTP_HOST:-}" ]]; then
+  host="$QUARKUS_HTTP_HOST"
+elif [[ -n "${WSL_DISTRO_NAME:-}" || -n "${WSL_INTEROP:-}" || -n "${WSLENV:-}" || -r /proc/sys/kernel/osrelease && "$(tr '[:upper:]' '[:lower:]' </proc/sys/kernel/osrelease)" == *microsoft* ]]; then
+  host="0.0.0.0"
+else
+  host="127.0.0.1"
+fi
+port="8090"
+runtime_pidfile="$repo_root/target/run-dev.pid"
+runtime_pid=""
+
+cleanup_runtime() {
+  if [[ -n "${runtime_pid:-}" ]] && kill -0 "$runtime_pid" 2>/dev/null; then
+    kill -9 "$runtime_pid" 2>/dev/null || true
+  fi
+
+  if [[ -f "$runtime_pidfile" ]]; then
+    rm -f "$runtime_pidfile"
+  fi
+}
 
 choose_dev_mvn() {
   if command -v mvn >/dev/null 2>&1; then
@@ -64,6 +84,38 @@ stop_listener_on_port() {
   fi
 }
 
+stop_stale_runtime_from_pidfile() {
+  if [[ ! -f "$runtime_pidfile" ]]; then
+    return
+  fi
+
+  local stale_pid
+  stale_pid="$(cat "$runtime_pidfile" 2>/dev/null || true)"
+  if [[ -n "$stale_pid" ]] && kill -0 "$stale_pid" 2>/dev/null; then
+    echo "Stopping previous dev runtime from $runtime_pidfile: $stale_pid"
+    kill -9 "$stale_pid" 2>/dev/null || true
+    sleep 1
+  fi
+
+  rm -f "$runtime_pidfile"
+}
+
+stop_stale_runtime_processes() {
+  local pids=()
+
+  if command -v ps >/dev/null 2>&1 && command -v rg >/dev/null 2>&1; then
+    mapfile -t pids < <(
+      ps -ef | rg "quarkus-run\.jar|quarkus-maven-plugin:${quarkus_version}:dev" | rg -v "rg " | awk '{print $2}' | sort -u
+    )
+  fi
+
+  if [[ "${#pids[@]}" -gt 0 ]]; then
+    echo "Stopping stale Quarkus runtime processes: ${pids[*]}"
+    kill -9 "${pids[@]}" 2>/dev/null || true
+    sleep 1
+  fi
+}
+
 if [[ -z "${JAVA_HOME:-}" && -d /usr/lib/jvm/java-21-openjdk-amd64 ]]; then
   export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 fi
@@ -87,16 +139,23 @@ if [[ -z "${GAIA_DATASET_URL:-}" ]]; then
   "$repo_root/scripts/setup-gaia-local.sh"
 fi
 
+trap cleanup_runtime EXIT INT TERM
+
+stop_stale_runtime_from_pidfile
+stop_stale_runtime_processes
 stop_listener_on_port "$port"
 
 if mvn_bin="$(choose_dev_mvn)"; then
   repo_local="${M2_REPO:-$HOME/.m2/repository}"
 
-  exec "$mvn_bin" \
+  "$mvn_bin" \
     -Dmaven.repo.local="$repo_local" \
     io.quarkus.platform:quarkus-maven-plugin:"$quarkus_version":dev \
     -Dquarkus.http.host="$host" \
-    -Ddebug=false
+    -Ddebug=false &
+  runtime_pid="$!"
+  printf '%s\n' "$runtime_pid" >"$runtime_pidfile"
+  wait "$runtime_pid"
 fi
 
 echo "Falling back to packaged runtime build on port ${port}." >&2
@@ -107,6 +166,9 @@ repo_local="${M2_REPO:-$HOME/.m2/repository}"
   -DskipTests \
   package
 
-exec java \
+java \
   -Dquarkus.http.host="$host" \
-  -jar target/quarkus-app/quarkus-run.jar
+  -jar target/quarkus-app/quarkus-run.jar &
+runtime_pid="$!"
+printf '%s\n' "$runtime_pid" >"$runtime_pidfile"
+wait "$runtime_pid"

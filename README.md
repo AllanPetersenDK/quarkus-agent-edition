@@ -81,7 +81,7 @@ See [`docs/companion-seams.md`](docs/companion-seams.md) for the rule that keeps
 mvn quarkus:dev
 ```
 
-The application listens on `http://localhost:8080` and the helper script binds dev mode to `0.0.0.0` so WSL and browser access are both usable.
+The application listens on `http://localhost:8090` and the helper script binds dev mode to `0.0.0.0` so WSL and browser access are both usable.
 
 If your local Maven is older than 3.9, use the helper script instead:
 
@@ -89,7 +89,7 @@ If your local Maven is older than 3.9, use the helper script instead:
 bash scripts/run-dev.sh
 ```
 
-The helper script now stops any existing listener on port `8080` before starting, so it does not silently keep running an older companion build. If Maven 3.9+ is unavailable, it falls back to packaging and running the current `target/quarkus-app/quarkus-run.jar` build instead of leaving the stale runtime in place.
+The helper script now stops any existing listener on port `8090` before starting, so it does not silently keep running an older companion build. If Maven 3.9+ is unavailable, it falls back to packaging and running the current `target/quarkus-app/quarkus-run.jar` build instead of leaving the stale runtime in place.
 
 To run a specific chapter smoke test with one command, use one of these:
 
@@ -115,8 +115,8 @@ mvn test
 
 For closed-network deployments, the official product entrypoint is `POST /api/v1/assistants/query`. The chapter-demo and companion/runtime seams remain available for book-aligned exploration and operator work, but they are secondary surfaces. See [`docs/closed-network-operation.md`](docs/closed-network-operation.md) for the deployment posture.
 
-- OpenAPI: `http://localhost:8080/openapi`
-- Swagger UI: `http://localhost:8080/swagger-ui`
+- OpenAPI: `http://localhost:8090/openapi`
+- Swagger UI: `http://localhost:8090/swagger-ui`
 - `POST /api/v1/assistants/query`
 - `GET /api/v1/assistants/admin/overview`
 - `GET /api/v1/assistants/admin/conversations`
@@ -158,7 +158,7 @@ Chapter 6 now also exposes a small pause/resume seam for confirmation-gated tool
 - `GET /api/v1/assistants/admin/conversations`
 - `GET /api/v1/assistants/admin/conversations/{conversationId}`
 - `GET /workflow-demo`
-- MCP server: `http://localhost:8080/mcp`
+- MCP server: `http://localhost:8090/mcp`
 
 The recommended product lane is `POST /api/v1/assistants/query`: a small document/knowledge assistant built on the mature RAG, memory, planning, reflection, and observability capabilities. Chapter demo endpoints remain available for the book companion story, but they are not the primary product surface. The small operator endpoints under `/api/v1/assistants/admin` are for closed-network drift checks and stay separate from the user-facing product contract.
 Chapter 10 now adds a shared runtime run-history seam at `GET /api/runtime/runs` and `GET /api/runtime/runs/{runId}`, plus a case-based evaluation seam at `POST /admin/evaluations/runs`, so manual, product, code, multi-agent, evaluation, and GAIA runs can be replayed after execution without relying on the original live response body.

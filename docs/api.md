@@ -7,8 +7,8 @@ The repo is now also framed for closed-network internal use: the product lane is
 
 ## OpenAPI And Swagger UI
 
-- OpenAPI JSON/YAML: `http://localhost:8080/openapi`
-- Swagger UI: `http://localhost:8080/swagger-ui`
+- OpenAPI JSON/YAML: `http://localhost:8090/openapi`
+- Swagger UI: `http://localhost:8090/swagger-ui`
 
 The OpenAPI and Swagger UI setup follows the official Quarkus `smallrye-openapi` approach.
 
